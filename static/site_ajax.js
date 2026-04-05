@@ -8,13 +8,14 @@
 
     const byIndex = (value) => {
       if (typeof value === 'undefined' || value === null || value === '') return null;
-      return document.querySelector('[data-cart-item= + String(value) + ]');
+      return document.querySelector('[data-cart-item="' + String(value) + '"]');
     };
 
     const byName = (value) => {
       const key = normalizeFlavorKey(value);
       if (!key) return null;
-      return document.querySelector('[data-flavor-key= + key + ]');
+      return document.querySelector('[data-flavor-key="' + key + '"]') ||
+             document.querySelector('[data-item-name="' + value + '"]');
     };
 
     return (
@@ -75,13 +76,7 @@
   }
 
   function setButtonLoading(button, loading) {
-    if (!button) return;
-
-    if (button.classList.contains('btn-remover-item-x')) {
-      button.disabled = !!loading;
-      button.classList.toggle('is-loading-soft', !!loading);
-      return;
-    }
+    if (!button || button.classList.contains('btn-remover-item-x')) return;
 
     const isFastAction = button.classList.contains('btn-adicionar') || button.classList.contains('btn-adicionar-pro');
 
@@ -247,11 +242,7 @@
 
     if (payload.removed) {
       const rowToRemove = findCartRow(payload);
-      if (!rowToRemove) {
-        visit('/carrinho', false).catch(() => window.location.reload());
-        return;
-      }
-      rowToRemove.remove();
+      if (rowToRemove) rowToRemove.remove();
       reindexCartDom();
       if (!document.querySelector('[data-cart-item]')) {
         visit('/carrinho', false).catch(() => window.location.reload());
@@ -265,7 +256,7 @@
         visit('/carrinho', false).catch(() => window.location.reload());
         return;
       }
-      const rowIndex = typeof row.dataset.cartItem !== 'undefined' ? row.dataset.cartItem : payload.item_index;
+      const rowIndex = row.dataset.cartItem || payload.item_index;
       const input = row.querySelector('[data-cart-qty-input="' + rowIndex + '"]') || row.querySelector('[data-cart-qty-input]');
       const subtotal = row.querySelector('[data-cart-subtotal="' + rowIndex + '"]') || row.querySelector('[data-cart-subtotal]');
       if (input) {
@@ -306,9 +297,14 @@
       return;
     }
 
-    if (action.indexOf('/remover_item/') === 0 || action.indexOf('/carrinho/atualizar/') === 0) {
+    if (action.indexOf('/remover_item/') === 0) {
       updateCartItemDom(payload);
-      showToast(payload.message || 'Atualizado com sucesso.');
+      showToast(payload.message || 'Removido com sucesso.');
+      return;
+    }
+
+    if (action.indexOf('/carrinho/atualizar/') === 0) {
+      updateCartItemDom(payload);
       return;
     }
 
@@ -338,7 +334,6 @@
       form.dataset.ajaxBound = '1';
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (form.dataset.submitting === '1') return;
         const button = e.submitter || form.querySelector('button[type="submit"]');
         const previousScroll = window.scrollY;
         setButtonLoading(button, true);
@@ -363,7 +358,7 @@
                 form.querySelector('[data-quantity-input]').max = String(payload.estoque_maximo);
               }
               const action = form.getAttribute('action') || '';
-              if ((action.indexOf('/remover_item/') === 0 || action.indexOf('/carrinho/atualizar/') === 0) && response.status === 404) {
+              if (action.indexOf('/remover_item/') === 0 || action.indexOf('/carrinho/atualizar/') === 0) {
                 visit('/carrinho', false).catch(() => window.location.reload());
                 return;
               }
@@ -382,10 +377,22 @@
             await swapPageFromHtml(html, finalUrl, true, previousScroll);
           }
           syncTopCartCounter();
-          showToast((form.action || '').includes('/pedido') ? 'Adicionado com sucesso.' : 'Atualizado com sucesso.');
+          const currentAction = form.getAttribute('action') || '';
+          if (currentAction.indexOf('/remover_item/') === 0) {
+            showToast('Removido com sucesso.');
+          } else if (currentAction.indexOf('/carrinho/atualizar/') === 0) {
+            // sem notificação para ajuste de quantidade
+          } else {
+            showToast((currentAction || '').includes('/pedido') ? 'Adicionado com sucesso.' : 'Atualizado com sucesso.');
+          }
         } catch (err) {
-          showToast('Não foi possível concluir a ação.');
-          window.location.reload();
+          const currentAction = form.getAttribute('action') || '';
+          if (currentAction.indexOf('/remover_item/') === 0 || currentAction.indexOf('/carrinho/atualizar/') === 0) {
+            visit('/carrinho', false).catch(() => window.location.reload());
+          } else {
+            showToast('Não foi possível concluir a ação.');
+            window.location.reload();
+          }
         } finally {
           form.dataset.submitting = '0';
           setButtonLoading(button, false);

@@ -379,28 +379,21 @@
                 } catch (e) {}
             }
 
-            let monitoramentoAlternando = false;
-            async function alternarMonitoramento(event) {
-                if (event) event.preventDefault();
-                if (monitoramentoAlternando) return;
-                monitoramentoAlternando = true;
-                ativarBtns.forEach((btn) => btn.disabled = true);
+            async function alternarMonitoramento() {
                 try {
-                    if (!monitoramentoAtivo && 'Notification' in window && Notification.permission === 'default') {
-                        await Notification.requestPermission();
-                    }
+                    if (!monitoramentoAtivo && 'Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
                 } catch (e) {}
                 monitoramentoAtivo = !monitoramentoAtivo;
                 localStorage.setItem(STORAGE_MONITOR, monitoramentoAtivo ? '1' : '0');
                 atualizarBotoesMonitoramento();
                 mostrarToast(monitoramentoAtivo ? 'Notificações em tempo real ativadas.' : 'Notificações em tempo real desativadas.');
-                setTimeout(() => {
-                    ativarBtns.forEach((btn) => btn.disabled = false);
-                    monitoramentoAlternando = false;
-                }, 250);
             }
             ativarBtns.forEach((btn) => {
                 btn.addEventListener('click', alternarMonitoramento);
+                btn.addEventListener('touchend', (event) => {
+                    event.preventDefault();
+                    alternarMonitoramento();
+                }, { passive: false });
             });
 
             async function verificarNovosPedidos() {
