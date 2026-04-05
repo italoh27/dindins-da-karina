@@ -5,21 +5,26 @@
 
   function findCartRow(payload) {
     if (!payload) return null;
-    if (payload.flavor_key) {
-      const byKey = document.querySelector('[data-flavor-key= + payload.flavor_key + ]');
-      if (byKey) return byKey;
-    }
-    if (payload.removed_name) {
-      const byRemovedName = document.querySelector('[data-flavor-key= + normalizeFlavorKey(payload.removed_name) + ]');
-      if (byRemovedName) return byRemovedName;
-    }
-    if (payload.item_name) {
-      const byItemName = document.querySelector('[data-flavor-key= + normalizeFlavorKey(payload.item_name) + ]');
-      if (byItemName) return byItemName;
-    }
-    if (typeof payload.removed_index !== 'undefined') return document.querySelector('[data-cart-item= + payload.removed_index + ]');
-    if (typeof payload.item_index !== 'undefined') return document.querySelector('[data-cart-item= + payload.item_index + ]');
-    return null;
+
+    const byIndex = (value) => {
+      if (typeof value === 'undefined' || value === null || value === '') return null;
+      return document.querySelector('[data-cart-item= + String(value) + ]');
+    };
+
+    const byName = (value) => {
+      const key = normalizeFlavorKey(value);
+      if (!key) return null;
+      return document.querySelector('[data-flavor-key= + key + ]');
+    };
+
+    return (
+      byIndex(payload.removed_index) ||
+      byIndex(payload.item_index) ||
+      byName(payload.removed_name) ||
+      byName(payload.item_name) ||
+      byName(payload.flavor_name) ||
+      byName(payload.flavor_key)
+    );
   }
 
   function syncTopCartCounter() {
@@ -70,7 +75,13 @@
   }
 
   function setButtonLoading(button, loading) {
-    if (!button || button.classList.contains('btn-remover-item-x')) return;
+    if (!button) return;
+
+    if (button.classList.contains('btn-remover-item-x')) {
+      button.disabled = !!loading;
+      button.classList.toggle('is-loading-soft', !!loading);
+      return;
+    }
 
     const isFastAction = button.classList.contains('btn-adicionar') || button.classList.contains('btn-adicionar-pro');
 
@@ -236,7 +247,11 @@
 
     if (payload.removed) {
       const rowToRemove = findCartRow(payload);
-      if (rowToRemove) rowToRemove.remove();
+      if (!rowToRemove) {
+        visit('/carrinho', false).catch(() => window.location.reload());
+        return;
+      }
+      rowToRemove.remove();
       reindexCartDom();
       if (!document.querySelector('[data-cart-item]')) {
         visit('/carrinho', false).catch(() => window.location.reload());
@@ -250,7 +265,7 @@
         visit('/carrinho', false).catch(() => window.location.reload());
         return;
       }
-      const rowIndex = row.dataset.cartItem || payload.item_index;
+      const rowIndex = typeof row.dataset.cartItem !== 'undefined' ? row.dataset.cartItem : payload.item_index;
       const input = row.querySelector('[data-cart-qty-input="' + rowIndex + '"]') || row.querySelector('[data-cart-qty-input]');
       const subtotal = row.querySelector('[data-cart-subtotal="' + rowIndex + '"]') || row.querySelector('[data-cart-subtotal]');
       if (input) {
@@ -323,6 +338,7 @@
       form.dataset.ajaxBound = '1';
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (form.dataset.submitting === '1') return;
         const button = e.submitter || form.querySelector('button[type="submit"]');
         const previousScroll = window.scrollY;
         setButtonLoading(button, true);

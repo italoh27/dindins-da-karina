@@ -30,20 +30,20 @@
             {% if carrinho and carrinho|length > 0 %}
             <div class="lista-itens lista-itens-pro">
                 {% for item in carrinho %}
-                <div class="item-carrinho item-carrinho-pro" data-cart-item="{{ loop.index0 }}" data-flavor-key="{{ item.nome|lower|replace(" ", "-") }}">
+                <div class="item-carrinho item-carrinho-pro" data-cart-item="{{ loop.index0 }}" data-flavor-key="{{ item.nome|lower|replace(" ", "-") }}" data-item-name="{{ item.nome }}">
                     <div class="item-topo-carrinho">
                         <div class="item-esquerda item-esquerda-pro">
                             <h3>{{ item.nome }}</h3>
                             <p>Preço unitário: R$ {{ "%.2f"|format(item.preco) }}</p>
                         </div>
-                        <form class="js-ajax-form form-remover-item-inline" action="/remover_item/{{ loop.index0 }}" method="post" data-cart-remove-form="{{ loop.index0 }}">
+                        <form class="js-ajax-form form-remover-item-inline" action="/remover_item/{{ loop.index0 }}" method="post" data-cart-remove-form="{{ loop.index0 }}" data-item-name="{{ item.nome }}">
                             <input type="hidden" name="item_nome" value="{{ item.nome }}">
                             <button type="submit" class="btn-remover-item-x" aria-label="Remover {{ item.nome }} do carrinho" title="Remover item">×</button>
                         </form>
                     </div>
 
                     <div class="item-centro-pro">
-                        <form class="js-ajax-form form-quantidade-carrinho" action="/carrinho/atualizar/{{ loop.index0 }}" method="post" data-auto-submit="quantity" data-auto-submit-delay="120">
+                        <form class="js-ajax-form form-quantidade-carrinho" action="/carrinho/atualizar/{{ loop.index0 }}" method="post" data-auto-submit="quantity" data-auto-submit-delay="160" data-item-name="{{ item.nome }}">
                             <input type="hidden" name="item_nome" value="{{ item.nome }}">
                             <div class="controle-quantidade controle-quantidade-carrinho" data-quantity-box>
                                 <button type="button" class="btn-qtd-step" data-step="-1" aria-label="Diminuir quantidade">−</button>
