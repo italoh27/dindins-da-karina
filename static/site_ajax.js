@@ -3,6 +3,25 @@
     return String(text || '').trim().toLowerCase().replace(/\s+/g, '-');
   }
 
+  function findCartRow(payload) {
+    if (!payload) return null;
+    if (payload.flavor_key) {
+      const byKey = document.querySelector('[data-flavor-key= + payload.flavor_key + ]');
+      if (byKey) return byKey;
+    }
+    if (payload.removed_name) {
+      const byRemovedName = document.querySelector('[data-flavor-key= + normalizeFlavorKey(payload.removed_name) + ]');
+      if (byRemovedName) return byRemovedName;
+    }
+    if (payload.item_name) {
+      const byItemName = document.querySelector('[data-flavor-key= + normalizeFlavorKey(payload.item_name) + ]');
+      if (byItemName) return byItemName;
+    }
+    if (typeof payload.removed_index !== 'undefined') return document.querySelector('[data-cart-item= + payload.removed_index + ]');
+    if (typeof payload.item_index !== 'undefined') return document.querySelector('[data-cart-item= + payload.item_index + ]');
+    return null;
+  }
+
   function syncTopCartCounter() {
     const cartLink = document.querySelector('.btn-carrinho-topo');
     if (!cartLink) return;
@@ -216,7 +235,7 @@
     if (totalEl && payload.total_text) totalEl.textContent = payload.total_text;
 
     if (payload.removed) {
-      const rowToRemove = document.querySelector('[data-cart-item="' + payload.removed_index + '"]');
+      const rowToRemove = findCartRow(payload);
       if (rowToRemove) rowToRemove.remove();
       reindexCartDom();
       if (!document.querySelector('[data-cart-item]')) {
@@ -225,11 +244,15 @@
       return;
     }
 
-    if (typeof payload.item_index !== 'undefined') {
-      const row = document.querySelector('[data-cart-item="' + payload.item_index + '"]');
-      if (!row) return;
-      const input = row.querySelector('[data-cart-qty-input="' + payload.item_index + '"]');
-      const subtotal = row.querySelector('[data-cart-subtotal="' + payload.item_index + '"]');
+    if (typeof payload.item_index !== 'undefined' || payload.item_name || payload.flavor_key) {
+      const row = findCartRow(payload);
+      if (!row) {
+        visit('/carrinho', false).catch(() => window.location.reload());
+        return;
+      }
+      const rowIndex = row.dataset.cartItem || payload.item_index;
+      const input = row.querySelector('[data-cart-qty-input="' + rowIndex + '"]') || row.querySelector('[data-cart-qty-input]');
+      const subtotal = row.querySelector('[data-cart-subtotal="' + rowIndex + '"]') || row.querySelector('[data-cart-subtotal]');
       if (input) {
         input.value = String(payload.item_quantity || input.value || 1);
         if (typeof payload.estoque_maximo !== 'undefined') {
@@ -322,6 +345,11 @@
             if (!response.ok || payload.ok === false) {
               if (payload && payload.estoque_maximo && form.querySelector('[data-quantity-input]')) {
                 form.querySelector('[data-quantity-input]').max = String(payload.estoque_maximo);
+              }
+              const action = form.getAttribute('action') || '';
+              if ((action.indexOf('/remover_item/') === 0 || action.indexOf('/carrinho/atualizar/') === 0) && response.status === 404) {
+                visit('/carrinho', false).catch(() => window.location.reload());
+                return;
               }
               showToast((payload && payload.message) || 'Não foi possível concluir a ação.');
               return;

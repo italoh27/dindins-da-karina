@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, redirect, render_template, request, send_file, session, url_for
 from urllib.parse import quote
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from decimal import Decimal, ROUND_HALF_UP
 from io import BytesIO
@@ -1434,14 +1434,18 @@ def remover_item_carrinho(item_index):
     removido = None
     removed_index = item_index
     item_nome = request.form.get("item_nome", "").strip().lower()
-    if 0 <= item_index < len(carrinho):
-        removido = carrinho.pop(item_index)
-    elif item_nome:
+
+    # Prioriza o nome do item para evitar erro quando os índices mudam após
+    # remoções/atualizações AJAX em sequência.
+    if item_nome:
         for idx, item in enumerate(carrinho):
             if str(item.get("nome", "")).strip().lower() == item_nome:
                 removido = carrinho.pop(idx)
                 removed_index = idx
                 break
+
+    if removido is None and 0 <= item_index < len(carrinho):
+        removido = carrinho.pop(item_index)
     if removido is not None:
         session["carrinho"] = carrinho
         session.modified = True
@@ -1452,6 +1456,7 @@ def remover_item_carrinho(item_index):
             "removed": removido is not None,
             "removed_index": removed_index,
             "removed_name": removido.get("nome") if removido else "",
+            "flavor_key": str(removido.get("nome", "")).strip().lower().replace(" ", "-") if removido else "",
             "cart_count": contar_itens_carrinho(carrinho),
             "total": round(total, 2),
             "total_text": f"R$ {total:.2f}",
@@ -1464,7 +1469,9 @@ def remover_item_carrinho(item_index):
 def atualizar_item_carrinho(item_index):
     carrinho = session.get("carrinho", [])
     item_nome = request.form.get("item_nome", "").strip().lower()
-    if not (0 <= item_index < len(carrinho)) and item_nome:
+    # Usa primeiro o nome do item para encontrar a linha correta, evitando
+    # inconsistências quando o DOM reindexa após uma remoção.
+    if item_nome:
         for idx, current in enumerate(carrinho):
             if str(current.get("nome", "")).strip().lower() == item_nome:
                 item_index = idx
@@ -1491,6 +1498,8 @@ def atualizar_item_carrinho(item_index):
                 "ok": True,
                 "removed": True,
                 "removed_index": item_index,
+                "removed_name": item.get("nome", ""),
+                "flavor_key": str(item.get("nome", "")).strip().lower().replace(" ", "-"),
                 "cart_count": contar_itens_carrinho(carrinho),
                 "total": round(total, 2),
                 "total_text": f"R$ {total:.2f}",
@@ -1533,6 +1542,7 @@ def atualizar_item_carrinho(item_index):
             "total": round(total, 2),
             "total_text": f"R$ {total:.2f}",
             "message": f"Quantidade de {item.get('nome')} atualizada para {nova_quantidade}.",
+            "item_name": item.get("nome", ""),
             "flavor_key": str(item.get("nome", "")).strip().lower().replace(" ", "-"),
             "estoque_exibicao": int(sabor_atualizado.get("estoque_exibicao", 0) or 0),
             "estoque_maximo": max(0, estoque_para_destinatario(sabor, destinatario)),
