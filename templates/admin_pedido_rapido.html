@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedido rápido</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="pagina-admin pagina-admin-pro">
+  <div data-admin-shell="page">
+    <div class="admin-topo admin-topo-sticky">
+      <div class="admin-topo-acoes admin-topo-acoes-premium">
+        <a href="/admin" class="btn-admin-voltar js-admin-ajax-link">← Voltar para painel</a>
+      </div>
+      <div class="admin-topo-mobile-voltar admin-topo-mobile-voltar-force">
+        <a href="/admin" class="btn-admin-voltar js-admin-ajax-link">← Voltar para painel</a>
+      </div>
+    </div>
+
+    <div class="admin-wrapper admin-wrapper-pro">
+      <div class="admin-header-bloco admin-header-bloco-pro">
+        <div>
+          <h1 class="titulo-admin">⚡ Pedido rápido</h1>
+          <p class="texto-ajuda-admin">Crie um pedido manual com total liberdade para adicionar sabores sem validar estoque. Ideal para balcão, ajustes internos e vendas rápidas.</p>
+        </div>
+      </div>
+
+      {% if mensagem %}<div class="alerta alerta-sucesso">{{ mensagem }}</div>{% endif %}
+
+      <section class="admin-box admin-export-box">
+        <div class="admin-box-topo"><h2>Novo pedido manual</h2></div>
+        <form action="/admin/pedido_rapido/criar" method="post" class="js-admin-ajax-form form-pedido-rapido" id="formPedidoRapidoAdmin">
+          <div class="grid-editar-cliente">
+            <label>
+              <span>Nome do cliente</span>
+              <input type="text" name="cliente_nome" placeholder="Ex.: Cliente balcão" required>
+            </label>
+            <label>
+              <span>Telefone</span>
+              <input type="text" name="cliente_telefone" placeholder="Opcional">
+            </label>
+            <label class="campo-endereco-edicao">
+              <span>Endereço</span>
+              <input type="text" name="cliente_endereco" placeholder="Opcional">
+            </label>
+          </div>
+
+          <div class="grid-adicionar-item-edicao grid-pedido-rapido-topo">
+            <label>
+              <span>Responsável</span>
+              <select name="destinatario">
+                <option value="italo">Italo</option>
+                <option value="karina">Karina</option>
+              </select>
+            </label>
+            <label>
+              <span>Status do pedido</span>
+              <select name="status">
+                <option value="pendente">Pendente</option>
+                <option value="entregue">Entregue</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+            </label>
+            <label>
+              <span>Status do pagamento</span>
+              <select name="pagamento_status">
+                <option value="aguardando_pagamento">Não pago</option>
+                <option value="pago">Pago</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="pedido-rapido-itens-box">
+            <div class="cabecalho-adicionar-item-edicao">
+              <h3>Itens do pedido</h3>
+            </div>
+            <div id="listaItensPedidoRapido">
+              <div class="grid-adicionar-item-edicao linha-item-rapido" data-item-row>
+                <label>
+                  <span>Sabor</span>
+                  <select name="item_nome[]" required>
+                    <option value="">Selecione um sabor</option>
+                    {% for sabor in sabores %}
+                    <option value="{{ sabor.nome }}">{{ sabor.nome }} — R$ {{ '%.2f'|format(sabor.preco) }}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+                <label>
+                  <span>Quantidade</span>
+                  <input type="number" min="1" name="item_quantidade[]" value="1" required>
+                </label>
+                <button type="button" class="btn-excluir-um btn-remover-linha-rapida" data-remove-quick-row>Remover linha</button>
+              </div>
+            </div>
+            <div class="acoes-finais-pedido acoes-adicionar-item-edicao">
+              <button type="button" class="btn-admin-topo btn-admin-topo-secundario" id="adicionarLinhaPedidoRapido">Adicionar outro item</button>
+              <button class="btn-admin-topo" type="submit">Criar pedido rápido</button>
+            </div>
+            <p class="texto-ajuda-admin">Esse fluxo não consome nem valida estoque. Ele registra o pedido manualmente para manter velocidade e flexibilidade.</p>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+  <script src="/static/admin_ajax.js"></script>
+  <script>
+    (function () {
+      function bindQuickOrderRows() {
+        const lista = document.getElementById('listaItensPedidoRapido');
+        const adicionar = document.getElementById('adicionarLinhaPedidoRapido');
+        if (!lista || !adicionar || adicionar.dataset.bound === '1') return;
+        adicionar.dataset.bound = '1';
+
+        function bindRemove(button) {
+          if (!button || button.dataset.bound === '1') return;
+          button.dataset.bound = '1';
+          button.addEventListener('click', () => {
+            const rows = lista.querySelectorAll('[data-item-row]');
+            if (rows.length <= 1) return;
+            button.closest('[data-item-row]')?.remove();
+          });
+        }
+
+        lista.querySelectorAll('[data-remove-quick-row]').forEach(bindRemove);
+
+        adicionar.addEventListener('click', () => {
+          const first = lista.querySelector('[data-item-row]');
+          if (!first) return;
+          const clone = first.cloneNode(true);
+          clone.querySelectorAll('select').forEach((el) => el.value = '');
+          clone.querySelectorAll('input').forEach((el) => { if (el.name === 'item_quantidade[]') el.value = '1'; else el.value = ''; });
+          lista.appendChild(clone);
+          bindRemove(clone.querySelector('[data-remove-quick-row]'));
+        });
+      }
+      bindQuickOrderRows();
+      window.initAdminPage && window.initAdminPage();
+    })();
+  </script>
+</body>
+</html>

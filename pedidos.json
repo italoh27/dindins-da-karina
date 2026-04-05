@@ -1,0 +1,30 @@
+[
+    {
+        "id": 1774475885016,
+        "data": "25/03/2026 18:58",
+        "data_filtro": "2026-03-25",
+        "cliente": {
+            "nome": "pedrinho",
+            "telefone": "",
+            "endereco": ""
+        },
+        "itens": [
+            {
+                "nome": "Ninho com Morango",
+                "quantidade": 1,
+                "preco_unitario": 5.0,
+                "subtotal": 5.0
+            }
+        ],
+        "total": 5.0,
+        "status": "pendente",
+        "pagamento_status": "nao_pago",
+        "destinatario": "italo",
+        "nome_vendedor": "Italo",
+        "pagamento_link": "",
+        "receipt_url": "",
+        "transaction_nsu": "",
+        "invoice_slug": "",
+        "capture_method": ""
+    }
+]

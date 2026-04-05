@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedido Criado</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="pagina-carrinho" data-ajax-shell="public">
+    <div class="carrinho-wrapper pedido-final-wrapper">
+        <h1 class="titulo-carrinho">✅ Pedido criado com sucesso</h1>
+
+        <div class="box-carrinho pedido-final-box pedido-final-box-pro">
+            <div class="pedido-resumo-topo">
+                <div>
+                    <p class="pedido-numero">Pedido #{{ pedido.id }}</p>
+                    <p>Responsável escolhido: <strong>{{ pedido.nome_vendedor }}</strong></p>
+                    <p>Status do pagamento: <strong>{% if pix_checkout_automatico %}Aguardando pagamento no checkout{% else %}Aguardando confirmação manual{% endif %}</strong></p>
+                </div>
+                <div class="pedido-total-destaque">
+                    <span>Total do pedido</span>
+                    <strong>R$ {{ "%.2f"|format(pedido.total) }}</strong>
+                </div>
+            </div>
+
+            <div class="pedido-itens pedido-itens-final">
+                {% for item in pedido.itens %}
+                <p>{{ item.nome }} — {{ item.quantidade }} x R$ {{ "%.2f"|format(item.preco_unitario) }}</p>
+                {% endfor %}
+            </div>
+
+            <div class="acoes-finais-pedido acoes-finais-pedido-pro">
+                <a href="{{ whatsapp_destino }}" target="_blank" class="btn-admin-topo btn-final-card" id="btnWhatsResponsavel">Enviar pedido para {{ responsavel_nome }}</a>
+                {% if pagamento_link %}
+                <a href="/pedido/{{ pedido.id }}/pagar" class="btn-finalizar btn-pagamento-destaque btn-pagar-checkout js-open-whatsapp-before-pay" id="btnPagarCheckout" data-whatsapp="{{ whatsapp_destino }}">Pagar no Pix ou Cartão</a>
+                {% endif %}
+                <a href="/" class="btn-voltar-inline js-ajax-link btn-final-card">Voltar para loja</a>
+            </div>
+
+            <p class="texto-ajuda-admin texto-ajuda-destaque">
+                Ao tocar em <strong>Pagar no Pix ou Cartão</strong>, o checkout da InfinitePay será aberto e a mensagem do pedido enviada ao responsável também leva sua chave Pix.
+            </p>
+        </div>
+    </div>
+    <div class="toast-global" id="toastGlobal" hidden></div>
+    <script src="/static/site_ajax.js"></script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+[
+    {
+        "id": 1,
+        "nome": "Ninho com Nutella",
+        "preco": 5.0,
+        "img": "/static/ninho_com_nutela.jpg",
+        "disponivel": true,
+        "estoque": 2,
+        "estoque_italo": 2,
+        "estoque_karina": 0
+    },
+    {
+        "id": 2,
+        "nome": "Ninho com Morango",
+        "preco": 5.0,
+        "img": "/static/ninho_com_morango.jpg",
+        "disponivel": true,
+        "estoque": 2,
+        "estoque_italo": 2,
+        "estoque_karina": 0
+    },
+    {
+        "id": 3,
+        "nome": "Romeu e Julieta",
+        "preco": 5.0,
+        "img": "/static/romeu_julieta.jpg",
+        "disponivel": true,
+        "estoque": 5,
+        "estoque_italo": 5,
+        "estoque_karina": 0
+    },
+    {
+        "id": 4,
+        "nome": "Maracujá Trufado",
+        "preco": 5.0,
+        "img": "/static/maracuja_trufado.jpg",
+        "disponivel": true,
+        "estoque": 0,
+        "estoque_italo": 0,
+        "estoque_karina": 0
+    },
+    {
+        "id": 5,
+        "nome": "Paçoca",
+        "preco": 5.0,
+        "img": "/static/pacoca.jpg",
+        "disponivel": true,
+        "estoque": 0,
+        "estoque_italo": 0,
+        "estoque_karina": 0
+    },
+    {
+        "id": 6,
+        "nome": "Pudim",
+        "preco": 5.0,
+        "img": "/static/pudim.jpg",
+        "disponivel": true,
+        "estoque": 0,
+        "estoque_italo": 0,
+        "estoque_karina": 0
+    },
+    {
+        "id": 7,
+        "nome": "Cocada",
+        "preco": 5.0,
+        "img": "/static/cocada.jpg",
+        "disponivel": true,
+        "estoque": 0,
+        "estoque_italo": 0,
+        "estoque_karina": 0
+    }
+]

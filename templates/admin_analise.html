@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Análise de dados</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="pagina-admin pagina-admin-pro">
+  <div data-admin-shell="page">
+  <div class="admin-topo admin-topo-sticky">
+    <div class="admin-topo-acoes admin-topo-acoes-premium">
+      <a href="/admin" class="btn-admin-voltar js-admin-ajax-link">← Voltar para painel</a>
+    </div>
+    <div class="admin-topo-mobile-voltar admin-topo-mobile-voltar-force">
+      <a href="/admin" class="btn-admin-voltar js-admin-ajax-link">← Voltar para painel</a>
+    </div>
+  </div>
+  <div class="admin-wrapper admin-wrapper-pro">
+    <div class="admin-header-bloco admin-header-bloco-pro">
+      <div><h1 class="titulo-admin">📊 Análise de dados</h1><p class="texto-ajuda-admin">Dashboard para acompanhar vendas, cobranças e desempenho dos sabores.</p></div>
+    </div>
+    <section class="admin-box analise-filtros-box analise-filtros-box-mobile">
+      <form method="get" action="/admin/analise" class="analise-filtros-form js-admin-ajax-form">
+        <div class="analise-filtro-campo analise-filtro-campo-largo"><span class="analise-filtro-label">Período</span><select name="periodo">
+          <option value="todos" {% if periodo=='todos' %}selected{% endif %}>Todo histórico</option>
+          <option value="hoje" {% if periodo=='hoje' %}selected{% endif %}>Hoje</option>
+          <option value="7dias" {% if periodo=='7dias' %}selected{% endif %}>Últimos 7 dias</option>
+          <option value="30dias" {% if periodo=='30dias' %}selected{% endif %}>Últimos 30 dias</option>
+          <option value="mes" {% if periodo=='mes' %}selected{% endif %}>Mês atual</option>
+          <option value="custom" {% if periodo=='custom' %}selected{% endif %}>Personalizado</option>
+        </select></div>
+        <label class="analise-filtro-campo"><span class="analise-filtro-label">Data inicial</span><input type="date" name="data_inicial" value="{{ data_inicial }}"></label>
+        <label class="analise-filtro-campo"><span class="analise-filtro-label">Data final</span><input type="date" name="data_final" value="{{ data_final }}"></label>
+        <div class="analise-filtro-campo"><span class="analise-filtro-label">Responsável</span><select name="responsavel"><option value="">Todos responsáveis</option><option value="italo" {% if responsavel=='italo' %}selected{% endif %}>Italo</option><option value="karina" {% if responsavel=='karina' %}selected{% endif %}>Karina</option></select></div>
+        <div class="analise-filtro-campo"><span class="analise-filtro-label">Pagamento</span><select name="pagamento"><option value="">Todos pagamentos</option><option value="pago" {% if pagamento=='pago' %}selected{% endif %}>Pago</option><option value="aguardando_pagamento" {% if pagamento=='aguardando_pagamento' %}selected{% endif %}>Não pago</option><option value="cancelado" {% if pagamento=='cancelado' %}selected{% endif %}>Cancelado</option></select></div>
+        <label class="check-admin analise-filtro-campo analise-filtro-checkbox"><span>Incluir ocultos</span><input type="checkbox" name="ocultos" value="1" {% if incluir_ocultos %}checked{% endif %}></label>
+        <div class="analise-filtro-acoes">
+          <button class="btn-admin-topo" type="submit">Aplicar filtros</button>
+          <a href="/admin/analise?periodo=todos" class="btn-admin-topo btn-admin-topo-secundario js-admin-ajax-link">Limpar datas</a>
+        </div>
+      </form>
+    </section>
+    <section class="admin-cards admin-cards-compactos">
+      <div class="admin-resumo-card destaque-resumo-card"><h3>Total de pedidos</h3><p>{{ total_pedidos }}</p></div>
+      <div class="admin-resumo-card"><h3>Faturamento bruto</h3><p>R$ {{ '%.2f'|format(faturamento_bruto) }}</p></div>
+      <div class="admin-resumo-card"><h3>Faturamento pago</h3><p>R$ {{ '%.2f'|format(total_pago) }}</p></div>
+      <div class="admin-resumo-card"><h3>Faturamento pendente</h3><p>R$ {{ '%.2f'|format(total_pendente) }}</p></div>
+      <div class="admin-resumo-card"><h3>Ticket médio</h3><p>R$ {{ '%.2f'|format(ticket_medio) }}</p></div>
+    </section>
+    <section class="metricas-responsavel-grid">
+      <div class="admin-box metricas-box"><div class="admin-box-topo"><h2>Comparativo Italo</h2></div><div class="metricas-stack"><div class="metrica-linha"><span>Pedidos</span><strong>{{ comparativo.italo.total_pedidos }}</strong></div><div class="metrica-linha"><span>Pago</span><strong>R$ {{ '%.2f'|format(comparativo.italo.pago) }}</strong></div><div class="metrica-linha"><span>Pendente</span><strong>R$ {{ '%.2f'|format(comparativo.italo.pendente) }}</strong></div></div></div>
+      <div class="admin-box metricas-box"><div class="admin-box-topo"><h2>Comparativo Karina</h2></div><div class="metricas-stack"><div class="metrica-linha"><span>Pedidos</span><strong>{{ comparativo.karina.total_pedidos }}</strong></div><div class="metrica-linha"><span>Pago</span><strong>R$ {{ '%.2f'|format(comparativo.karina.pago) }}</strong></div><div class="metrica-linha"><span>Pendente</span><strong>R$ {{ '%.2f'|format(comparativo.karina.pendente) }}</strong></div></div></div>
+    </section>
+    <section class="admin-layout-principal">
+      <div class="admin-coluna-principal">
+        <div class="admin-box"><div class="admin-box-topo"><h2>Saldo devedor por cliente</h2></div>
+          <div class="tabela-responsiva"><table class="tabela-analise"><thead><tr><th>Cliente</th><th>Telefone</th><th>Pedidos</th><th>Total</th><th>Pago</th><th>Devendo</th></tr></thead><tbody>{% for item in saldo_devedor %}<tr><td>{{ item.cliente }}</td><td>{{ item.telefone }}</td><td>{{ item.pedidos }}</td><td>R$ {{ '%.2f'|format(item.total) }}</td><td>R$ {{ '%.2f'|format(item.pago) }}</td><td><strong>R$ {{ '%.2f'|format(item.saldo_devedor) }}</strong></td></tr>{% else %}<tr><td colspan="6">Nenhum saldo devedor no filtro atual.</td></tr>{% endfor %}</tbody></table></div></div>
+        <div class="admin-box"><div class="admin-box-topo"><h2>Pedidos do filtro atual</h2></div>
+          <div class="tabela-responsiva"><table class="tabela-analise"><thead><tr><th>ID</th><th>Data</th><th>Cliente</th><th>Resp.</th><th>Pagamento</th><th>Total</th><th>Ação</th></tr></thead><tbody>{% for pedido in pedidos_filtrados %}<tr><td>#{{ pedido.id }}</td><td>{{ pedido.data }}</td><td>{{ pedido.cliente.nome }}</td><td>{{ pedido.nome_vendedor }}</td><td>{{ pedido.pagamento_status_legivel }}</td><td>R$ {{ '%.2f'|format(pedido.total) }}</td><td><form class="js-admin-ajax-form" method="post" action="/admin/excluir-analise/{{ pedido.id }}" onsubmit="return confirm('Excluir permanentemente este pedido?');"><input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-excluir-um" type="submit">Excluir</button></form></td></tr>{% else %}<tr><td colspan="7">Nenhum pedido encontrado.</td></tr>{% endfor %}</tbody></table></div></div>
+      </div>
+      <aside class="admin-coluna-lateral">
+        <div class="admin-box"><div class="admin-box-topo"><h2>Sabores mais vendidos</h2></div>{% for item in ranking_sabores[:10] %}<div class="grafico-barra-item"><div class="grafico-barra-topo"><span>{{ item.nome }}</span><strong>{{ item.quantidade }}</strong></div><div class="grafico-barra-trilho"><div class="grafico-barra-preenchimento" style="width: {{ item.percentual }}%"></div></div><small>Faturamento: R$ {{ '%.2f'|format(item.faturamento) }}</small></div>{% else %}<p class="texto-ajuda-admin">Sem dados no período.</p>{% endfor %}</div>
+        <div class="admin-box"><div class="admin-box-topo"><h2>Pedidos por dia</h2></div>{% for item in pedidos_dia_lista %}<div class="metrica-linha"><span>{{ item.data }}</span><strong>{{ item.pedidos }} pedido(s) · R$ {{ '%.2f'|format(item.faturamento) }}</strong></div>{% else %}<p class="texto-ajuda-admin">Sem dados diários no período.</p>{% endfor %}</div>
+      </aside>
+    </section>
+  </div>
+  </div>
+  <script src="/static/admin_ajax.js"></script>
+</body>
+</html>

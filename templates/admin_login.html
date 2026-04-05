@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Admin</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="pagina-admin-login">
+    <div class="admin-login-box">
+        <h1 class="titulo-login-admin">🔐 Login Admin</h1>
+        <form method="post" class="form-admin-login">
+            <input type="password" name="senha" placeholder="Digite a senha do admin" required>
+            {% if erro %}<p class="erro-login">{{ erro }}</p>{% endif %}
+            <button class="btn-admin-entrar" type="submit">Entrar</button>
+        </form>
+        {% if redefinir_msg %}<p class="sucesso-login">{{ redefinir_msg }}</p>{% endif %}
+        {% if redefinir_erro %}<p class="erro-login">{{ redefinir_erro }}</p>{% endif %}
+        <details class="bloco-redefinir-senha">
+            <summary>Redefinir senha do admin</summary>
+            <form method="post" action="/admin/redefinir-senha" class="form-admin-login redefinir-senha-form">
+                <input type="password" name="senha_atual" placeholder="Senha antiga" required>
+                <input type="password" name="nova_senha" placeholder="Nova senha" required>
+                <input type="password" name="confirmar_senha" placeholder="Confirmar nova senha" required>
+                <button class="btn-admin-entrar" type="submit">Atualizar senha</button>
+            </form>
+        </details>
+        <a href="/" class="btn-admin-voltar-loja">← Voltar para loja</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="pagina-admin pagina-admin-pro">
+    <div data-admin-shell="page">
+    <div class="admin-topo admin-topo-sticky">
+        <div class="admin-topo-flutuante">
+            <a href="/" class="btn-admin-voltar btn-admin-voltar-flutuante">← Voltar para loja</a>
+        </div>
+        <div class="admin-topo-acoes admin-topo-acoes-premium">
+            <button type="button" class="btn-admin-topo" data-scroll-target="#centralPedidosSecao">📍 Ir para pedidos</button>
+            <button type="button" class="btn-admin-topo" data-scroll-target="#configuracaoLojaSecao">⚙️ Configurações da loja</button>
+            <button type="button" class="btn-admin-topo" data-scroll-target="#notificacoesTempoRealSecao">🔔 Notificações em tempo real</button>
+            <button type="button" class="btn-admin-topo" data-scroll-target="body">⬆️ Voltar ao topo</button>
+            <a href="/admin/analise" class="btn-admin-topo js-admin-ajax-link">📊 Análise de dados</a>
+            <a href="/admin/sabores" class="btn-admin-topo js-admin-ajax-link">🍦 Gerenciador de sabores</a>
+            <a href="/admin/exportar_excel" class="btn-exportar-excel js-admin-ajax-link">📥 Exportar Excel</a>
+            <a href="/admin/pedido_rapido" class="btn-admin-topo btn-admin-topo-destaque js-admin-ajax-link">⚡ Pedido rápido</a>
+            <a href="/admin/logout" class="btn-admin-sair">Sair</a>
+        </div>
+                <div class="admin-topo-mobile-nav">
+            <label for="adminNavSelect" class="sr-only">Navegação rápida do painel</label>
+            <select id="adminNavSelect" data-admin-mobile-nav>
+                <option value="">Ações do painel</option>
+                                <option value="scroll:#centralPedidosSecao">Ir para pedidos</option>
+                <option value="scroll:#configuracaoLojaSecao">Configurações da loja</option>
+                <option value="scroll:#notificacoesTempoRealSecao">Notificações em tempo real</option>
+                <option value="scroll:body">Voltar ao topo</option>
+                <option value="/admin/analise">Análise de dados</option>
+                <option value="/admin/sabores">Gerenciador de sabores</option>
+                <option value="/admin/exportar_excel">Exportar Excel</option>
+                <option value="/admin/pedido_rapido">Pedido rápido</option>
+                <option value="/admin/logout">Sair</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="admin-wrapper admin-wrapper-pro">
+        <div class="admin-header-bloco admin-header-bloco-pro">
+            <div>
+                <h1 class="titulo-admin">📋 Painel Administrativo</h1>
+                <p class="texto-ajuda-admin">Tela reorganizada para ficar mais espaçosa, fácil de visualizar e melhor no celular.</p>
+            </div>
+            <div class="admin-status-live">
+                <span class="pill-live" id="statusLive">● Monitorando pedidos</span>
+                <small>Último pedido lido: <strong id="ultimoPedidoLido">#{{ ultimo_pedido_id }}</strong></small>
+            </div>
+        </div>
+
+        <div id="toastNotificacao" class="toast-notificacao" hidden></div>
+        {% if mensagem %}<div class="alerta alerta-sucesso">{{ mensagem }}</div>{% endif %}
+
+        <section class="admin-cards admin-cards-compactos">
+            <div class="admin-resumo-card destaque-resumo-card"><h3>Total de Pedidos</h3><p>{{ total_pedidos }}</p></div>
+            <div class="admin-resumo-card"><h3>Faturamento Pago</h3><p>R$ {{ "%.2f"|format(faturamento_total) }}</p></div>
+            <div class="admin-resumo-card"><h3>Faturamento Pago Hoje</h3><p>R$ {{ "%.2f"|format(faturamento_hoje) }}</p></div>
+            <div class="admin-resumo-card"><h3>Total não pago</h3><p>R$ {{ "%.2f"|format(total_nao_pago) }}</p></div>
+            <div class="admin-resumo-card"><h3>Status da Loja</h3><p>{{ 'Aberta' if config.loja_aberta else 'Fechada' }}</p></div>
+        </section>
+
+        <section class="metricas-responsavel-grid">
+            <div class="admin-box metricas-box">
+                <div class="admin-box-topo"><h2>Indicadores Italo</h2></div>
+                <div class="metricas-stack">
+                    <div class="metrica-linha"><span>Total de pedidos</span><strong>{{ metricas_responsavel.italo.total_pedidos }}</strong></div>
+                    <div class="metrica-linha"><span>Faturamento pago</span><strong>R$ {{ "%.2f"|format(metricas_responsavel.italo.faturamento_pago) }}</strong></div>
+                    <div class="metrica-linha"><span>Faturamento pago hoje</span><strong>R$ {{ "%.2f"|format(metricas_responsavel.italo.faturamento_pago_hoje) }}</strong></div>
+                    <div class="metrica-linha"><span>Total não pago</span><strong>R$ {{ "%.2f"|format(metricas_responsavel.italo.total_nao_pago) }}</strong></div>
+                </div>
+            </div>
+            <div class="admin-box metricas-box">
+                <div class="admin-box-topo"><h2>Indicadores Karina</h2></div>
+                <div class="metricas-stack">
+                    <div class="metrica-linha"><span>Total de pedidos</span><strong>{{ metricas_responsavel.karina.total_pedidos }}</strong></div>
+                    <div class="metrica-linha"><span>Faturamento pago</span><strong>R$ {{ "%.2f"|format(metricas_responsavel.karina.faturamento_pago) }}</strong></div>
+                    <div class="metrica-linha"><span>Faturamento pago hoje</span><strong>R$ {{ "%.2f"|format(metricas_responsavel.karina.faturamento_pago_hoje) }}</strong></div>
+                    <div class="metrica-linha"><span>Total não pago</span><strong>R$ {{ "%.2f"|format(metricas_responsavel.karina.total_nao_pago) }}</strong></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="admin-layout-principal">
+            <div class="admin-coluna-principal">
+                <div class="admin-box" id="centralPedidosSecao">
+                    <div class="admin-box-topo admin-box-topo-coluna">
+                        <div>
+                            <h2>Central de pedidos</h2>
+                            <p class="texto-ajuda-admin">Agora a central usa uma grade única, com filtro rápido real e sem repetir pedidos em várias abas.</p>
+                        </div>
+                        <div class="admin-box-filtros-rapidos admin-box-filtros-rapidos-ativo">
+                            <span class="filtro-rapido-label">Filtro rápido:</span>
+                            <div class="filtro-rapido-acoes">
+                                <button type="button" class="btn-filtro-rapido ativo" data-filter="todos">Todos</button>
+                                <button type="button" class="btn-filtro-rapido" data-filter="nao_pagos">Não pagos</button>
+                                <button type="button" class="btn-filtro-rapido" data-filter="pagos">Pagos</button>
+                                <button type="button" class="btn-filtro-rapido" data-filter="cancelados">Cancelados</button>
+                                <button type="button" class="btn-filtro-rapido" data-filter="ocultos">Ocultos</button>
+                            </div>
+                        </div>
+                        <div class="resumo-filtros-pedidos">
+                            <div class="resumo-filtro-chip ativo" data-filter="todos">
+                                <strong>Todos</strong>
+                                <span>{{ resumo_status['todos'] }}</span>
+                            </div>
+                            <div class="resumo-filtro-chip" data-filter="nao_pagos">
+                                <strong>Não pagos</strong>
+                                <span>{{ resumo_status['nao_pagos'] }}</span>
+                            </div>
+                            <div class="resumo-filtro-chip" data-filter="pagos">
+                                <strong>Pagos</strong>
+                                <span>{{ resumo_status['pagos'] }}</span>
+                            </div>
+                            <div class="resumo-filtro-chip" data-filter="cancelados">
+                                <strong>Cancelados</strong>
+                                <span>{{ resumo_status['cancelados'] }}</span>
+                            </div>
+                            <div class="resumo-filtro-chip" data-filter="ocultos">
+                                <strong>Ocultos</strong>
+                                <span>{{ resumo_status['ocultos'] }}</span>
+                            </div>
+                        </div>
+                        <form class="filtro-data-pedidos js-admin-ajax-form" method="get" action="/admin" id="filtroDataPedidosForm">
+                            <input type="hidden" name="return_to" value="{{ request_path }}">
+                            <label for="filtro_data" class="texto-ajuda-admin">Filtrar por data do pedido</label>
+                            <div class="filtro-data-linha">
+                                <input type="date" id="filtro_data" name="data" value="{{ filtro_data }}">
+                                <input type="hidden" id="filtro_status_hidden" name="status" value="{{ filtro_status }}">
+                                <button type="submit" class="btn-admin-topo">Aplicar data</button>
+                                {% if filtro_data %}<a href="/admin" class="btn-admin-topo btn-limpar-data">Limpar</a>{% endif %}
+                            </div>
+                            <small class="texto-ajuda-admin">{% if filtro_data_label %}Mostrando somente pedidos de {{ filtro_data_label }}.{% else %}Selecione uma data para ver só os pedidos daquele dia.{% endif %}</small>
+                        </form>
+                        <div class="central-pedidos-topbar">
+                            <p class="texto-ajuda-admin">Exibindo: <strong id="labelFiltroPedidos">Todos</strong></p>
+                            <p class="texto-ajuda-admin">Pedidos visíveis: <strong id="contadorPedidosVisiveis">{{ resumo_status['todos'] }}</strong></p>
+                        </div>
+                    </div>
+
+                    <div class="pedidos-grid-admin pedidos-grid-admin-pro pedidos-grid-unificado" id="pedidosGridAdmin">
+                        {% for pedido in abas_pedidos['todos'] %}
+                        <article class="pedido-card pedido-card-admin-melhorado {% if pedido.oculto %}pedido-card-oculto{% endif %}"
+                                 data-filter-tags="todos {% if pedido.pagamento_status == 'aguardando_pagamento' %}nao_pagos{% endif %} {% if pedido.pagamento_status == 'pago' %}pagos{% endif %} {% if pedido.status == 'cancelado' or pedido.pagamento_status == 'cancelado' %}cancelados{% endif %} {% if pedido.oculto %}ocultos{% endif %}">
+                            <div class="pedido-topo pedido-topo-admin-pro">
+                                <div>
+                                    <h4>#{{ pedido.id }} - {{ pedido.cliente.nome }}</h4>
+                                    <p>{{ pedido.data }}</p>
+                                    <p>{{ pedido.cliente.telefone or 'Sem telefone' }}</p>
+                                    <p>{{ pedido.cliente.endereco or 'Sem endereço' }}</p>
+                                    <p>Responsável: {{ pedido.nome_vendedor }}</p>
+                                    {% if pedido.payment_method %}<p>Método: {{ pedido.payment_method }}</p>{% endif %}
+                                    {% if pedido.ocultado_em %}<p>Ocultado em: {{ pedido.ocultado_em }}</p>{% endif %}
+                                </div>
+                                <div class="pedido-status-box">
+                                    <span class="badge {{ 'badge-pago' if pedido.pagamento_status == 'pago' else 'badge-pendente' }}">{{ pedido.pagamento_status_legivel }}</span>
+                                    <span class="badge {{ 'badge-entregue' if pedido.status == 'entregue' else 'badge-estoque' if pedido.status != 'cancelado' else 'badge-pendente' }}">{{ pedido.status|capitalize }}</span>
+                                    {% if pedido.oculto %}<span class="badge badge-estoque">Oculto</span>{% endif %}
+                                    <a href="/admin/pedido/{{ pedido.id }}/editar" class="btn-editar-pedido-mini js-admin-ajax-link">Editar pedido</a>
+                                </div>
+                            </div>
+
+                            <div class="pedido-itens">
+                                {% for item in pedido.itens %}
+                                <p>{{ item.nome }} — {{ item.quantidade }} x R$ {{ "%.2f"|format(item.preco_unitario) }}</p>
+                                {% endfor %}
+                            </div>
+
+                            <p class="pedido-total">Total: R$ {{ "%.2f"|format(pedido.total) }}</p>
+
+                            <div class="pedido-topo-botoes pedido-topo-botoes-grid pedido-acoes-grid-pro">
+                                {% if not pedido.oculto %}
+                                    {% if pedido.pagamento_status == 'pago' %}
+                                    <form class="js-admin-ajax-form" action="/admin/nao_pago/{{ pedido.id }}" method="post">
+                                    <input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-pendente" type="submit">Marcar não pago</button></form>
+                                    {% else %}
+                                    <form class="js-admin-ajax-form" action="/admin/pago/{{ pedido.id }}" method="post">
+                                    <input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-entregue" type="submit">Marcar pago</button></form>
+                                    {% endif %}
+
+                                    {% if pedido.status == 'entregue' %}
+                                    <form class="js-admin-ajax-form" action="/admin/pendente/{{ pedido.id }}" method="post">
+                                    <input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-pendente" type="submit">Voltar p/ pendente</button></form>
+                                    {% elif pedido.status != 'cancelado' %}
+                                    <form class="js-admin-ajax-form" action="/admin/entregue/{{ pedido.id }}" method="post">
+                                    <input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-admin-topo" type="submit">Marcar entregue</button></form>
+                                    {% endif %}
+
+                                    {% if pedido.status != 'cancelado' %}
+                                    <form class="js-admin-ajax-form" action="/admin/cancelar/{{ pedido.id }}" method="post" onsubmit="return confirm('Deseja cancelar este pedido? Se ainda não foi pago, o estoque será devolvido.');"><button class="btn-excluir-um" type="submit">Cancelar</button></form>
+                                    {% endif %}
+
+                                    {% if pedido.status == 'cancelado' or pedido.pagamento_status in ['aguardando_pagamento', 'cancelado', 'falhou'] %}
+                                    <form class="js-admin-ajax-form" action="/admin/ocultar/{{ pedido.id }}" method="post">
+                                    <input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-limpar" type="submit">Ocultar</button></form>
+                                    {% endif %}
+                                {% else %}
+                                    <form class="js-admin-ajax-form" action="/admin/reexibir/{{ pedido.id }}" method="post">
+                                    <input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-admin-topo" type="submit">Reexibir</button></form>
+                                {% endif %}
+
+                                <form class="js-admin-ajax-form" action="/admin/excluir/{{ pedido.id }}" method="post" onsubmit="return confirm('Deseja excluir permanentemente este pedido?');"><button class="btn-excluir-um" type="submit">Deletar pedido</button></form>
+                                {% if pedido.pagamento_link %}<a href="{{ pedido.pagamento_link }}" target="_blank" class="btn-exportar-excel">InfinitePay</a>{% endif %}
+                                {% if pedido.receipt_url %}<a href="{{ pedido.receipt_url }}" target="_blank" class="btn-exportar-excel">Comprovante</a>{% endif %}
+                            </div>
+                        </article>
+                        {% endfor %}
+                    </div>
+                    <div class="central-pedidos-vazio" id="centralPedidosVazio" {% if abas_pedidos['todos']|length %}hidden{% endif %}>
+                        <h3>Nenhum pedido encontrado</h3>
+                        <p>Troque o filtro rápido acima para ver outro grupo de pedidos.</p>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="admin-coluna-lateral">
+                <div class="admin-box destaque-box" id="notificacoesTempoRealSecao">
+                    <div class="admin-box-topo">
+                        <div>
+                            <h2>Notificações em tempo real</h2>
+                            <p class="texto-ajuda-admin">Mantenha o painel aberto para monitorar pedidos novos.</p>
+                        </div>
+                        <button type="button" class="btn-admin-topo" id="ativarNotificacoesLateral" aria-pressed="false">Ativar</button>
+                    </div>
+                    <div class="mini-status-grid">
+                        <div class="mini-status-card"><strong>Monitoramento</strong><span id="statusMonitoramento">Ligado</span></div>
+                        <div class="mini-status-card"><strong>Último pedido</strong><span id="ultimoPedidoLidoCard">#{{ ultimo_pedido_id }}</span></div>
+                    </div>
+                </div>
+
+                <div class="admin-box" id="configuracaoLojaSecao">
+                    <div class="admin-box-topo">
+                        <h2>Configuração da loja</h2>
+                    </div>
+                    <form class="js-admin-ajax-form" action="/admin/loja/toggle" method="post" class="stack-form-admin">
+                        <button type="submit" class="{{ 'btn-status-pendente' if config.loja_aberta else 'btn-status-entregue' }} btn-bloco-total">
+                            {{ 'Bloquear pedidos' if config.loja_aberta else 'Liberar pedidos' }}
+                        </button>
+                    </form>
+                    <form class="js-admin-ajax-form form-admin-config form-admin-config-pro" action="/admin/configuracoes" method="post">
+                        <input type="text" name="mensagem_loja_fechada" placeholder="Mensagem quando a loja estiver fechada" value="{{ config.mensagem_loja_fechada }}">
+                        <div class="status-integration-box">{{ 'InfinitePay ativa' if config.infinitepay_ativo else 'InfinitePay desativada' }}</div>
+                        <label class="check-admin check-admin-pro">
+                            <span>Ativar checkout InfinitePay</span>
+                            <input type="checkbox" name="infinitepay_ativo" {% if config.infinitepay_ativo %}checked{% endif %}>
+                        </label>
+                        <div class="bloqueios-responsavel-grid">
+                            <label class="check-admin check-admin-pro check-bloqueio-destinatario">
+                                <span>Bloquear pedidos do Italo</span>
+                                <input type="checkbox" name="bloquear_italo" {% if config.bloquear_italo %}checked{% endif %}>
+                            </label>
+                            <label class="check-admin check-admin-pro check-bloqueio-destinatario">
+                                <span>Bloquear pedidos da Karina</span>
+                                <input type="checkbox" name="bloquear_karina" {% if config.bloquear_karina %}checked{% endif %}>
+                            </label>
+                        </div>
+                        <button class="btn-admin-salvar-contigurações btn-bloco-total" type="submit">Salvar configurações</button>
+                    </form>
+                    <p class="texto-ajuda-admin">O checkout online depende do <strong>INFINITEPAY_HANDLE</strong> configurado no Render, sem o símbolo $.</p>
+                </div>
+
+                </aside>
+        </section>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    </div>
+
+    <script src="/static/admin_ajax.js"></script>
+    <script>
+        window.initAdminPage = function () {
+            const STORAGE_TAB = 'adminActiveTab';
+            const STORAGE_LAST_ID = 'adminLastPedidoId';
+            const STORAGE_MONITOR = 'adminMonitoramentoAtivo';
+            const toast = document.getElementById('toastNotificacao');
+            const toastContainer = document.getElementById('toastContainer');
+            const statusLive = document.getElementById('statusLive');
+            const statusMonitoramento = document.getElementById('statusMonitoramento');
+            const ultimoPedidoLido = document.getElementById('ultimoPedidoLido');
+            const ultimoPedidoLidoCard = document.getElementById('ultimoPedidoLidoCard');
+            const ativarBtns = [document.getElementById('ativarNotificacoesLateral')].filter(Boolean);
+            const quickFilters = document.querySelectorAll('.btn-filtro-rapido');
+            const resumoChips = document.querySelectorAll('.resumo-filtro-chip');
+            const pedidosCards = document.querySelectorAll('#pedidosGridAdmin .pedido-card-admin-melhorado');
+            const contadorPedidosVisiveis = document.getElementById('contadorPedidosVisiveis');
+            const labelFiltroPedidos = document.getElementById('labelFiltroPedidos');
+            const centralPedidosVazio = document.getElementById('centralPedidosVazio');
+            let ultimoId = Number(sessionStorage.getItem(STORAGE_LAST_ID) || '{{ ultimo_pedido_id }}' || 0);
+            let audioContext = null;
+            let monitoramentoAtivo = localStorage.getItem(STORAGE_MONITOR) === '1';
+
+            function atualizarResumoFiltro(filterName) {
+                quickFilters.forEach((btn) => btn.classList.toggle('ativo', btn.dataset.filter === filterName));
+                resumoChips.forEach((chip) => chip.classList.toggle('ativo', chip.dataset.filter === filterName));
+            }
+
+            function nomeFiltro(filterName) {
+                const mapa = { todos: 'Todos', nao_pagos: 'Não pagos', pagos: 'Pagos', cancelados: 'Cancelados', ocultos: 'Ocultos' };
+                return mapa[filterName] || 'Todos';
+            }
+
+            function atualizarURLFiltro(filterName) {
+                const url = new URL(window.location.href);
+                if (filterName && filterName !== 'todos') url.searchParams.set('status', filterName);
+                else url.searchParams.delete('status');
+                history.replaceState(history.state || {}, '', url.toString());
+                const hidden = document.getElementById('filtro_status_hidden');
+                if (hidden) hidden.value = filterName === 'todos' ? '' : filterName;
+            }
+
+            function aplicarFiltroPedidos(filterName) {
+                let visiveis = 0;
+                pedidosCards.forEach((card) => {
+                    const tags = String(card.dataset.filterTags || '').split(/\s+/).filter(Boolean);
+                    const mostrar = filterName === 'todos' || tags.includes(filterName);
+                    card.hidden = !mostrar;
+                    if (mostrar) visiveis += 1;
+                });
+                if (contadorPedidosVisiveis) contadorPedidosVisiveis.textContent = String(visiveis);
+                if (labelFiltroPedidos) labelFiltroPedidos.textContent = nomeFiltro(filterName);
+                if (centralPedidosVazio) centralPedidosVazio.hidden = visiveis > 0;
+                atualizarResumoFiltro(filterName);
+                sessionStorage.setItem(STORAGE_TAB, filterName);
+                atualizarURLFiltro(filterName);
+            }
+
+            quickFilters.forEach((btn) => btn.addEventListener('click', () => aplicarFiltroPedidos(btn.dataset.filter)));
+            resumoChips.forEach((chip) => chip.addEventListener('click', () => aplicarFiltroPedidos(chip.dataset.filter)));
+            const initialTab = '{{ filtro_status or '' }}' || sessionStorage.getItem(STORAGE_TAB) || 'todos';
+            aplicarFiltroPedidos(initialTab);
+
+            function showFloatingToast(texto) {
+                if (!toastContainer) return;
+                const item = document.createElement('div');
+                item.className = 'toast-card';
+                item.textContent = texto;
+                toastContainer.appendChild(item);
+                setTimeout(() => { item.classList.add('sumindo'); setTimeout(() => item.remove(), 350); }, 3000);
+            }
+
+            function mostrarToast(texto) {
+                if (toast) {
+                    toast.textContent = texto;
+                    toast.hidden = false;
+                    toast.classList.add('mostrar');
+                    setTimeout(() => { toast.classList.remove('mostrar'); setTimeout(() => { toast.hidden = true; }, 250); }, 2600);
+                }
+                showFloatingToast(texto);
+            }
+
+            function atualizarBotoesMonitoramento() {
+                ativarBtns.forEach((btn) => {
+                    btn.textContent = monitoramentoAtivo ? '🔔 Notificações ativadas' : '🔔 Ativar notificações';
+                    btn.classList.toggle('ativo', monitoramentoAtivo);
+                    btn.setAttribute('aria-pressed', monitoramentoAtivo ? 'true' : 'false');
+                });
+                if (statusMonitoramento) statusMonitoramento.textContent = monitoramentoAtivo ? 'Ligado' : 'Desligado';
+                if (statusLive) statusLive.textContent = monitoramentoAtivo ? '● Monitorando pedidos' : '● Monitoramento pausado';
+            }
+            atualizarBotoesMonitoramento();
+
+            function tocarSomCurto() {
+                try {
+                    if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const ctx = audioContext;
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+                    oscillator.type = 'triangle';
+                    oscillator.frequency.value = 880;
+                    gainNode.gain.value = 0.03;
+                    oscillator.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+                    oscillator.start();
+                    oscillator.stop(ctx.currentTime + 0.12);
+                } catch (e) {}
+            }
+
+            async function alternarMonitoramento() {
+                try {
+                    if (!monitoramentoAtivo && 'Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
+                } catch (e) {}
+                monitoramentoAtivo = !monitoramentoAtivo;
+                localStorage.setItem(STORAGE_MONITOR, monitoramentoAtivo ? '1' : '0');
+                atualizarBotoesMonitoramento();
+                mostrarToast(monitoramentoAtivo ? 'Notificações em tempo real ativadas.' : 'Notificações em tempo real desativadas.');
+            }
+            ativarBtns.forEach((btn) => {
+                btn.addEventListener('click', alternarMonitoramento);
+                btn.addEventListener('touchend', (event) => {
+                    event.preventDefault();
+                    alternarMonitoramento();
+                }, { passive: false });
+            });
+
+            async function verificarNovosPedidos() {
+                if (!monitoramentoAtivo) return;
+                try {
+                    const resposta = await fetch(`/admin/notificacoes?ultimo_id=${ultimoId}`, { cache: 'no-store' });
+                    if (!resposta.ok) throw new Error('falha');
+                    const dados = await resposta.json();
+                    if (statusMonitoramento) statusMonitoramento.textContent = 'Ligado';
+                    if (statusLive) statusLive.textContent = '● Monitorando pedidos';
+                    if (Array.isArray(dados.novos) && dados.novos.length) {
+                        dados.novos.forEach((pedido) => {
+                            const texto = `Novo pedido #${pedido.id} - ${pedido.cliente} - R$ ${pedido.total.toFixed(2)}`;
+                            mostrarToast(texto);
+                            tocarSomCurto();
+                            if ('Notification' in window && Notification.permission === 'granted') new Notification('Pedido novo na loja', { body: texto });
+                        });
+                    }
+                    ultimoId = dados.ultimo_id || ultimoId;
+                    if (ultimoPedidoLido) ultimoPedidoLido.textContent = `#${ultimoId}`;
+                    if (ultimoPedidoLidoCard) ultimoPedidoLidoCard.textContent = `#${ultimoId}`;
+                    sessionStorage.setItem(STORAGE_LAST_ID, String(ultimoId));
+                } catch (e) {
+                    if (statusMonitoramento) statusMonitoramento.textContent = 'Reconectando';
+                    if (statusLive) statusLive.textContent = '● Reconectando';
+                }
+            }
+            if (window.__adminMonitorInterval) clearInterval(window.__adminMonitorInterval);
+            window.__adminMonitorInterval = setInterval(verificarNovosPedidos, 10000);
+            verificarNovosPedidos();
+        };
+        window.initAdminPage();
+    </script>
+</body>
+</html>

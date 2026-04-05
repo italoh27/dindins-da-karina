@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geladinhos Gourmet</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="pagina-loja" data-ajax-shell="public" data-cart-count="{{ qtd_itens }}">
+    <header class="topo-loja-pro topo-loja-pro-clean">
+        <div class="topo-acoes topo-acoes-loja topo-minimal-loja">
+            <a class="btn-admin-topo" href="/admin">📋 Admin</a>
+            <a class="btn-carrinho-topo js-ajax-link" href="/carrinho" data-cart-count-label="{{ qtd_itens }}">🛒 Carrinho ({{ qtd_itens }})</a>
+        </div>
+
+        <h1 class="marca-loja-topo marca-loja-topo-principal">Geladinhos Gourmet</h1>
+    </header>
+
+    {% if mensagem %}
+    <div class="alerta alerta-sucesso">{{ mensagem }}</div>
+    {% endif %}
+
+    {% if not loja_aberta %}
+    <div class="alerta alerta-fechado">{{ mensagem_loja }}</div>
+    {% endif %}
+
+    {% if destinatario_bloqueado %}
+    <div class="alerta alerta-fechado">{{ mensagem_bloqueio_destinatario }}</div>
+    {% endif %}
+
+    <section class="seletor-responsavel-loja seletor-responsavel-loja-pro">
+        <form class="form-responsavel-loja js-ajax-form" action="/definir_destinatario" method="post">
+            <input type="hidden" name="next" value="/">
+            <div class="responsavel-loja-bloco responsavel-loja-bloco-integrado">
+                <span class="responsavel-loja-label">Pedido para:</span>
+            </div>
+            <div class="responsavel-loja-acoes">
+                <button type="submit" name="destinatario" value="italo" class="btn-responsavel-loja {% if destinatario_atual == 'italo' %}ativo{% endif %}" {% if bloquear_italo %}disabled{% endif %}>Italo{% if bloquear_italo %} · pausado{% endif %}</button>
+                <button type="submit" name="destinatario" value="karina" class="btn-responsavel-loja {% if destinatario_atual == 'karina' %}ativo{% endif %}" {% if bloquear_karina %}disabled{% endif %}>Karina{% if bloquear_karina %} · pausada{% endif %}</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="vitrine-wrapper vitrine-wrapper-minimal vitrine-wrapper-pro vitrine-wrapper-loja-ajustada">
+        <div class="vitrine-topo vitrine-topo-minimal vitrine-topo-pro vitrine-topo-loja-final">
+            <h2 class="titulo2 titulo2-menor titulo-sabores-ajustado">Sabores disponíveis</h2>
+            <div class="carrossel-topbar carrossel-topbar-abaixo-titulo">
+                <button type="button" class="carrossel-btn carrossel-btn-topo" id="prevCard" aria-label="Ver sabores anteriores">‹</button>
+                <button type="button" class="carrossel-btn carrossel-btn-topo" id="nextCard" aria-label="Ver próximos sabores">›</button>
+            </div>
+        </div>
+
+        <div class="carrossel-stage carrossel-stage-topo">
+            <div class="carrossel-area">
+                <div class="container carrossel-produtos" id="carrosselProdutos">
+                    {% for sabor in sabores %}
+                    <article class="card card-carrossel card-carrossel-minimal card-loja-pro" data-flavor-card="{{ sabor.nome|lower|replace(" ", "-") }}">
+                        <div class="card-imagem-wrap card-imagem-wrap-pro">
+                            <img src="{{ sabor.img }}" alt="{{ sabor.nome }}" loading="lazy" decoding="async">
+                        </div>
+
+                        <div class="card-conteudo card-conteudo-pro">
+                            <div class="card-topo-pro">
+                                <h3>{{ sabor.nome }}</h3>
+                                <p class="preco-card">R$ {{ "%.2f"|format(sabor.preco) }}</p>
+                            </div>
+
+                            <div class="estoque-destaque estoque-destaque-pro">
+                                <span class="estoque-label">Estoque {{ destinatario_atual|capitalize }}</span>
+                                {% if sabor.estoque_exibicao > 0 %}
+                                <span class="badge badge-estoque badge-estoque-forte" data-estoque-sabor="{{ sabor.nome|lower|replace(' ', '-') }}">{{ sabor.estoque_exibicao }} unidade(s)</span>
+                                {% else %}
+                                <span class="badge badge-esgotado badge-estoque-forte">Sem estoque</span>
+                                {% endif %}
+                            </div>
+
+                            <form class="form-card form-card-pro js-ajax-form" action="/pedido" method="post">
+                                <input type="hidden" name="sabor" value="{{ sabor.nome }}">
+                                <input type="hidden" name="destinatario" value="{{ destinatario_atual }}">
+
+                                <div class="campo-qtd-loja-pro">
+                                    <label class="label-compacta" for="qtd-{{ loop.index }}">Quantidade</label>
+                                    <input id="qtd-{{ loop.index }}" class="inputquantidade" type="number" name="quantidade" value="1" min="1" {% if sabor.estoque_exibicao > 0 %}max="{{ sabor.estoque_exibicao }}"{% endif %} required data-flavor-qty-input="{{ sabor.nome|lower|replace(" ", "-") }}" {% if not loja_aberta or destinatario_bloqueado or sabor.estoque_exibicao <= 0 %}disabled{% endif %}>
+                                </div>
+
+                                <button class="btn-adicionar btn-adicionar-pro" type="submit" data-flavor-button="{{ sabor.nome|lower|replace(" ", "-") }}" {% if not loja_aberta or destinatario_bloqueado or sabor.estoque_exibicao <= 0 %}disabled{% endif %}>
+                                    {% if destinatario_bloqueado %}Pedidos pausados{% elif sabor.estoque_exibicao <= 0 %}Indisponível{% else %}Adicionar ao carrinho{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="toast-global" id="toastGlobal" hidden></div>
+    <script src="/static/site_ajax.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+Flask
+openpyxl
+gunicorn
+psycopg[binary]
+requests
+psycopg_pool
