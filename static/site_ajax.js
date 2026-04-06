@@ -158,12 +158,6 @@
     }
   }
 
-
-  function formatMoney(value) {
-    const number = Number(value || 0);
-    return 'R$ ' + number.toFixed(2);
-  }
-
   function updateCartCounter(total) {
     const cartLink = document.querySelector('.btn-carrinho-topo');
     if (!cartLink) return;
@@ -274,6 +268,7 @@
 
   function handleJsonFormSuccess(form, payload, button) {
     const action = form.getAttribute('action') || '';
+
     if (action === '/pedido') {
       updateCartCounter(payload.cart_count);
       if (payload.flavor_key) updateFlavorStock(payload.flavor_key, payload.estoque_exibicao);
@@ -381,7 +376,6 @@
           if (currentAction.indexOf('/remover_item/') === 0) {
             showToast('Removido com sucesso.');
           } else if (currentAction.indexOf('/carrinho/atualizar/') === 0) {
-            // sem notificação para ajuste de quantidade
           } else {
             showToast((currentAction || '').includes('/pedido') ? 'Adicionado com sucesso.' : 'Atualizado com sucesso.');
           }
@@ -389,7 +383,6 @@
           const currentAction = form.getAttribute('action') || '';
           if (currentAction.indexOf('/remover_item/') === 0 || currentAction.indexOf('/carrinho/atualizar/') === 0) {
             visit('/carrinho', false).catch(() => window.location.reload());
-            return;
           } else {
             showToast('Não foi possível concluir a ação.');
             window.location.reload();
@@ -421,7 +414,6 @@
       });
     });
   }
-
 
   function scheduleAutoSubmit(form) {
     if (!form || form.dataset.submitting === '1') return;
@@ -458,11 +450,6 @@
       if (button.dataset.stepBound === '1') return;
       button.dataset.stepBound = '1';
       button.addEventListener('click', () => {
-        const toast = document.getElementById('toastGlobal');
-        if (toast) {
-          toast.classList.remove('mostrar');
-          toast.hidden = true;
-        }
         const box = button.closest('[data-quantity-box]');
         const input = box ? box.querySelector('[data-quantity-input]') : null;
         if (!input) return;
@@ -483,11 +470,6 @@
       if (input.dataset.autoSubmitBound === '1') return;
       input.dataset.autoSubmitBound = '1';
       input.addEventListener('input', () => {
-        const toast = document.getElementById('toastGlobal');
-        if (toast) {
-          toast.classList.remove('mostrar');
-          toast.hidden = true;
-        }
         const form = input.closest('form[data-auto-submit="quantity"]');
         if (form) scheduleAutoSubmit(form);
       });
