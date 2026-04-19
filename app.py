@@ -2033,7 +2033,10 @@ def admin_analise():
     ]
 
     saldo_devedor = [
-        {**info, 'saldo_devedor': round(info['nao_pago'], 2)}
+        {
+            **info,
+            'saldo_devedor': round(info['nao_pago'], 2),
+        }
         for info in devedores.values() if info['nao_pago'] > 0
     ]
     saldo_devedor.sort(key=lambda x: x['saldo_devedor'], reverse=True)
@@ -2057,7 +2060,55 @@ def admin_analise():
         pagamento=pagamento,
         incluir_ocultos=incluir_ocultos,
         request_path=request.full_path if request.query_string else request.path,
+        mensagem=pop_mensagem('mensagem_admin'),
     )
+
+
+
+@app.route("/admin/marcar_pago_cliente", methods=['POST'])
+def marcar_pago_cliente():
+    if not admin_logado():
+        return redirect('/admin/login')
+
+    cliente_nome = str(request.form.get('cliente_nome', '') or '').strip()
+    cliente_telefone = str(request.form.get('cliente_telefone', '') or '').strip()
+
+    if not cliente_nome:
+        set_mensagem('mensagem_admin', 'Cliente não informado para marcar os pedidos como pagos.')
+        return redirect_admin_back('/admin/analise')
+
+    pedidos = ler_pedidos()
+    atualizados = 0
+    for pedido in pedidos:
+        cliente = pedido.get('cliente', {}) or {}
+        nome_atual = str(cliente.get('nome', '') or '').strip()
+        telefone_atual = str(cliente.get('telefone', '') or '').strip()
+        status_pedido = str(pedido.get('status', '') or '').strip().lower()
+        pagamento_status = str(pedido.get('pagamento_status', '') or '').strip().lower()
+
+        if nome_atual != cliente_nome:
+            continue
+        if cliente_telefone and telefone_atual != cliente_telefone:
+            continue
+        if status_pedido == 'cancelado' or pagamento_status in {'pago', 'cancelado'}:
+            continue
+
+        if db_enabled():
+            if atualizar_pedido_db(int(pedido.get('id')), pagamento_status='pago'):
+                atualizados += 1
+        else:
+            pedido['pagamento_status'] = 'pago'
+            atualizados += 1
+
+    if not db_enabled() and atualizados:
+        salvar_pedidos(pedidos)
+
+    if atualizados:
+        set_mensagem('mensagem_admin', f'{atualizados} pedido(s) de {cliente_nome} marcado(s) como pago.')
+    else:
+        set_mensagem('mensagem_admin', f'Nenhum pedido pendente encontrado para {cliente_nome}.')
+
+    return redirect_admin_back('/admin/analise')
 
 
 @app.route("/admin/excluir-analise/<int:pedido_id>", methods=['POST'])

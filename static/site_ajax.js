@@ -66,6 +66,30 @@
     }, 2200);
   }
 
+
+  let cartFloatingTimer = null;
+
+  function hideCartFloatingCta() {
+    const cta = document.getElementById('cartFloatingCta');
+    if (!cta) return;
+    cta.classList.remove('mostrar');
+    window.clearTimeout(cartFloatingTimer);
+    window.setTimeout(() => {
+      if (!cta.classList.contains('mostrar')) cta.hidden = true;
+    }, 220);
+  }
+
+  function showCartFloatingCta() {
+    const cta = document.getElementById('cartFloatingCta');
+    if (!cta) return;
+    cta.hidden = false;
+    window.clearTimeout(cartFloatingTimer);
+    window.requestAnimationFrame(() => cta.classList.add('mostrar'));
+    cartFloatingTimer = window.setTimeout(() => {
+      hideCartFloatingCta();
+    }, 5000);
+  }
+
   function sameOrigin(url) {
     try {
       const u = new URL(url, window.location.origin);
@@ -282,6 +306,7 @@
         }, 900);
       }
       showToast(payload.message || 'Adicionado com sucesso.');
+      showCartFloatingCta();
       return;
     }
 
@@ -493,6 +518,15 @@
     });
   }
 
+
+  function bindCartFloatingCta() {
+    const continueButton = document.getElementById('continueShoppingBtn');
+    if (continueButton && continueButton.dataset.bound !== '1') {
+      continueButton.dataset.bound = '1';
+      continueButton.addEventListener('click', () => hideCartFloatingCta());
+    }
+  }
+
   function bindCarousel() {
     const carrossel = document.getElementById('carrosselProdutos');
     const prevBtn = document.getElementById('prevCard');
@@ -518,6 +552,7 @@
   function bind() {
     bindLinks();
     bindForms();
+    bindCartFloatingCta();
     bindCopyPix();
     bindExternalSubmitButtons();
     bindQuantityControls();

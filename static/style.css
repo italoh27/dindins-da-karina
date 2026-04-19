@@ -3683,3 +3683,22 @@ input[name="ocultos"] {
         min-height: 15px !important;
     }
 }
+
+
+/* FASE 17 - CTA flutuante carrinho e ações extras análise */
+.cart-floating-cta{position:fixed;left:50%;bottom:20px;transform:translate(-50%,18px);width:min(calc(100% - 24px),520px);display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border-radius:18px;background:rgba(24,24,27,.96);color:#fff;box-shadow:var(--shadow-hover);border:1px solid rgba(255,255,255,.12);z-index:10000;opacity:0;pointer-events:none;transition:.22s ease}
+.cart-floating-cta.mostrar{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.cart-floating-cta__info{display:flex;flex-direction:column;gap:2px}
+.cart-floating-cta__info strong{font-size:15px;line-height:1.2}
+.cart-floating-cta__info span{font-size:13px;opacity:.88}
+.cart-floating-cta__actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.cart-floating-cta .btn-carrinho-topo,
+.cart-floating-cta .btn-admin-topo{margin:0;white-space:nowrap;padding:10px 14px;border-radius:12px}
+.acoes-tabela-analise{display:flex;flex-wrap:wrap;gap:8px}
+.btn-pagar-cliente{white-space:nowrap}
+@media (max-width: 640px){
+  .cart-floating-cta{flex-direction:column;align-items:stretch;padding:14px}
+  .cart-floating-cta__actions{width:100%;justify-content:stretch}
+  .cart-floating-cta .btn-carrinho-topo,
+  .cart-floating-cta .btn-admin-topo{width:100%;text-align:center;justify-content:center}
+}
