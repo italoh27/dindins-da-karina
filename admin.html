@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin - Dindins</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Painel Admin</h1>
+        <nav>
+            <ul>
+                <li><a href="/admin">Pedidos</a></li>
+                <li><a href="/admin_sabores">Sabores</a></li>
+                <li><a href="/">Ir para o Site</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Gestão de Pedidos</h2>
+        <div class="card">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>WhatsApp</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pedido in pedidos %}
+                        <tr>
+                            <td>#{{ pedido.id }}</td>
+                            <td>{{ pedido.cliente }}</td>
+                            <td>{{ pedido.telefone }}</td>
+                            <td>R$ {{ "%.2f"|format(pedido.valor_total|float) }}</td>
+                            <td>
+                                <span style="background: var(--cor-fundo); padding: 0.3rem 0.6rem; border-radius: 4px; font-weight: bold; border: 1px solid #ddd;">
+                                    {{ pedido.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="/admin_pedido_editar/{{ pedido.id }}" class="btn" style="padding: 0.3rem 0.8rem; margin: 0; width: auto; text-decoration: none;">Ver/Editar</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" style="text-align: center;">Nenhum pedido recente.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    <script src="{{ url_for('static', filename='admin_ajax.js') }}"></script>
+</body>
+</html>

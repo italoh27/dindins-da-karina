@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrinho - Geladinhos Gourmet</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="pagina-carrinho" data-ajax-shell="public" data-cart-count="{{ qtd_itens }}">
+    <div class="pagina-carrinho-topo">
+        <a class="btn-voltar-inline js-ajax-link" href="/">← Voltar para os sabores</a>
+    </div>
+
+    <div class="carrinho-wrapper">
+        <h1 class="titulo-carrinho">🛒 Seu Carrinho ({{ qtd_itens }})</h1>
+
+        {% if mensagem %}
+        <div class="alerta alerta-erro">{{ mensagem }}</div>
+        {% endif %}
+
+        {% if not loja_aberta %}
+        <div class="alerta alerta-fechado">{{ mensagem_loja }}</div>
+        {% endif %}
+
+        {% if destinatario_bloqueado %}
+        <div class="alerta alerta-fechado">{{ mensagem_bloqueio_destinatario }}</div>
+        {% endif %}
+
+        <div class="box-carrinho">
+            {% if carrinho and carrinho|length > 0 %}
+            <div class="lista-itens lista-itens-pro">
+                {% for item in carrinho %}
+                <div class="item-carrinho item-carrinho-pro" data-cart-item="{{ loop.index0 }}" data-flavor-key="{{ item.nome|lower|replace(" ", "-") }}">
+                    <div class="item-topo-carrinho">
+                        <div class="item-esquerda item-esquerda-pro">
+                            <h3>{{ item.nome }}</h3>
+                            <p>Preço unitário: R$ {{ "%.2f"|format(item.preco) }}</p>
+                        </div>
+                        <form class="js-ajax-form form-remover-item-inline" action="/remover_item/{{ loop.index0 }}" method="post" data-cart-remove-form="{{ loop.index0 }}">
+                            <input type="hidden" name="item_nome" value="{{ item.nome }}">
+                            <button type="submit" class="btn-remover-item-x" aria-label="Remover {{ item.nome }} do carrinho" title="Remover item">×</button>
+                        </form>
+                    </div>
+
+                    <div class="item-centro-pro">
+                        <form class="js-ajax-form form-quantidade-carrinho" action="/carrinho/atualizar/{{ loop.index0 }}" method="post" data-auto-submit="quantity" data-auto-submit-delay="120">
+                            <input type="hidden" name="item_nome" value="{{ item.nome }}">
+                            <div class="controle-quantidade controle-quantidade-carrinho" data-quantity-box>
+                                <button type="button" class="btn-qtd-step" data-step="-1" aria-label="Diminuir quantidade">−</button>
+                                <input type="number" name="quantidade" min="0" value="{{ item.quantidade }}" class="input-quantidade-step input-quantidade-carrinho" data-quantity-input max="{{ item.estoque_maximo }}" data-cart-qty-input="{{ loop.index0 }}">
+                                <button type="button" class="btn-qtd-step" data-step="1" aria-label="Aumentar quantidade">+</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="item-direita item-direita-pro">
+                        <span class="texto-resumo-carrinho">Subtotal</span>
+                        <strong data-cart-subtotal="{{ loop.index0 }}">R$ {{ "%.2f"|format(item.subtotal) }}</strong>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="total-carrinho" data-cart-total-wrap><span class="texto-resumo-carrinho total-carrinho-label">Total do pedido:</span> <span data-cart-total>R$ {{ "%.2f"|format(total) }}</span></div>
+
+            <div class="pagamento pagamento-carrinho pagamento-carrinho-pro">
+                <h2>💳 Formas de pagamento</h2>
+                <p class="pix-label">Pix manual</p>
+                <div class="pix-box">
+                    <input type="text" id="pix" value="{{ chave_pix }}" readonly>
+                    <button type="button" class="btn-copiar-pix js-copy-pix" data-copy-target="#pix" data-copy-value="{{ chave_pix }}">Copiar chave Pix</button>
+                </div>
+                <div class="pix-dados">
+                    <p><strong>Nome:</strong> {{ nome_pix }}</p>
+                    <p><strong>Banco:</strong> {{ banco_pix }}</p>
+                </div>
+            </div>
+
+            <form class="form-cliente js-ajax-form" action="/finalizar_pedido" method="post">
+                <h2>Finalizar pedido</h2>
+
+                <div class="responsavel-destaque">
+                    <p class="responsavel-titulo">Selecione quem vai receber este pedido</p>
+                    <select name="destinatario" required>
+                        <option value="italo" {% if destinatario_atual == "italo" %}selected{% endif %} {% if bloquear_italo %}disabled{% endif %}>Responsável: Italo{% if bloquear_italo %} · pausado{% endif %}</option>
+                        <option value="karina" {% if destinatario_atual == "karina" %}selected{% endif %} {% if bloquear_karina %}disabled{% endif %}>Responsável: Karina{% if bloquear_karina %} · pausada{% endif %}</option>
+                    </select>
+                    <p class="texto-ajuda-admin">O estoque e a separação do pedido seguem o responsável selecionado.</p>
+                </div>
+
+                <input type="text" name="nome" placeholder="Seu nome" required>
+                <input type="text" name="telefone" placeholder="Seu telefone">
+                <input type="text" name="endereco" placeholder="Seu endereço">
+
+                <div class="acoes-carrinho acoes-carrinho-duplas">
+                    <button class="btn-limpar" type="button" data-submit-external-form="#formLimparCarrinho">Limpar pedido</button>
+                    <button class="btn-finalizar" type="submit" {% if not loja_aberta or destinatario_bloqueado %}disabled{% endif %}>Finalizar pedido e gerar pagamento</button>
+                </div>
+            </form>
+
+            <form id="formLimparCarrinho" class="js-ajax-form" action="/limpar_carrinho" method="post"></form>
+            {% else %}
+            <div class="carrinho-vazio">
+                <p>Seu carrinho está vazio.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="toast-global" id="toastGlobal" hidden></div>
+    <script src="/static/site_ajax.js"></script>
+</body>
+</html>

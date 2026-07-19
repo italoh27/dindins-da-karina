@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editar pedido</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="pagina-admin pagina-admin-pro">
+  <div data-admin-shell="page">
+    <div class="admin-topo admin-topo-sticky">
+      <div class="admin-topo-acoes admin-topo-acoes-premium">
+        <a href="/admin" class="btn-admin-voltar js-admin-ajax-link">← Voltar para painel</a>
+      </div>
+      <div class="admin-topo-mobile-voltar admin-topo-mobile-voltar-force">
+        <a href="/admin" class="btn-admin-voltar js-admin-ajax-link">← Voltar para painel</a>
+      </div>
+    </div>
+    <div class="admin-wrapper admin-wrapper-pro">
+      <div class="admin-header-bloco admin-header-bloco-pro admin-header-centralizado">
+        <div>
+          <h1 class="titulo-admin titulo-admin-centralizado">✏️ Editar pedido #{{ pedido.id }}</h1>
+          <p class="texto-ajuda-admin texto-ajuda-centralizado">Aqui você pode alterar cliente, aumentar, diminuir, remover e adicionar itens com devolução correta ao estoque.</p>
+        </div>
+      </div>
+
+      {% if mensagem %}<div class="alerta alerta-sucesso">{{ mensagem }}</div>{% endif %}
+
+      <section class="admin-box">
+        <div class="pedido-topo pedido-topo-admin-pro">
+          <div>
+            <h4>{{ pedido.cliente.nome }}</h4>
+            <p>{{ pedido.data }}</p>
+            <p>{{ pedido.cliente.telefone or 'Sem telefone' }}</p>
+            <p>{{ pedido.cliente.endereco or 'Sem endereço' }}</p>
+            <p>Responsável: {{ pedido.nome_vendedor }}</p>
+          </div>
+          <div class="pedido-status-box">
+            <span class="badge {{ 'badge-pago' if pedido.pagamento_status == 'pago' else 'badge-pendente' }}">{{ pedido.pagamento_status_legivel }}</span>
+            <span class="badge {{ 'badge-entregue' if pedido.status == 'entregue' else 'badge-estoque' if pedido.status != 'cancelado' else 'badge-pendente' }}">{{ pedido.status|capitalize }}</span>
+          </div>
+        </div>
+
+        <form action="/admin/pedido/{{ pedido.id }}/salvar" method="post" class="form-editar-pedido js-admin-ajax-form" id="formSalvarPedidoEdicao">
+          <div class="grid-editar-cliente">
+            <label>
+              <span>Nome do cliente</span>
+              <input type="text" name="cliente_nome" value="{{ pedido.cliente.nome }}" required>
+            </label>
+            <label>
+              <span>Telefone</span>
+              <input type="text" name="cliente_telefone" value="{{ pedido.cliente.telefone or '' }}">
+            </label>
+            <label class="campo-endereco-edicao">
+              <span>Endereço</span>
+              <input type="text" name="cliente_endereco" value="{{ pedido.cliente.endereco or '' }}">
+            </label>
+          </div>
+
+          <div class="lista-edicao-pedido">
+            {% for item in pedido.itens %}
+            <div class="item-edicao-pedido item-edicao-pedido-grid item-edicao-pedido-pro">
+              <div>
+                <strong>{{ item.nome }}</strong>
+                <p>Preço unitário: R$ {{ '%.2f'|format(item.preco_unitario) }}</p>
+                <p>Subtotal atual: R$ {{ '%.2f'|format(item.subtotal) }}</p>
+              </div>
+              <div class="acoes-item-edicao acoes-item-edicao-pro">
+                <label class="label-quantidade-edicao">
+                  <span>Quantidade</span>
+                  <div class="controle-quantidade controle-quantidade-admin" data-quantity-box>
+                    <button type="button" class="btn-qtd-step" data-step="-1" aria-label="Diminuir quantidade">−</button>
+                    <input type="number" min="0" name="quantidade_{{ item.id }}" value="{{ item.quantidade }}" class="input-quantidade-edicao input-quantidade-step" data-quantity-input>
+                    <button type="button" class="btn-qtd-step" data-step="1" aria-label="Aumentar quantidade">+</button>
+                  </div>
+                </label>
+                <button class="btn-excluir-um btn-remover-item-admin" type="button" data-remove-item>Remover item</button>
+              </div>
+            </div>
+            {% else %}
+            <p class="texto-ajuda-admin">Este pedido não possui mais itens.</p>
+            {% endfor %}
+          </div>
+
+          <div class="rodape-edicao-pedido">
+            <p class="pedido-total">Total atual: R$ {{ '%.2f'|format(pedido.total) }}</p>
+            <div class="acoes-finais-pedido">
+              <button class="btn-admin-topo" type="submit">Salvar alterações do pedido</button>
+              <a href="/admin#centralPedidosSecao" class="btn-admin-voltar js-admin-ajax-link">Voltar para central de pedidos</a>
+            </div>
+          </div>
+        </form>
+
+        <form action="/admin/pedido/{{ pedido.id }}/salvar" method="post" class="js-admin-ajax-form bloco-adicionar-item-edicao form-adicionar-item-edicao" id="formAdicionarItemPedido">
+          <input type="hidden" name="cliente_nome" value="{{ pedido.cliente.nome }}">
+          <input type="hidden" name="cliente_telefone" value="{{ pedido.cliente.telefone or '' }}">
+          <input type="hidden" name="cliente_endereco" value="{{ pedido.cliente.endereco or '' }}">
+          {% for item in pedido.itens %}
+          <input type="hidden" name="quantidade_{{ item.id }}" value="{{ item.quantidade }}">
+          {% endfor %}
+          <div class="cabecalho-adicionar-item-edicao">
+            <h3>Adicionar item ao pedido</h3>
+          </div>
+          <div class="grid-adicionar-item-edicao">
+            <label>
+              <span>Sabor</span>
+              <select name="novo_item_nome" required>
+                <option value="">Selecione um sabor</option>
+                {% for sabor in sabores_disponiveis %}
+                <option value="{{ sabor.nome }}">{{ sabor.nome }} — R$ {{ '%.2f'|format(sabor.preco) }} — estoque {{ sabor.estoque }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>
+              <span>Quantidade</span>
+              <input type="number" min="1" name="novo_item_quantidade" value="1" required>
+            </label>
+          </div>
+          <div class="acoes-finais-pedido acoes-adicionar-item-edicao">
+            <button class="btn-admin-topo btn-admin-topo-secundario" type="submit">Adicionar item ao pedido</button>
+            <a href="/admin#centralPedidosSecao" class="btn-admin-voltar js-admin-ajax-link">Voltar para central de pedidos</a>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+  <script src="/static/admin_ajax.js"></script>
+</body>
+</html>

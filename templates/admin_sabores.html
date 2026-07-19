@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciador de sabores</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="pagina-admin pagina-admin-pro">
+  <div data-admin-shell="page">
+    <div class="admin-topo admin-topo-sticky admin-topo-sabores-page">
+      <div class="admin-topo-flutuante admin-topo-flutuante-sabores">
+        <a href="/admin" class="btn-admin-voltar btn-admin-voltar-flutuante js-admin-ajax-link">← Voltar para painel</a>
+        <div class="barra-navegacao-sabores barra-navegacao-sabores-flutuante">
+          <label for="adminSaboresSelect" class="sr-only">Ações dos sabores</label>
+          <div class="acoes-sabores-select-wrap">
+            <label for="adminSaboresSelect" class="sr-only">Selecionar sabor</label>
+            <select id="adminSaboresSelect" data-admin-mobile-nav data-admin-sabores-nav data-admin-sync-scroll="1" class="acoes-sabores-select">
+              <option value="#topoSabores">Ações dos sabores</option>
+              {% for sabor in sabores %}
+              <option value="#sabor-{{ sabor.id }}">{{ sabor.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-wrapper admin-wrapper-pro" id="topoSabores">
+      <div class="admin-header-bloco admin-header-bloco-pro">
+        <div>
+          <h1 class="titulo-admin">🍦 Gerenciador de sabores</h1>
+          <p class="texto-ajuda-admin">Cadastre, ajuste estoque e controle a exibição separada de Italo e Karina sem mexer no restante do painel.</p>
+        </div>
+      </div>
+
+      {% if mensagem %}<div class="alerta alerta-sucesso">{{ mensagem }}</div>{% endif %}
+
+      <section class="admin-box">
+        <div class="admin-box-topo"><h2>Adicionar novo sabor</h2></div>
+        <form class="form-sabor-admin form-sabor-admin-pro js-admin-ajax-form" action="/admin/sabores/adicionar" method="post">
+          <input type="hidden" name="return_to" value="{{ request_path }}">
+          <input type="text" name="nome" placeholder="Nome do sabor" required>
+          <input type="number" step="0.01" name="preco" placeholder="Preço" required>
+          <input type="number" min="0" step="1" name="estoque_italo" placeholder="Estoque Italo" required>
+          <input type="number" min="0" step="1" name="estoque_karina" placeholder="Estoque Karina" required>
+          <input type="text" name="img" placeholder="/static/nome_da_imagem.jpg" required>
+          <button class="btn-admin-filtrar" type="submit">Adicionar sabor</button>
+        </form>
+      </section>
+
+      <section class="lista-itens-admin lista-itens-admin-melhorada lista-itens-admin-sabores">
+        {% for sabor in sabores %}
+        <article id="sabor-{{ sabor.id }}" class="item-admin-card item-admin-card-melhorado sabor-card-admin">
+          <div class="item-admin-card-info">
+            <h4>{{ sabor.nome }}</h4>
+            <p>Preço: R$ {{ '%.2f'|format(sabor.preco) }}</p>
+            <p>Estoque Italo: {{ sabor.estoque_italo }}</p>
+            <p>Estoque Karina: {{ sabor.estoque_karina }}</p>
+            <p>Total: {{ sabor.estoque_italo + sabor.estoque_karina }}</p>
+            <div class="badges-sabor-admin">
+              <span class="badge {{ 'badge-entregue' if sabor.disponivel else 'badge-pendente' }}">{{ 'Exibição geral ligada' if sabor.disponivel else 'Exibição geral desligada' }}</span>
+              <span class="badge {{ 'badge-entregue' if sabor.ativo_italo else 'badge-pendente' }}">Italo {{ 'ativo' if sabor.ativo_italo else 'oculto' }}</span>
+              <span class="badge {{ 'badge-entregue' if sabor.ativo_karina else 'badge-pendente' }}">Karina {{ 'ativa' if sabor.ativo_karina else 'oculta' }}</span>
+            </div>
+          </div>
+
+          <div class="pedido-topo-botoes pedido-topo-botoes-grid pedido-topo-botoes-sabores">
+            <form class="js-admin-ajax-form sabor-estoque-form" action="/admin/sabores/estoque/{{ sabor.id }}" method="post">
+              <input type="hidden" name="return_to" value="{{ request_path }}">
+              <div class="sabor-estoque-inputs">
+                <input type="number" min="0" name="estoque_italo" value="{{ sabor.estoque_italo }}" required>
+                <input type="number" min="0" name="estoque_karina" value="{{ sabor.estoque_karina }}" required>
+              </div>
+              <button class="btn-admin-topo" type="submit">Salvar estoques</button>
+            </form>
+
+            <div class="acoes-sabor-destinatario">
+              <form class="js-admin-ajax-form" action="/admin/sabores/toggle-destinatario/{{ sabor.id }}" method="post">
+                <input type="hidden" name="return_to" value="{{ request_path }}">
+                <input type="hidden" name="destinatario" value="italo">
+                <button class="{{ 'btn-status-entregue' if sabor.ativo_italo else 'btn-status-pendente' }}" type="submit">
+                  {{ 'Ocultar de Italo' if sabor.ativo_italo else 'Mostrar para Italo' }}
+                </button>
+              </form>
+
+              <form class="js-admin-ajax-form" action="/admin/sabores/toggle-destinatario/{{ sabor.id }}" method="post">
+                <input type="hidden" name="return_to" value="{{ request_path }}">
+                <input type="hidden" name="destinatario" value="karina">
+                <button class="{{ 'btn-status-entregue' if sabor.ativo_karina else 'btn-status-pendente' }}" type="submit">
+                  {{ 'Ocultar de Karina' if sabor.ativo_karina else 'Mostrar para Karina' }}
+                </button>
+              </form>
+            </div>
+
+            <form class="js-admin-ajax-form" action="/admin/sabores/toggle/{{ sabor.id }}" method="post">
+              <input type="hidden" name="return_to" value="{{ request_path }}">
+              <button class="btn-status-pendente" type="submit">{{ 'Desativar geral' if sabor.disponivel else 'Ativar geral' }}</button>
+            </form>
+
+            <form class="js-admin-ajax-form" action="/admin/sabores/excluir/{{ sabor.id }}" method="post" onsubmit="return confirm('Deseja excluir este sabor?');">
+              <input type="hidden" name="return_to" value="{{ request_path }}">
+              <button class="btn-excluir-um" type="submit">Excluir</button>
+            </form>
+          </div>
+        </article>
+        {% endfor %}
+      </section>
+    </div>
+  </div>
+  <script src="/static/admin_ajax.js"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dindins da Karina</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Dindins da Karina</h1>
+        <nav>
+            <ul>
+                <li><a href="/">Início</a></li>
+                <li><a href="/carrinho">Carrinho <span id="cart-count"></span></a></li>
+                <li><a href="/admin">Painel</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h2>Nossos Sabores Gourmet</h2>
+            <p style="color: #7f8fa6; margin-top: 0.5rem;">Os melhores dindins da região! Refrescantes e cremosos.</p>
+        </div>
+        
+        <div class="produtos-grid">
+            {% for sabor in sabores %}
+            <div class="produto-card">
+                <img src="{{ url_for('static', filename=sabor.imagem|default('default.jpg')) }}" alt="{{ sabor.nome }}" onerror="this.src='https://via.placeholder.com/250?text=Dindin'">
+                <h3>{{ sabor.nome }}</h3>
+                <p style="color: var(--cor-primaria); font-weight: bold; font-size: 1.2rem; margin-top: 0.5rem;">R$ {{ "%.2f"|format(sabor.preco|float) }}</p>
+                <!-- O botão mantém a sua lógica de JS original -->
+                <button class="btn" onclick="adicionarAoCarrinho({{ sabor.id }})">Adicionar</button>
+            </div>
+            {% else %}
+            <p>Nenhum sabor cadastrado no momento.</p>
+            {% endfor %}
+        </div>
+    </main>
+    <script src="{{ url_for('static', filename='site_ajax.js') }}"></script>
+</body>
+</html>

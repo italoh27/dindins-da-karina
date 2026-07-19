@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exportar Excel</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="pagina-admin pagina-admin-pro">
+  <div data-admin-shell="page">
+    <div class="admin-topo admin-topo-sticky">
+      <div class="admin-topo-acoes">
+        <a href="/admin" class="btn-admin-voltar js-admin-ajax-link">← Voltar para painel</a>
+      </div>
+      <div class="admin-topo-mobile-voltar">
+        <a href="/admin" class="btn-admin-voltar js-admin-ajax-link">← Voltar para painel</a>
+      </div>
+    </div>
+
+    <div class="admin-wrapper admin-wrapper-pro">
+      <div class="admin-header-bloco admin-header-bloco-pro">
+        <div>
+          <h1 class="titulo-admin">📥 Exportar Excel</h1>
+          <p class="texto-ajuda-admin">Baixe uma planilha com todos os pedidos cadastrados no sistema.</p>
+        </div>
+      </div>
+
+      <section class="admin-box admin-export-box">
+        <div class="admin-box-topo"><h2>Planilha de pedidos</h2></div>
+        <p class="texto-ajuda-admin">Total de pedidos prontos para exportação: <strong>{{ total_pedidos }}</strong></p>
+        <div class="acoes-finais-pedido admin-export-acoes">
+          <a href="/admin/exportar_excel/baixar" class="btn-exportar-excel">Baixar arquivo Excel</a>
+          <a href="/admin" class="btn-admin-voltar js-admin-ajax-link">Voltar para o painel</a>
+        </div>
+      </section>
+    </div>
+  </div>
+  <script src="/static/admin_ajax.js"></script>
+</body>
+</html>

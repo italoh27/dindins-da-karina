@@ -1,0 +1,7 @@
+{
+    "loja_aberta": true,
+    "mensagem_loja_fechada": "No momento os pedidos estão pausados. Tente novamente mais tarde.",
+    "infinitepay_link": "",
+    "infinitepay_handle": "",
+    "usar_checkout_api": false
+}

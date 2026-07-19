@@ -1,0 +1,77 @@
+
+/* =========================================================
+   STYLE.CSS - DINDINS DA KARINA (Visual Moderno e Responsivo)
+   ========================================================= */
+:root {
+  --cor-primaria: #ff6b81;
+  --cor-secundaria: #ff4757;
+  --cor-fundo: #f8f9fa;
+  --cor-texto: #2f3542;
+  --cor-branco: #ffffff;
+  --sombra-suave: 0 4px 6px rgba(0,0,0,0.05);
+  --sombra-destaque: 0 10px 15px rgba(0,0,0,0.1);
+  --borda-raio: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+body { background-color: var(--cor-fundo); color: var(--cor-texto); line-height: 1.6; display: flex; flex-direction: column; min-height: 100vh; }
+
+header { background-color: var(--cor-branco); box-shadow: var(--sombra-suave); padding: 1rem 5%; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+
+header h1 { color: var(--cor-primaria); font-size: 1.8rem; font-weight: 700; }
+
+nav ul { list-style: none; display: flex; gap: 20px; }
+
+nav a { text-decoration: none; color: var(--cor-texto); font-weight: 500; transition: color 0.3s; }
+
+nav a:hover { color: var(--cor-primaria); }
+
+main { flex: 1; padding: 2rem 5%; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+.produtos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 2rem; }
+
+.produto-card { background: var(--cor-branco); border-radius: var(--borda-raio); padding: 1.5rem; text-align: center; box-shadow: var(--sombra-suave); transition: transform 0.3s; display: flex; flex-direction: column; justify-content: space-between;}
+
+.produto-card:hover { transform: translateY(-5px); box-shadow: var(--sombra-destaque); }
+
+.produto-card img { width: 100%; border-radius: 8px; margin-bottom: 1rem; object-fit: cover; aspect-ratio: 1/1; }
+
+.btn { display: inline-block; background-color: var(--cor-primaria); color: var(--cor-branco); padding: 0.6rem 1.5rem; border: none; border-radius: 25px; font-weight: bold; cursor: pointer; text-decoration: none; transition: background 0.3s; width: 100%; margin-top: 1rem; text-align: center; }
+
+.btn:hover { background-color: var(--cor-secundaria); }
+
+.btn-secondary { background-color: #7f8fa6; }
+
+.btn-secondary:hover { background-color: #718093; }
+
+.btn-success { background-color: #2ed573; }
+
+.btn-success:hover { background-color: #26de81; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 1rem; background: var(--cor-branco); border-radius: var(--borda-raio); overflow: hidden; box-shadow: var(--sombra-suave); }
+
+th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #eee; }
+
+th { background-color: var(--cor-primaria); color: var(--cor-branco); }
+
+.form-group { margin-bottom: 1rem; text-align: left; }
+
+.form-group label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+
+.form-group input, .form-group select { width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+
+.form-group input:focus { border-color: var(--cor-primaria); }
+
+.card { background: var(--cor-branco); padding: 2rem; border-radius: var(--borda-raio); box-shadow: var(--sombra-suave); margin-top: 2rem; }
+
+/* Adicionado overflow para tabelas ficarem com scroll lateral no celular */
+.table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 768px) { 
+  header { flex-direction: column; text-align: center; gap: 15px; } 
+  nav ul { flex-wrap: wrap; justify-content: center; } 
+  .produtos-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); } 
+  th, td { padding: 0.5rem; font-size: 0.9rem; } 
+  .card { padding: 1rem; }
+}
