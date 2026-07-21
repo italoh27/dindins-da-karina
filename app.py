@@ -4,7 +4,10 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from decimal import Decimal, ROUND_HALF_UP
 from io import BytesIO
+<<<<<<< HEAD
 from openpyxl import Workbook
+=======
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)
 from psycopg.rows import dict_row
 import json
 import os
@@ -13,6 +16,11 @@ import tempfile
 import requests
 import psycopg
 from psycopg_pool import ConnectionPool
+<<<<<<< HEAD
+=======
+from threading import Lock
+from time import monotonic
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "troque-esta-chave-em-producao")
@@ -22,6 +30,13 @@ ARQUIVO_SABORES = os.path.join(BASE_DIR, "sabores.json")
 ARQUIVO_PEDIDOS = os.path.join(BASE_DIR, "pedidos.json")
 ARQUIVO_CONFIG = os.path.join(BASE_DIR, "config_loja.json")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+<<<<<<< HEAD
+=======
+DB_POOL_MIN_SIZE = max(0, int(os.environ.get("DB_POOL_MIN_SIZE", "1")))
+DB_POOL_MAX_SIZE = max(DB_POOL_MIN_SIZE or 1, int(os.environ.get("DB_POOL_MAX_SIZE", "10")))
+DB_POOL_TIMEOUT = max(1, int(os.environ.get("DB_POOL_TIMEOUT", "10")))
+CONFIG_CACHE_TTL = max(0, int(os.environ.get("CONFIG_CACHE_TTL", "30")))
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)
 SENHA_ADMIN = os.environ.get("ADMIN_PASSWORD", "Zaraba@27")
 
 NUMERO_ITALO = os.environ.get("NUMERO_ITALO", "5581999616265")
@@ -34,6 +49,13 @@ INFINITEPAY_HANDLE = os.environ.get("INFINITEPAY_HANDLE", "italo-henrique-27").s
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
 MIGRATION_MARKER = os.path.join(BASE_DIR, ".json_to_db_migrated")
 
+<<<<<<< HEAD
+=======
+DB_POOL = None
+_config_cache = {"value": None, "expires_at": 0.0}
+_config_cache_lock = Lock()
+
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)
 
 APP_TIMEZONE = ZoneInfo("America/Recife")
 DIAS_SEMANA_PT = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
@@ -267,7 +289,13 @@ def db_enabled():
 def get_conn():
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL não configurada.")
+<<<<<<< HEAD
     return psycopg.connect(DATABASE_URL, row_factory=dict_row)
+=======
+    if DB_POOL is not None:
+        return DB_POOL.connection(timeout=DB_POOL_TIMEOUT)
+    return psycopg.connect(DATABASE_URL, row_factory=dict_row, connect_timeout=DB_POOL_TIMEOUT)
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)
 
 
 def ensure_database():
@@ -352,6 +380,17 @@ def ensure_database():
                 SET estoque_italo = CASE WHEN estoque_italo = 0 AND estoque_karina = 0 AND estoque > 0 THEN estoque ELSE estoque_italo END,
                     ativo_italo = CASE WHEN ativo_italo IS NULL THEN COALESCE(disponivel, TRUE) ELSE ativo_italo END,
                     ativo_karina = CASE WHEN ativo_karina IS NULL THEN COALESCE(disponivel, TRUE) ELSE ativo_karina END;
+<<<<<<< HEAD
+=======
+
+                CREATE INDEX IF NOT EXISTS idx_pedido_itens_pedido_id ON pedido_itens (pedido_id);
+                CREATE INDEX IF NOT EXISTS idx_pedidos_data_filtro ON pedidos (data_filtro DESC);
+                CREATE INDEX IF NOT EXISTS idx_pedidos_destinatario_data ON pedidos (destinatario, data_filtro DESC);
+                CREATE INDEX IF NOT EXISTS idx_pedidos_pagamento_data ON pedidos (pagamento_status, data_filtro DESC);
+                CREATE INDEX IF NOT EXISTS idx_pedidos_visiveis_id ON pedidos (id DESC) WHERE oculto = FALSE;
+                CREATE INDEX IF NOT EXISTS idx_pagamentos_log_pedido_id ON pagamentos_log (pedido_id);
+                CREATE INDEX IF NOT EXISTS idx_pagamentos_log_payment_id ON pagamentos_log (payment_id);
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)
                 """
             )
         conn.commit()
@@ -369,6 +408,13 @@ def set_config_value(key, value):
                 (key, json.dumps(value, ensure_ascii=False)),
             )
         conn.commit()
+<<<<<<< HEAD
+=======
+    if key == "config_loja":
+        with _config_cache_lock:
+            _config_cache["value"] = dict(value) if isinstance(value, dict) else None
+            _config_cache["expires_at"] = monotonic() + CONFIG_CACHE_TTL
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)
 
 
 def get_config_value(key, default):
@@ -386,6 +432,14 @@ def ler_config():
     if not db_enabled():
         return arquivo_base
 
+<<<<<<< HEAD
+=======
+    agora = monotonic()
+    with _config_cache_lock:
+        if _config_cache["value"] is not None and _config_cache["expires_at"] > agora:
+            return dict(_config_cache["value"])
+
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)
     base = configuracao_padrao()
     config_db = get_config_value("config_loja", None)
 
@@ -398,6 +452,13 @@ def ler_config():
 
     base.update(config_db)
 
+<<<<<<< HEAD
+=======
+    with _config_cache_lock:
+        _config_cache["value"] = dict(base)
+        _config_cache["expires_at"] = agora + CONFIG_CACHE_TTL
+
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)
     # Mantém o arquivo local espelhado como backup simples,
     # sem depender dele como fonte principal quando há banco.
     try:
@@ -671,6 +732,11 @@ def ler_pedidos():
 
 
 def buscar_pedido(pedido_id):
+<<<<<<< HEAD
+=======
+    if db_enabled():
+        return obter_pedido_db(pedido_id)
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)
     for pedido in ler_pedidos():
         if int(pedido.get("id")) == int(pedido_id):
             return pedido
@@ -1268,6 +1334,14 @@ def add_cache_headers(response):
 # =========================
 # ROTAS PÚBLICAS
 # =========================
+<<<<<<< HEAD
+=======
+@app.route("/healthz")
+def healthz():
+    return jsonify({"status": "ok"})
+
+
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)
 @app.route("/")
 def home():
     carrinho = session.get("carrinho", [])
@@ -2320,6 +2394,38 @@ def admin_notificacoes():
         ultimo_visto = int(request.args.get("ultimo_id", 0) or 0)
     except ValueError:
         ultimo_visto = 0
+<<<<<<< HEAD
+=======
+    if db_enabled():
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT id, cliente_nome, total, nome_vendedor, data
+                    FROM pedidos
+                    WHERE id > %s AND oculto = FALSE
+                    ORDER BY id
+                    LIMIT 100
+                    """,
+                    (ultimo_visto,),
+                )
+                rows = cur.fetchall()
+        novos = [
+            {
+                "id": int(row["id"]),
+                "cliente": row["cliente_nome"],
+                "total": float(row["total"] or 0),
+                "vendedor": row["nome_vendedor"],
+                "data": row["data"],
+            }
+            for row in rows
+        ]
+        return jsonify({
+            "novos": novos,
+            "ultimo_id": max([ultimo_visto] + [item["id"] for item in novos]),
+        })
+
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)
     novos = []
     for pedido in ler_pedidos():
         pedido_id = int(pedido.get("id", 0) or 0)
@@ -2623,10 +2729,26 @@ def admin_excluir_sabor(sabor_id):
 
 
 if db_enabled():
+<<<<<<< HEAD
+=======
+    DB_POOL = ConnectionPool(
+        conninfo=DATABASE_URL,
+        min_size=DB_POOL_MIN_SIZE,
+        max_size=DB_POOL_MAX_SIZE,
+        timeout=DB_POOL_TIMEOUT,
+        kwargs={"row_factory": dict_row, "connect_timeout": DB_POOL_TIMEOUT},
+        check=ConnectionPool.check_connection,
+        open=True,
+    )
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)
     ensure_database()
     migrate_json_to_db_once()
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
+<<<<<<< HEAD
     app.run(host="0.0.0.0", port=port)
+=======
+    app.run(host="0.0.0.0", port=port)
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)

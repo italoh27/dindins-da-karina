@@ -57,3 +57,14 @@ CREATE TABLE IF NOT EXISTS pagamentos_log (
     raw_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+<<<<<<< HEAD
+=======
+
+CREATE INDEX IF NOT EXISTS idx_pedido_itens_pedido_id ON pedido_itens (pedido_id);
+CREATE INDEX IF NOT EXISTS idx_pedidos_data_filtro ON pedidos (data_filtro DESC);
+CREATE INDEX IF NOT EXISTS idx_pedidos_destinatario_data ON pedidos (destinatario, data_filtro DESC);
+CREATE INDEX IF NOT EXISTS idx_pedidos_pagamento_data ON pedidos (pagamento_status, data_filtro DESC);
+CREATE INDEX IF NOT EXISTS idx_pedidos_visiveis_id ON pedidos (id DESC) WHERE oculto = FALSE;
+CREATE INDEX IF NOT EXISTS idx_pagamentos_log_pedido_id ON pagamentos_log (pedido_id);
+CREATE INDEX IF NOT EXISTS idx_pagamentos_log_payment_id ON pagamentos_log (payment_id);
+>>>>>>> e051b52 (Otimiza desempenho e conexoes com PostgreSQL)
