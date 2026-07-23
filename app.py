@@ -615,9 +615,9 @@ def enrich_sabor_destinatario(sabor, destinatario, carrinho=None):
             for c in carrinho
             if str(c.get("nome", "")).strip().lower() == str(item.get("nome", "")).strip().lower()
         )
-    # Itens no carrinho ainda não são pedidos confirmados. O estoque público só
-    # muda depois de reservar_estoque(), durante a finalização do pedido.
-    item["estoque_exibicao"] = estoque_base
+    # Desconto apenas visual e restrito à sessão atual. O banco e as telas de
+    # outros clientes só mudam em reservar_estoque(), ao finalizar o pedido.
+    item["estoque_exibicao"] = max(0, estoque_base - reservado_no_carrinho)
     item["ativo_exibicao"] = sabor_ativo_para_destinatario(item, destinatario)
     item["estoque_total"] = max(0, int(item.get("estoque_italo", item.get("estoque", 0)) or 0)) + max(0, int(item.get("estoque_karina", 0) or 0))
     item["quantidade_reservada_carrinho"] = reservado_no_carrinho
