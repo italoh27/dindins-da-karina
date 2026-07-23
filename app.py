@@ -383,7 +383,12 @@ def get_conn():
         raise RuntimeError("DATABASE_URL não configurada.")
     if DB_POOL is not None:
         return DB_POOL.connection(timeout=DB_POOL_TIMEOUT)
-    return psycopg.connect(DATABASE_URL, row_factory=dict_row, connect_timeout=DB_POOL_TIMEOUT)
+    return psycopg.connect(
+        DATABASE_URL,
+        row_factory=dict_row,
+        connect_timeout=DB_POOL_TIMEOUT,
+        prepare_threshold=None,
+    )
 
 
 def ensure_database():
@@ -2938,7 +2943,13 @@ if db_enabled():
         min_size=DB_POOL_MIN_SIZE,
         max_size=DB_POOL_MAX_SIZE,
         timeout=DB_POOL_TIMEOUT,
-        kwargs={"row_factory": dict_row, "connect_timeout": DB_POOL_TIMEOUT},
+        # Neon/PgBouncer pode trocar a conexão física entre transações. Desativar
+        # prepared statements automáticos evita colisões como "_pg3_0 already exists".
+        kwargs={
+            "row_factory": dict_row,
+            "connect_timeout": DB_POOL_TIMEOUT,
+            "prepare_threshold": None,
+        },
         check=ConnectionPool.check_connection,
         open=True,
     )
