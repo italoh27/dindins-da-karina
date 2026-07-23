@@ -233,6 +233,25 @@ def normalizar_telefone_br(telefone):
     return f"+55{numeros}"
 
 
+def montar_endereco_entrega(form):
+    cep = "".join(ch for ch in str(form.get("cep", "")) if ch.isdigit())
+    rua = str(form.get("rua", "") or "").strip()
+    numero = str(form.get("numero", "") or "").strip()
+    bairro = str(form.get("bairro", "") or "").strip()
+    cidade = str(form.get("cidade", "") or "").strip()
+    uf = str(form.get("uf", "") or "").strip().upper()[:2]
+    complemento = str(form.get("complemento", "") or "").strip()
+    referencia = str(form.get("ponto_referencia", "") or "").strip()
+    if len(cep) != 8 or not all((rua, numero, bairro, cidade, uf)):
+        raise ValueError("Preencha CEP, rua, número, bairro, cidade e UF para a entrega.")
+    partes = [f"{rua}, nº {numero}", bairro, f"{cidade}/{uf}", f"CEP {cep[:5]}-{cep[5:]}"]
+    if complemento:
+        partes.append(f"Complemento: {complemento}")
+    if referencia:
+        partes.append(f"Referência: {referencia}")
+    return " - ".join(partes)
+
+
 def cliente_logado():
     return session.get("cliente_id") is not None
 
@@ -1817,7 +1836,11 @@ def finalizar_pedido():
 
     nome = session.get("cliente_nome", "") if config.get("exigir_cadastro", False) else request.form.get("nome", "").strip()
     telefone = session.get("cliente_telefone", "") if config.get("exigir_cadastro", False) else request.form.get("telefone", "").strip()
-    endereco = request.form.get("endereco", "").strip()
+    try:
+        endereco = montar_endereco_entrega(request.form)
+    except ValueError as exc:
+        set_mensagem("mensagem_carrinho", str(exc))
+        return redirect("/carrinho")
     destinatario = normalizar_destinatario(request.form.get("destinatario", session.get("destinatario_atual", "italo")))
     session["destinatario_atual"] = destinatario
     carrinho = session.get("carrinho", [])

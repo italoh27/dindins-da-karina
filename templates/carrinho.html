@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carrinho - Geladinhos Gourmet</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260723-fluxo-final">
+  <link rel="stylesheet" href="/static/style.css?v=20260723-endereco">
 </head>
 <body class="pagina-carrinho" data-ajax-shell="public" data-cart-count="{{ qtd_itens }}">
     <div class="pagina-carrinho-topo">
@@ -97,7 +97,17 @@
 
                 <input type="text" name="nome" placeholder="Seu nome" value="{{ cliente_nome }}" {% if exigir_cadastro %}readonly{% endif %} required>
                 <input type="text" name="telefone" placeholder="Seu telefone" value="{{ cliente_telefone }}" {% if exigir_cadastro %}readonly{% endif %}>
-                <input type="text" name="endereco" placeholder="Seu endereço">
+                <fieldset class="endereco-entrega-grid">
+                    <legend>Endereço para entrega</legend>
+                    <label class="campo-cep"><span>CEP</span><div class="cep-input-wrap"><input type="text" name="cep" id="cepEntrega" inputmode="numeric" maxlength="9" placeholder="00000-000" autocomplete="postal-code" required><span id="cepStatus" aria-live="polite"></span></div></label>
+                    <label class="campo-rua"><span>Rua</span><input type="text" name="rua" id="ruaEntrega" autocomplete="address-line1" required></label>
+                    <label><span>Número</span><input type="text" name="numero" id="numeroEntrega" inputmode="numeric" required></label>
+                    <label><span>Bairro</span><input type="text" name="bairro" id="bairroEntrega" required></label>
+                    <label class="campo-cidade"><span>Cidade</span><input type="text" name="cidade" id="cidadeEntrega" autocomplete="address-level2" required></label>
+                    <label><span>UF</span><input type="text" name="uf" id="ufEntrega" maxlength="2" autocomplete="address-level1" required></label>
+                    <label class="campo-completo"><span>Complemento <small>(opcional)</small></span><input type="text" name="complemento" autocomplete="address-line2" placeholder="Apartamento, bloco, casa..."></label>
+                    <label class="campo-completo"><span>Ponto de referência <small>(opcional)</small></span><input type="text" name="ponto_referencia" placeholder="Próximo a mercado, igreja..."></label>
+                </fieldset>
 
                 <div class="acoes-carrinho acoes-carrinho-duplas">
                     {% if exigir_pagamento_online %}<p class="aviso-pagamento-obrigatorio">O pagamento online será aberto ao finalizar.</p>{% endif %}
@@ -120,6 +130,34 @@
     <script>
       (() => {
         const form = document.getElementById('finalizarPedidoForm');
+        const cepInput = document.getElementById('cepEntrega');
+        const cepStatus = document.getElementById('cepStatus');
+        const preencherCep = async () => {
+          const cep = (cepInput?.value || '').replace(/\D/g, '');
+          if (cep.length !== 8) return;
+          cepStatus.textContent = 'Buscando...';
+          try {
+            const resposta = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const dados = await resposta.json();
+            if (!resposta.ok || dados.erro) throw new Error('CEP não encontrado');
+            document.getElementById('ruaEntrega').value = dados.logradouro || '';
+            document.getElementById('bairroEntrega').value = dados.bairro || '';
+            document.getElementById('cidadeEntrega').value = dados.localidade || '';
+            document.getElementById('ufEntrega').value = dados.uf || '';
+            cepStatus.textContent = 'CEP encontrado';
+            document.getElementById(dados.logradouro ? 'numeroEntrega' : 'ruaEntrega').focus();
+          } catch (erro) {
+            cepStatus.textContent = 'Não encontrado. Preencha manualmente.';
+          }
+        };
+        if (cepInput) {
+          cepInput.addEventListener('input', () => {
+            const numeros = cepInput.value.replace(/\D/g, '').slice(0, 8);
+            cepInput.value = numeros.length > 5 ? `${numeros.slice(0, 5)}-${numeros.slice(5)}` : numeros;
+            if (numeros.length === 8) preencherCep();
+          });
+          cepInput.addEventListener('blur', preencherCep);
+        }
         if (form && form.dataset.prepararWhatsapp === '1') {
           form.addEventListener('submit', () => {
             try { window.open('about:blank', 'pedidoWhatsapp'); } catch (e) {}
