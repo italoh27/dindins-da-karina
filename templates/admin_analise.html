@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Análise de dados</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=20260722-profissional">
 </head>
 <body class="admin-page admin-analise-page">
   <div data-ajax-shell="admin">
@@ -52,11 +52,26 @@
           </select>
         </label>
         <label class="checkbox-analise"><input type="checkbox" name="ocultos" value="1" {% if incluir_ocultos %}checked{% endif %}> <span>Incluir ocultos</span></label>
+        <label class="checkbox-analise"><input type="checkbox" name="clientes_cadastrados" value="1" {% if somente_cadastrados %}checked{% endif %}> <span>Somente clientes cadastrados</span></label>
         <div class="filtro-acoes-analise">
           <button class="btn-admin-filtrar" type="submit">Aplicar filtros</button>
           <a href="/admin/analise?periodo=todos" class="btn-admin-topo btn-admin-topo-secundario js-admin-ajax-link">Limpar datas</a>
         </div>
       </form>
+    </section>
+
+    <section class="admin-box clientes-cadastrados-box">
+      <div class="admin-box-topo"><div><span class="eyebrow-premium">Relacionamento</span><h2>Clientes cadastrados</h2></div><span class="badge badge-pago">{{ clientes_cadastrados|length }} cliente(s)</span></div>
+      <div class="tabela-responsiva">
+        <table class="tabela-analise">
+          <thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Cadastro</th></tr></thead>
+          <tbody>
+            {% for cliente in clientes_cadastrados %}
+            <tr><td><strong>{{ cliente.nome }}</strong></td><td>{{ cliente.telefone }}</td><td>{{ cliente.email or 'Não informado' }}</td><td>{{ cliente.created_at.strftime('%d/%m/%Y') if cliente.created_at and cliente.created_at.strftime is defined else cliente.created_at }}</td></tr>
+            {% else %}<tr><td colspan="4">Nenhum cliente cadastrado ainda.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section class="admin-cards admin-cards-compactos">

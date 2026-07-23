@@ -4,16 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geladinhos Gourmet</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=20260722-profissional">
 </head>
 <body class="pagina-loja" data-ajax-shell="public" data-cart-count="{{ qtd_itens }}">
     <header class="topo-loja-pro topo-loja-pro-clean">
         <div class="topo-acoes topo-acoes-loja topo-minimal-loja">
+            <a class="btn-cliente-topo" href="/cliente">Meus pedidos</a>
             <a class="btn-admin-topo" href="/admin">📋 Admin</a>
             <a class="btn-carrinho-topo js-ajax-link" href="/carrinho" data-cart-count-label="{{ qtd_itens }}">🛒 Carrinho ({{ qtd_itens }})</a>
         </div>
 
-        <h1 class="marca-loja-topo marca-loja-topo-principal">Geladinhos Gourmet</h1>
+        <div class="marca-wrap-premium">
+            <span class="marca-kicker">Feitos com carinho, sabor de verdade</span>
+            <h1 class="marca-loja-topo marca-loja-topo-principal">Geladinhos Gourmet</h1>
+        </div>
     </header>
 
     {% if mensagem %}

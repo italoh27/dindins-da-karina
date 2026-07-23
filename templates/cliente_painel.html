@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meus pedidos · Geladinhos Gourmet</title>
+  <link rel="stylesheet" href="/static/style.css?v=20260722-profissional">
+</head>
+<body class="pagina-cliente pagina-premium-bg">
+  <main class="cliente-shell">
+    <nav class="cliente-nav"><a href="/" class="btn-voltar-premium">← Loja</a><a href="/cliente/sair" class="btn-voltar-premium">Sair</a></nav>
+    <header class="cliente-hero cliente-hero-painel"><span class="eyebrow-premium">Olá, {{ cliente_nome }}</span><h1>Seus pedidos</h1><p>Acompanhe o andamento em tempo real.</p></header>
+    {% if mensagem %}<div class="alerta alerta-sucesso">{{ mensagem }}</div>{% endif %}
+    <section class="pedidos-cliente-grid">
+      {% for pedido in pedidos %}
+      <article class="glass-card pedido-cliente-card">
+        <div class="pedido-cliente-topo"><div><span class="eyebrow-premium">Pedido #{{ pedido.id }}</span><h2>R$ {{ '%.2f'|format(pedido.total) }}</h2></div><span class="status-cliente status-{{ pedido.status }}">{{ pedido.status_legivel }}</span></div>
+        {% set etapas = ['pendente', 'em_preparacao', 'saiu_entrega', 'entregue'] %}
+        {% set etapa_atual = etapas.index(pedido.status) if pedido.status in etapas else -1 %}
+        <div class="timeline-pedido" aria-label="Andamento do pedido">
+          {% for etapa, titulo in [('pendente','Recebido'),('em_preparacao','Preparação'),('saiu_entrega','Saiu para entrega'),('entregue','Entregue')] %}
+          <div class="timeline-etapa {% if loop.index0 <= etapa_atual %}ativa{% endif %}"><span>{{ loop.index }}</span><small>{{ titulo }}</small></div>
+          {% endfor %}
+        </div>
+        <div class="pedido-cliente-itens">{% for item in pedido.itens %}<p><strong>{{ item.quantidade }}×</strong> {{ item.nome }} <span>R$ {{ '%.2f'|format(item.subtotal) }}</span></p>{% endfor %}</div>
+        <footer><span>{{ pedido.data }}</span><strong>{{ pedido.pagamento_status_legivel }}</strong></footer>
+      </article>
+      {% else %}
+      <div class="glass-card cliente-vazio"><h2>Nenhum pedido encontrado</h2><p>Use no pedido o mesmo telefone informado no cadastro.</p><a href="/" class="btn-vibrante">Fazer meu pedido</a></div>
+      {% endfor %}
+    </section>
+  </main>
+</body>
+</html>
