@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260722-profissional">
+  <link rel="stylesheet" href="/static/style.css?v=20260723-controles">
 </head>
 <body class="pagina-admin pagina-admin-pro">
     <div data-admin-shell="page">
@@ -245,6 +245,21 @@
                             <span>Ativar checkout InfinitePay</span>
                             <input type="checkbox" name="infinitepay_ativo" {% if config.infinitepay_ativo %}checked{% endif %}>
                         </label>
+                        <label class="check-admin check-admin-pro">
+                            <span>Exigir cadastro para fazer pedidos</span>
+                            <input type="checkbox" name="exigir_cadastro" {% if config.exigir_cadastro %}checked{% endif %}>
+                        </label>
+                        <label class="check-admin check-admin-pro">
+                            <span>Exigir pagamento online ao finalizar</span>
+                            <input type="checkbox" name="exigir_pagamento_online" {% if config.exigir_pagamento_online %}checked{% endif %}>
+                        </label>
+                        <div class="config-entrega-grid">
+                            <label class="check-admin check-admin-pro">
+                                <span>Entrega grátis</span>
+                                <input type="checkbox" name="entrega_gratis" {% if config.entrega_gratis %}checked{% endif %}>
+                            </label>
+                            <label class="campo-taxa-entrega"><span>Valor da entrega (R$)</span><input type="number" name="taxa_entrega" min="0" step="0.01" value="{{ '%.2f'|format(config.taxa_entrega or 0) }}"></label>
+                        </div>
                         <div class="bloqueios-responsavel-grid">
                             <label class="check-admin check-admin-pro check-bloqueio-destinatario">
                                 <span>Bloquear pedidos do Italo</span>

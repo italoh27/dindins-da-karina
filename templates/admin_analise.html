@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Análise de dados</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260722-profissional">
+  <link rel="stylesheet" href="/static/style.css?v=20260723-controles">
 </head>
 <body class="admin-page admin-analise-page">
   <div data-ajax-shell="admin">
@@ -64,11 +64,11 @@
       <div class="admin-box-topo"><div><span class="eyebrow-premium">Relacionamento</span><h2>Clientes cadastrados</h2></div><span class="badge badge-pago">{{ clientes_cadastrados|length }} cliente(s)</span></div>
       <div class="tabela-responsiva">
         <table class="tabela-analise">
-          <thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Cadastro</th></tr></thead>
+          <thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Cadastro</th><th>Ação</th></tr></thead>
           <tbody>
             {% for cliente in clientes_cadastrados %}
-            <tr><td><strong>{{ cliente.nome }}</strong></td><td>{{ cliente.telefone }}</td><td>{{ cliente.email or 'Não informado' }}</td><td>{{ cliente.created_at.strftime('%d/%m/%Y') if cliente.created_at and cliente.created_at.strftime is defined else cliente.created_at }}</td></tr>
-            {% else %}<tr><td colspan="4">Nenhum cliente cadastrado ainda.</td></tr>{% endfor %}
+            <tr><td><strong>{{ cliente.nome }}</strong></td><td>{{ cliente.telefone }}</td><td>{{ cliente.email or 'Não informado' }}</td><td>{{ cliente.created_at.strftime('%d/%m/%Y') if cliente.created_at and cliente.created_at.strftime is defined else cliente.created_at }}</td><td><form class="js-admin-ajax-form" method="post" action="/admin/clientes/{{ cliente.id }}/excluir" onsubmit="return confirm('Excluir o cadastro de {{ cliente.nome }}? Os pedidos serão preservados.');"><input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-excluir-um" type="submit">Excluir cliente</button></form></td></tr>
+            {% else %}<tr><td colspan="5">Nenhum cliente cadastrado ainda.</td></tr>{% endfor %}
           </tbody>
         </table>
       </div>

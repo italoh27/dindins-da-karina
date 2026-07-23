@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pedido Criado</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260722-profissional">
+  <link rel="stylesheet" href="/static/style.css?v=20260723-controles">
 </head>
 <body class="pagina-carrinho" data-ajax-shell="public">
     <div class="carrinho-wrapper pedido-final-wrapper">
@@ -27,6 +27,7 @@
                 {% for item in pedido.itens %}
                 <p>{{ item.nome }} — {{ item.quantidade }} x R$ {{ "%.2f"|format(item.preco_unitario) }}</p>
                 {% endfor %}
+                <p><strong>Entrega:</strong> {% if pedido.taxa_entrega > 0 %}R$ {{ "%.2f"|format(pedido.taxa_entrega) }}{% else %}Grátis{% endif %}</p>
             </div>
 
             <div class="acoes-finais-pedido acoes-finais-pedido-pro">

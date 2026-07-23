@@ -89,6 +89,10 @@ def configuracao_padrao():
         "infinitepay_ativo": True,
         "bloquear_italo": False,
         "bloquear_karina": False,
+        "exigir_cadastro": False,
+        "exigir_pagamento_online": False,
+        "entrega_gratis": True,
+        "taxa_entrega": 0.0,
     }
 
 
@@ -233,6 +237,20 @@ def cliente_logado():
     return session.get("cliente_id") is not None
 
 
+def taxa_entrega_config(config=None):
+    config = config or ler_config()
+    if config.get("entrega_gratis", True):
+        return money(0)
+    return money(config.get("taxa_entrega", 0))
+
+
+def total_carrinho_com_entrega(carrinho, config=None):
+    if not carrinho:
+        return money(0)
+    produtos = sum(money(item.get("subtotal", 0)) for item in carrinho)
+    return money(produtos + taxa_entrega_config(config))
+
+
 def listar_clientes():
     if not db_enabled():
         return ler_json(ARQUIVO_CLIENTES, [])
@@ -240,6 +258,23 @@ def listar_clientes():
         with conn.cursor() as cur:
             cur.execute("SELECT id, nome, telefone, email, created_at FROM clientes ORDER BY created_at DESC")
             return [dict(row) for row in cur.fetchall()]
+
+
+def excluir_cliente_cadastrado(cliente_id):
+    cliente_id = int(cliente_id)
+    if not db_enabled():
+        clientes = ler_json(ARQUIVO_CLIENTES, [])
+        restantes = [c for c in clientes if int(c.get("id", 0)) != cliente_id]
+        if len(restantes) == len(clientes):
+            return False
+        salvar_json(ARQUIVO_CLIENTES, restantes)
+        return True
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM clientes WHERE id = %s", (cliente_id,))
+            excluido = cur.rowcount > 0
+        conn.commit()
+    return excluido
 
 
 def buscar_cliente_por_telefone(telefone):
@@ -385,6 +420,7 @@ def ensure_database():
                     cliente_telefone VARCHAR(40) NOT NULL DEFAULT '',
                     cliente_endereco TEXT NOT NULL DEFAULT '',
                     total NUMERIC(10,2) NOT NULL DEFAULT 0,
+                    taxa_entrega NUMERIC(10,2) NOT NULL DEFAULT 0,
                     status VARCHAR(40) NOT NULL DEFAULT 'pendente',
                     pagamento_status VARCHAR(40) NOT NULL DEFAULT 'aguardando_pagamento',
                     destinatario VARCHAR(20) NOT NULL DEFAULT 'italo',
@@ -435,6 +471,7 @@ def ensure_database():
 
                 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS oculto BOOLEAN NOT NULL DEFAULT FALSE;
                 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS ocultado_em TIMESTAMP NULL;
+                ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS taxa_entrega NUMERIC(10,2) NOT NULL DEFAULT 0;
                 ALTER TABLE sabores ADD COLUMN IF NOT EXISTS estoque_italo INTEGER NOT NULL DEFAULT 0;
                 ALTER TABLE sabores ADD COLUMN IF NOT EXISTS estoque_karina INTEGER NOT NULL DEFAULT 0;
                 ALTER TABLE sabores ADD COLUMN IF NOT EXISTS ativo_italo BOOLEAN NOT NULL DEFAULT TRUE;
@@ -717,6 +754,7 @@ def row_to_pedido(row, itens):
         },
         "itens": itens,
         "total": float(row["total"]),
+        "taxa_entrega": float(row.get("taxa_entrega", 0) or 0),
         "status": row["status"],
         "pagamento_status": row["pagamento_status"],
         "destinatario": row["destinatario"],
@@ -916,7 +954,7 @@ def atualizar_pedido_edicao_db(pedido_id, cliente_nome, cliente_telefone, client
         pedido_encontrado["cliente"]["telefone"] = (cliente_telefone or "").strip()
         pedido_encontrado["cliente"]["endereco"] = (cliente_endereco or "").strip()
         pedido_encontrado["itens"] = novos_itens
-        pedido_encontrado["total"] = round(sum(float(i.get("subtotal", 0) or 0) for i in novos_itens), 2)
+        pedido_encontrado["total"] = round(sum(float(i.get("subtotal", 0) or 0) for i in novos_itens) + float(pedido_encontrado.get("taxa_entrega", 0) or 0), 2)
         if not novos_itens:
             pedido_encontrado["status"] = "cancelado"
             if pedido_encontrado.get("pagamento_status") != "pago":
@@ -934,7 +972,7 @@ def atualizar_pedido_edicao_db(pedido_id, cliente_nome, cliente_telefone, client
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT id, destinatario, pagamento_status, status
+                SELECT id, destinatario, pagamento_status, status, taxa_entrega
                 FROM pedidos
                 WHERE id = %s
                 FOR UPDATE
@@ -1038,7 +1076,7 @@ def atualizar_pedido_edicao_db(pedido_id, cliente_nome, cliente_telefone, client
                 (pedido_id,),
             )
             resumo = cur.fetchone()
-            total_restante = money(resumo["total_restante"])
+            total_restante = money(resumo["total_restante"]) + money(pedido_row.get("taxa_entrega", 0))
             itens_restantes = int(resumo["itens_restantes"] or 0)
 
             status_novo = 'cancelado' if itens_restantes <= 0 else ('pendente' if pedido_row['status'] == 'cancelado' else pedido_row['status'])
@@ -1073,12 +1111,12 @@ def criar_pedido_db(pedido):
                 """
                 INSERT INTO pedidos (
                     id, data, data_filtro, cliente_nome, cliente_telefone, cliente_endereco,
-                    total, status, pagamento_status, destinatario, nome_vendedor,
+                    total, taxa_entrega, status, pagamento_status, destinatario, nome_vendedor,
                     pagamento_link, receipt_url, transaction_nsu, invoice_slug, capture_method,
                     preference_id, payment_id, payment_method, payment_detail, estoque_devolvido
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s
                 )
@@ -1091,6 +1129,7 @@ def criar_pedido_db(pedido):
                     pedido["cliente"].get("telefone", ""),
                     pedido["cliente"].get("endereco", ""),
                     money(pedido["total"]),
+                    money(pedido.get("taxa_entrega", 0)),
                     pedido["status"],
                     pedido["pagamento_status"],
                     pedido["destinatario"],
@@ -1248,6 +1287,7 @@ def migrate_json_to_db_once():
                 },
                 "itens": itens,
                 "total": float(pedido.get("total", 0) or 0),
+                "taxa_entrega": float(pedido.get("taxa_entrega", 0) or 0),
                 "status": str(pedido.get("status", "pendente")),
                 "pagamento_status": str(pedido.get("pagamento_status", "aguardando_pagamento")),
                 "destinatario": normalizar_destinatario(pedido.get("destinatario", "italo")),
@@ -1300,6 +1340,12 @@ def criar_checkout_infinitepay(pedido):
         "redirect_url": f"{obter_base_url()}{url_for('retorno_pagamento')}",
         "webhook_url": f"{obter_base_url()}{url_for('webhook_infinitepay')}",
     }
+    if money(pedido.get("taxa_entrega", 0)) > 0:
+        payload["items"].append({
+            "quantity": 1,
+            "price": int(round(float(pedido["taxa_entrega"]) * 100)),
+            "description": "Taxa de entrega",
+        })
 
     telefone = normalizar_telefone_br(pedido["cliente"].get("telefone", ""))
     nome = str(pedido["cliente"].get("nome", "")).strip()
@@ -1562,9 +1608,11 @@ def pedido():
 @app.route("/carrinho")
 def carrinho():
     carrinho = session.get("carrinho", [])
-    total = sum(float(item.get("subtotal", 0) or 0) for item in carrinho)
-    qtd_itens = contar_itens_carrinho(carrinho)
     config = ler_config()
+    total_produtos = sum(float(item.get("subtotal", 0) or 0) for item in carrinho)
+    taxa_entrega = float(taxa_entrega_config(config))
+    total = float(total_carrinho_com_entrega(carrinho, config))
+    qtd_itens = contar_itens_carrinho(carrinho)
     destinatario_sessao = normalizar_destinatario(session.get("destinatario_atual", "italo"))
     destinatario_atual = ajustar_destinatario_disponivel(destinatario_sessao, config)
     if destinatario_atual != destinatario_sessao:
@@ -1584,6 +1632,8 @@ def carrinho():
         "carrinho.html",
         carrinho=carrinho_view,
         total=total,
+        total_produtos=total_produtos,
+        taxa_entrega=taxa_entrega,
         qtd_itens=qtd_itens,
         chave_pix=CHAVE_PIX,
         nome_pix=NOME_PIX,
@@ -1598,6 +1648,11 @@ def carrinho():
         bloquear_italo=pedidos_bloqueados_para(config, "italo"),
         bloquear_karina=pedidos_bloqueados_para(config, "karina"),
         mensagem_bloqueio_destinatario=mensagem_bloqueio_destinatario(destinatario_atual) if destinatario_bloqueado else "",
+        exigir_cadastro=config.get("exigir_cadastro", False),
+        exigir_pagamento_online=config.get("exigir_pagamento_online", False),
+        cliente_logado=cliente_logado(),
+        cliente_nome=session.get("cliente_nome", ""),
+        cliente_telefone=session.get("cliente_telefone", ""),
     )
 
 
@@ -1622,7 +1677,7 @@ def remover_item_carrinho(item_index):
     if removido is not None:
         session["carrinho"] = carrinho
         session.modified = True
-    total = sum(float(item.get("subtotal", 0) or 0) for item in carrinho)
+    total = float(total_carrinho_com_entrega(carrinho))
     if is_ajax_request():
         return jsonify({
             "ok": removido is not None,
@@ -1666,7 +1721,7 @@ def atualizar_item_carrinho(item_index):
         carrinho.pop(item_index)
         session["carrinho"] = carrinho
         session.modified = True
-        total = sum(float(prod.get("subtotal", 0) or 0) for prod in carrinho)
+        total = float(total_carrinho_com_entrega(carrinho))
         if is_ajax_request():
             return jsonify({
                 "ok": True,
@@ -1705,7 +1760,7 @@ def atualizar_item_carrinho(item_index):
     session["carrinho"] = carrinho
     session.modified = True
     if is_ajax_request():
-        total = sum(float(prod.get("subtotal", 0) or 0) for prod in carrinho)
+        total = float(total_carrinho_com_entrega(carrinho))
         sabor_atualizado = enrich_sabor_destinatario(sabor, destinatario, carrinho)
         return jsonify({
             "ok": True,
@@ -1746,8 +1801,15 @@ def finalizar_pedido():
         set_mensagem("mensagem_carrinho", config.get("mensagem_loja_fechada", "A loja está fechada no momento."))
         return redirect("/carrinho")
 
-    nome = request.form.get("nome", "").strip()
-    telefone = request.form.get("telefone", "").strip()
+    if config.get("exigir_cadastro", False) and not cliente_logado():
+        set_mensagem("mensagem_cliente", "Cadastre-se ou entre para finalizar seu pedido.")
+        return redirect("/cliente")
+    if config.get("exigir_pagamento_online", False) and not infinitepay_ativo():
+        set_mensagem("mensagem_carrinho", "O pagamento online obrigatório está indisponível. Fale com a loja.")
+        return redirect("/carrinho")
+
+    nome = session.get("cliente_nome", "") if config.get("exigir_cadastro", False) else request.form.get("nome", "").strip()
+    telefone = session.get("cliente_telefone", "") if config.get("exigir_cadastro", False) else request.form.get("telefone", "").strip()
     endereco = request.form.get("endereco", "").strip()
     destinatario = normalizar_destinatario(request.form.get("destinatario", session.get("destinatario_atual", "italo")))
     session["destinatario_atual"] = destinatario
@@ -1779,6 +1841,8 @@ def finalizar_pedido():
             }
         )
         total += subtotal
+    taxa_entrega = taxa_entrega_config(config)
+    total += taxa_entrega
 
     try:
         reservar_estoque(itens_pedido, destinatario)
@@ -1793,6 +1857,7 @@ def finalizar_pedido():
         "cliente": {"nome": nome, "telefone": telefone, "endereco": endereco},
         "itens": itens_pedido,
         "total": float(total),
+        "taxa_entrega": float(taxa_entrega),
         "status": "pendente",
         "pagamento_status": "aguardando_pagamento",
         "destinatario": destinatario,
@@ -1834,6 +1899,9 @@ def finalizar_pedido():
     session["carrinho"] = []
     session.modified = True
 
+    if config.get("exigir_pagamento_online", False) and pedido.get("pagamento_link"):
+        return redirect(pedido["pagamento_link"])
+
     return render_template(
         "pedido_criado.html",
         pedido=pedido,
@@ -1865,6 +1933,7 @@ def montar_mensagem_whatsapp(pedido, pagamento_link=""):
         f"🏷️ Responsável: {pedido.get('nome_vendedor', '')}\n\n"
         "🛒 *Itens do pedido:*\n"
         + "\n".join(linhas_itens)
+        + (f"\nTaxa de entrega: R$ {float(pedido.get('taxa_entrega', 0)):.2f}" if float(pedido.get('taxa_entrega', 0) or 0) > 0 else "\nEntrega gratis")
         + f"\n\n💰 *Total do pedido: R$ {float(pedido.get('total', 0)):.2f}*"
     )
     if pagamento_link:
@@ -2291,6 +2360,17 @@ def marcar_pago_cliente():
     return redirect_admin_back('/admin/analise')
 
 
+@app.route("/admin/clientes/<int:cliente_id>/excluir", methods=["POST"])
+def admin_excluir_cliente(cliente_id):
+    if not admin_logado():
+        return redirect("/admin/login")
+    if excluir_cliente_cadastrado(cliente_id):
+        set_mensagem("mensagem_admin", "Cadastro do cliente excluído. Os pedidos anteriores foram preservados.")
+    else:
+        set_mensagem("mensagem_admin", "Cliente não encontrado.")
+    return redirect_admin_back("/admin/analise")
+
+
 @app.route("/admin/excluir-analise/<int:pedido_id>", methods=['POST'])
 def excluir_pedido_analise(pedido_id):
     if not admin_logado():
@@ -2342,6 +2422,13 @@ def admin_configuracoes():
     config["infinitepay_ativo"] = request.form.get("infinitepay_ativo") == "on"
     config["bloquear_italo"] = request.form.get("bloquear_italo") == "on"
     config["bloquear_karina"] = request.form.get("bloquear_karina") == "on"
+    config["exigir_cadastro"] = request.form.get("exigir_cadastro") == "on"
+    config["exigir_pagamento_online"] = request.form.get("exigir_pagamento_online") == "on"
+    config["entrega_gratis"] = request.form.get("entrega_gratis") == "on"
+    try:
+        config["taxa_entrega"] = float(money(request.form.get("taxa_entrega", 0)))
+    except Exception:
+        config["taxa_entrega"] = 0.0
     salvar_config(config)
     set_mensagem("mensagem_admin", "Configurações atualizadas com sucesso.")
     return redirect_admin_back("/admin")
@@ -2550,6 +2637,7 @@ def admin_notificacoes():
                 "id": pedido_id,
                 "cliente": pedido.get("cliente", {}).get("nome", "Cliente"),
                 "total": float(pedido.get("total", 0) or 0),
+                "taxa_entrega": float(pedido.get("taxa_entrega", 0) or 0),
                 "vendedor": pedido.get("nome_vendedor", "Italo"),
                 "data": pedido.get("data", ""),
             })

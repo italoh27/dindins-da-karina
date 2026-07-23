@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carrinho - Geladinhos Gourmet</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260722-profissional">
+  <link rel="stylesheet" href="/static/style.css?v=20260723-controles">
 </head>
 <body class="pagina-carrinho" data-ajax-shell="public" data-cart-count="{{ qtd_itens }}">
     <div class="pagina-carrinho-topo">
@@ -61,7 +61,11 @@
                 {% endfor %}
             </div>
 
-            <div class="total-carrinho" data-cart-total-wrap><span class="texto-resumo-carrinho total-carrinho-label">Total do pedido:</span> <span data-cart-total>R$ {{ "%.2f"|format(total) }}</span></div>
+            <div class="resumo-valores-carrinho">
+                <p><span>Produtos</span><strong>R$ {{ "%.2f"|format(total_produtos) }}</strong></p>
+                <p><span>Entrega</span><strong>{% if taxa_entrega > 0 %}R$ {{ "%.2f"|format(taxa_entrega) }}{% else %}Grátis{% endif %}</strong></p>
+                <div class="total-carrinho" data-cart-total-wrap><span class="texto-resumo-carrinho total-carrinho-label">Total do pedido:</span> <span data-cart-total>R$ {{ "%.2f"|format(total) }}</span></div>
+            </div>
 
             <div class="pagamento pagamento-carrinho pagamento-carrinho-pro">
                 <h2>💳 Formas de pagamento</h2>
@@ -76,6 +80,9 @@
                 </div>
             </div>
 
+            {% if exigir_cadastro and not cliente_logado %}
+            <div class="cadastro-obrigatorio-box"><h2>Entre para finalizar</h2><p>A loja está exigindo cadastro para novos pedidos. É rápido e permite acompanhar a entrega.</p><a href="/cliente" class="btn-vibrante">Cadastrar ou entrar</a></div>
+            {% else %}
             <form class="form-cliente js-ajax-form" action="/finalizar_pedido" method="post">
                 <h2>Finalizar pedido</h2>
 
@@ -88,15 +95,17 @@
                     <p class="texto-ajuda-admin">O estoque e a separação do pedido seguem o responsável selecionado.</p>
                 </div>
 
-                <input type="text" name="nome" placeholder="Seu nome" required>
-                <input type="text" name="telefone" placeholder="Seu telefone">
+                <input type="text" name="nome" placeholder="Seu nome" value="{{ cliente_nome }}" {% if exigir_cadastro %}readonly{% endif %} required>
+                <input type="text" name="telefone" placeholder="Seu telefone" value="{{ cliente_telefone }}" {% if exigir_cadastro %}readonly{% endif %}>
                 <input type="text" name="endereco" placeholder="Seu endereço">
 
                 <div class="acoes-carrinho acoes-carrinho-duplas">
+                    {% if exigir_pagamento_online %}<p class="aviso-pagamento-obrigatorio">O pagamento online será aberto ao finalizar.</p>{% endif %}
                     <button class="btn-limpar" type="button" data-submit-external-form="#formLimparCarrinho">Limpar pedido</button>
                     <button class="btn-finalizar" type="submit" {% if not loja_aberta or destinatario_bloqueado %}disabled{% endif %}>Finalizar pedido e gerar pagamento</button>
                 </div>
             </form>
+            {% endif %}
 
             <form id="formLimparCarrinho" class="js-ajax-form" action="/limpar_carrinho" method="post"></form>
             {% else %}
