@@ -3746,3 +3746,11 @@ input:focus,select:focus,textarea:focus{outline:3px solid rgba(34,211,238,.22)!i
 .admin-page .admin-resumo-card p,.admin-page .metrica-linha strong,.admin-page .tabela-analise td,.admin-page .tabela-analise td strong,.pagina-admin .pedido-total,.pagina-admin .pedido-total *,.pagina-admin [data-cart-total],.pagina-carrinho [data-cart-total],.pagina-carrinho .item-direita strong,.pagina-carrinho .resumo-valores-carrinho strong{color:#fff!important;-webkit-text-fill-color:#fff!important;opacity:1!important}
 .preco-card,.pedido-total-destaque strong,.pedido-cliente-topo h2,.pedido-cliente-itens span,.pedido-numero{color:#fff!important;-webkit-text-fill-color:#fff!important;opacity:1!important}
 @media(max-width:760px){.config-entrega-grid{grid-template-columns:1fr}.filtro-box-analise,.filtro-analise-grid{width:100%;max-width:100%;box-sizing:border-box;overflow:hidden}.filtro-analise-grid label{width:100%;max-width:100%;box-sizing:border-box}.checkbox-analise{width:auto!important}.clientes-cadastrados-box .tabela-responsiva{overflow-x:auto}}
+
+/* === Superfícies padronizadas === */
+.card,.admin-box,.pedido-card,.pedido-card-admin-melhorado,.admin-resumo-card,.glass-card,.box-carrinho,.item-carrinho,.pagamento,.form-cliente,.mini-status-card,.status-integration-box,.cadastro-obrigatorio-box,.resumo-valores-carrinho{
+  background:rgba(18,20,44,.88)!important;
+  border-color:rgba(255,255,255,.14)!important;
+  color:#fff!important;
+  box-shadow:0 20px 55px rgba(2,6,23,.38)!important;
+}

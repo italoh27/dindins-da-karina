@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carrinho - Geladinhos Gourmet</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260723-controles">
+  <link rel="stylesheet" href="/static/style.css?v=20260723-fluxo-final">
 </head>
 <body class="pagina-carrinho" data-ajax-shell="public" data-cart-count="{{ qtd_itens }}">
     <div class="pagina-carrinho-topo">
@@ -83,7 +83,7 @@
             {% if exigir_cadastro and not cliente_logado %}
             <div class="cadastro-obrigatorio-box"><h2>Entre para finalizar</h2><p>A loja está exigindo cadastro para novos pedidos. É rápido e permite acompanhar a entrega.</p><a href="/cliente" class="btn-vibrante">Cadastrar ou entrar</a></div>
             {% else %}
-            <form class="form-cliente js-ajax-form" action="/finalizar_pedido" method="post">
+            <form class="form-cliente" action="/finalizar_pedido" method="post" id="finalizarPedidoForm" {% if exigir_pagamento_online %}data-preparar-whatsapp="1"{% endif %}>
                 <h2>Finalizar pedido</h2>
 
                 <div class="responsavel-destaque">
@@ -117,6 +117,16 @@
     </div>
 
     <div class="toast-global" id="toastGlobal" hidden></div>
+    <script>
+      (() => {
+        const form = document.getElementById('finalizarPedidoForm');
+        if (form && form.dataset.prepararWhatsapp === '1') {
+          form.addEventListener('submit', () => {
+            try { window.open('about:blank', 'pedidoWhatsapp'); } catch (e) {}
+          });
+        }
+      })();
+    </script>
     <script src="/static/site_ajax.js"></script>
 </body>
 </html>

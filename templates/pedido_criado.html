@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pedido Criado</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260723-controles">
+  <link rel="stylesheet" href="/static/style.css?v=20260723-fluxo-final">
 </head>
 <body class="pagina-carrinho" data-ajax-shell="public">
     <div class="carrinho-wrapper pedido-final-wrapper">
@@ -33,7 +33,7 @@
             <div class="acoes-finais-pedido acoes-finais-pedido-pro">
                 <a href="{{ whatsapp_destino }}" target="_blank" class="btn-admin-topo btn-final-card" id="btnWhatsResponsavel">Enviar pedido para {{ responsavel_nome }}</a>
                 {% if pagamento_link %}
-                <a href="/pedido/{{ pedido.id }}/pagar" class="btn-finalizar btn-pagamento-destaque btn-pagar-checkout js-open-whatsapp-before-pay" id="btnPagarCheckout" data-whatsapp="{{ whatsapp_destino }}">Pagar no Pix ou Cartão</a>
+                <a href="/pedido/{{ pedido.id }}/pagar" class="btn-finalizar btn-pagamento-destaque btn-pagar-checkout js-open-whatsapp-before-pay" id="btnPagarCheckout" data-whatsapp="{{ whatsapp_destino }}">{% if pagamento_obrigatorio %}Enviar pedido e pagar agora{% else %}Pagar no Pix ou Cartão{% endif %}</a>
                 {% endif %}
                 <a href="/" class="btn-voltar-inline js-ajax-link btn-final-card">Voltar para loja</a>
             </div>
@@ -44,6 +44,21 @@
         </div>
     </div>
     <div class="toast-global" id="toastGlobal" hidden></div>
+    {% if pagamento_obrigatorio and pagamento_link %}
+    <script>
+      (() => {
+        let whatsappAberto = false;
+        try {
+          const popup = window.open('', 'pedidoWhatsapp');
+          if (popup && !popup.closed) {
+            popup.location.replace({{ whatsapp_destino|tojson }});
+            whatsappAberto = true;
+          }
+        } catch (e) {}
+        if (whatsappAberto) setTimeout(() => window.location.replace('/pedido/{{ pedido.id }}/pagar'), 700);
+      })();
+    </script>
+    {% endif %}
     <script src="/static/site_ajax.js"></script>
 </body>
 </html>

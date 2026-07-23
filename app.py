@@ -615,7 +615,9 @@ def enrich_sabor_destinatario(sabor, destinatario, carrinho=None):
             for c in carrinho
             if str(c.get("nome", "")).strip().lower() == str(item.get("nome", "")).strip().lower()
         )
-    item["estoque_exibicao"] = max(0, estoque_base - reservado_no_carrinho)
+    # Itens no carrinho ainda não são pedidos confirmados. O estoque público só
+    # muda depois de reservar_estoque(), durante a finalização do pedido.
+    item["estoque_exibicao"] = estoque_base
     item["ativo_exibicao"] = sabor_ativo_para_destinatario(item, destinatario)
     item["estoque_total"] = max(0, int(item.get("estoque_italo", item.get("estoque", 0)) or 0)) + max(0, int(item.get("estoque_karina", 0) or 0))
     item["quantidade_reservada_carrinho"] = reservado_no_carrinho
@@ -1904,9 +1906,6 @@ def finalizar_pedido():
     session["carrinho"] = []
     session.modified = True
 
-    if config.get("exigir_pagamento_online", False) and pedido.get("pagamento_link"):
-        return redirect(pedido["pagamento_link"])
-
     return render_template(
         "pedido_criado.html",
         pedido=pedido,
@@ -1914,6 +1913,7 @@ def finalizar_pedido():
         responsavel_nome=get_nome_vendedor(destinatario),
         pagamento_link=pedido.get("pagamento_link", ""),
         pix_checkout_automatico=infinitepay_ativo(),
+        pagamento_obrigatorio=config.get("exigir_pagamento_online", False),
     )
 
 
