@@ -12,6 +12,7 @@ import tempfile
 import requests
 import psycopg
 from psycopg_pool import ConnectionPool
+from werkzeug.security import check_password_hash, generate_password_hash
 from threading import Lock
 from time import monotonic
 
@@ -22,6 +23,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ARQUIVO_SABORES = os.path.join(BASE_DIR, "sabores.json")
 ARQUIVO_PEDIDOS = os.path.join(BASE_DIR, "pedidos.json")
 ARQUIVO_CONFIG = os.path.join(BASE_DIR, "config_loja.json")
+ARQUIVO_CLIENTES = os.path.join(BASE_DIR, "clientes.json")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 DB_POOL_MIN_SIZE = max(0, int(os.environ.get("DB_POOL_MIN_SIZE", "1")))
 DB_POOL_MAX_SIZE = max(DB_POOL_MIN_SIZE or 1, int(os.environ.get("DB_POOL_MAX_SIZE", "10")))
@@ -227,6 +229,63 @@ def normalizar_telefone_br(telefone):
     return f"+55{numeros}"
 
 
+def cliente_logado():
+    return session.get("cliente_id") is not None
+
+
+def listar_clientes():
+    if not db_enabled():
+        return ler_json(ARQUIVO_CLIENTES, [])
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, nome, telefone, email, created_at FROM clientes ORDER BY created_at DESC")
+            return [dict(row) for row in cur.fetchall()]
+
+
+def buscar_cliente_por_telefone(telefone):
+    telefone = normalizar_telefone_br(telefone)
+    if not telefone:
+        return None
+    if not db_enabled():
+        return next((c for c in ler_json(ARQUIVO_CLIENTES, []) if c.get("telefone") == telefone), None)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM clientes WHERE telefone = %s", (telefone,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def criar_cliente(nome, telefone, email, senha):
+    nome = str(nome or "").strip()
+    telefone = normalizar_telefone_br(telefone)
+    email = str(email or "").strip().lower()
+    if len(nome) < 2 or not telefone or len(senha or "") < 6:
+        raise ValueError("Informe nome, telefone válido e uma senha com pelo menos 6 caracteres.")
+    if buscar_cliente_por_telefone(telefone):
+        raise ValueError("Este telefone já possui cadastro.")
+    senha_hash = generate_password_hash(senha)
+    if not db_enabled():
+        clientes = ler_json(ARQUIVO_CLIENTES, [])
+        cliente = {"id": max([int(c.get("id", 0)) for c in clientes], default=0) + 1, "nome": nome, "telefone": telefone, "email": email, "senha_hash": senha_hash, "created_at": now_local().isoformat()}
+        clientes.append(cliente)
+        salvar_json(ARQUIVO_CLIENTES, clientes)
+        return cliente
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO clientes (nome, telefone, email, senha_hash) VALUES (%s, %s, %s, %s) RETURNING *",
+                (nome, telefone, email, senha_hash),
+            )
+            cliente = dict(cur.fetchone())
+        conn.commit()
+    return cliente
+
+
+def pedidos_do_cliente(telefone):
+    telefone_normalizado = normalizar_telefone_br(telefone)
+    return [p for p in ler_pedidos() if normalizar_telefone_br(p.get("cliente", {}).get("telefone", "")) == telefone_normalizado]
+
+
 def normalizar_imagem_sabor(img):
     caminho = str(img or "").strip()
     if not caminho:
@@ -254,6 +313,16 @@ def status_pagamento_legivel(status):
     return mapa.get(status, str(status).replace("_", " ").capitalize())
 
 
+def status_pedido_legivel(status):
+    return {
+        "pendente": "Pedido recebido",
+        "em_preparacao": "Em preparação",
+        "saiu_entrega": "Saiu para entrega",
+        "entregue": "Entregue",
+        "cancelado": "Cancelado",
+    }.get(str(status or "pendente"), str(status or "pendente").replace("_", " ").capitalize())
+
+
 def is_ajax_request():
     return request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
@@ -263,6 +332,7 @@ def enriquecer_pedido(pedido):
     pedido["oculto"] = bool(pedido.get("oculto", False))
     pedido["ocultado_em"] = pedido.get("ocultado_em", "") or ""
     pedido["pagamento_status_legivel"] = status_pagamento_legivel(str(pedido.get("pagamento_status", "aguardando_pagamento")))
+    pedido["status_legivel"] = status_pedido_legivel(pedido.get("status", "pendente"))
     return pedido
 
 
@@ -353,6 +423,16 @@ def ensure_database():
                     created_at TIMESTAMP NOT NULL DEFAULT NOW()
                 );
 
+                CREATE TABLE IF NOT EXISTS clientes (
+                    id BIGSERIAL PRIMARY KEY,
+                    nome VARCHAR(150) NOT NULL,
+                    telefone VARCHAR(40) NOT NULL UNIQUE,
+                    email VARCHAR(180) NOT NULL DEFAULT '',
+                    senha_hash TEXT NOT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+                );
+
                 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS oculto BOOLEAN NOT NULL DEFAULT FALSE;
                 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS ocultado_em TIMESTAMP NULL;
                 ALTER TABLE sabores ADD COLUMN IF NOT EXISTS estoque_italo INTEGER NOT NULL DEFAULT 0;
@@ -371,6 +451,7 @@ def ensure_database():
                 CREATE INDEX IF NOT EXISTS idx_pedidos_visiveis_id ON pedidos (id DESC) WHERE oculto = FALSE;
                 CREATE INDEX IF NOT EXISTS idx_pagamentos_log_pedido_id ON pagamentos_log (pedido_id);
                 CREATE INDEX IF NOT EXISTS idx_pagamentos_log_payment_id ON pagamentos_log (payment_id);
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_clientes_telefone ON clientes (telefone);
                 """
             )
         conn.commit()
@@ -949,7 +1030,11 @@ def atualizar_pedido_edicao_db(pedido_id, cliente_nome, cliente_telefone, client
                 )
 
             cur.execute(
-                "SELECT COALESCE(SUM(subtotal), 0) AS total_restante, COUNT(*) AS itens_restantes FROM pedido_itens WHERE pedido_id = %s",
+                "UPDATE pedido_itens SET subtotal = ROUND(preco_unitario * quantidade, 2) WHERE pedido_id = %s",
+                (pedido_id,),
+            )
+            cur.execute(
+                "SELECT COALESCE(SUM(preco_unitario * quantidade), 0) AS total_restante, COUNT(*) AS itens_restantes FROM pedido_itens WHERE pedido_id = %s",
                 (pedido_id,),
             )
             resumo = cur.fetchone()
@@ -1305,6 +1390,55 @@ def add_cache_headers(response):
 @app.route("/healthz")
 def healthz():
     return jsonify({"status": "ok"})
+
+
+@app.route("/cliente")
+def area_cliente():
+    if not cliente_logado():
+        return render_template("cliente_acesso.html", mensagem=pop_mensagem("mensagem_cliente"))
+    telefone = session.get("cliente_telefone", "")
+    pedidos = pedidos_do_cliente(telefone)
+    return render_template(
+        "cliente_painel.html",
+        cliente_nome=session.get("cliente_nome", "Cliente"),
+        pedidos=pedidos,
+        mensagem=pop_mensagem("mensagem_cliente"),
+    )
+
+
+@app.route("/cliente/cadastro", methods=["POST"])
+def cliente_cadastro():
+    try:
+        cliente = criar_cliente(
+            request.form.get("nome"), request.form.get("telefone"),
+            request.form.get("email"), request.form.get("senha"),
+        )
+        session["cliente_id"] = int(cliente["id"])
+        session["cliente_nome"] = cliente["nome"]
+        session["cliente_telefone"] = cliente["telefone"]
+        set_mensagem("mensagem_cliente", "Cadastro realizado. Agora você pode acompanhar seus pedidos.")
+    except Exception as exc:
+        set_mensagem("mensagem_cliente", str(exc))
+    return redirect("/cliente")
+
+
+@app.route("/cliente/entrar", methods=["POST"])
+def cliente_entrar():
+    cliente = buscar_cliente_por_telefone(request.form.get("telefone"))
+    if not cliente or not check_password_hash(cliente.get("senha_hash", ""), request.form.get("senha", "")):
+        set_mensagem("mensagem_cliente", "Telefone ou senha incorretos.")
+        return redirect("/cliente")
+    session["cliente_id"] = int(cliente["id"])
+    session["cliente_nome"] = cliente["nome"]
+    session["cliente_telefone"] = cliente["telefone"]
+    return redirect("/cliente")
+
+
+@app.route("/cliente/sair")
+def cliente_sair():
+    for chave in ("cliente_id", "cliente_nome", "cliente_telefone"):
+        session.pop(chave, None)
+    return redirect("/")
 
 
 @app.route("/")
@@ -1996,6 +2130,8 @@ def admin_analise():
     responsavel = request.args.get('responsavel', '').strip().lower()
     pagamento = request.args.get('pagamento', '').strip().lower()
     incluir_ocultos = request.args.get('ocultos', '').strip().lower() == '1'
+    somente_cadastrados = request.args.get('clientes_cadastrados', '').strip().lower() == '1'
+    clientes_cadastrados = listar_clientes()
 
     if periodo == 'hoje' and not data_inicial and not data_final:
         data_inicial = hoje
@@ -2017,6 +2153,9 @@ def admin_analise():
         data_final = ''
 
     filtrados = filtrar_pedidos_analise(pedidos, data_inicial, data_final, responsavel, pagamento, incluir_ocultos)
+    if somente_cadastrados:
+        telefones_cadastrados = {normalizar_telefone_br(c.get('telefone', '')) for c in clientes_cadastrados}
+        filtrados = [p for p in filtrados if normalizar_telefone_br(p.get('cliente', {}).get('telefone', '')) in telefones_cadastrados]
     total_pedidos = len(filtrados)
     total_pago = sum(float(p.get('total', 0) or 0) for p in filtrados if p.get('pagamento_status') == 'pago')
     total_pendente = sum(float(p.get('total', 0) or 0) for p in filtrados if p.get('pagamento_status') == 'aguardando_pagamento')
@@ -2098,6 +2237,8 @@ def admin_analise():
         responsavel=responsavel,
         pagamento=pagamento,
         incluir_ocultos=incluir_ocultos,
+        somente_cadastrados=somente_cadastrados,
+        clientes_cadastrados=clientes_cadastrados,
         request_path=request.full_path if request.query_string else request.path,
         mensagem=pop_mensagem('mensagem_admin'),
     )
@@ -2299,6 +2440,19 @@ def marcar_entregue(pedido_id):
     if not admin_logado():
         return redirect("/admin/login")
     atualizar_pedido_db(pedido_id, status="entregue")
+    return redirect_admin_back("/admin")
+
+
+@app.route("/admin/pedido/<int:pedido_id>/status/<status>", methods=["POST"])
+def atualizar_status_entrega(pedido_id, status):
+    if not admin_logado():
+        return redirect("/admin/login")
+    permitidos = {"pendente", "em_preparacao", "saiu_entrega", "entregue"}
+    if status not in permitidos or not buscar_pedido(pedido_id):
+        set_mensagem("mensagem_admin", "Status ou pedido inválido.")
+        return redirect_admin_back("/admin")
+    atualizar_pedido_db(pedido_id, status=status)
+    set_mensagem("mensagem_admin", f"Pedido #{pedido_id}: {status_pedido_legivel(status)}.")
     return redirect_admin_back("/admin")
 
 
