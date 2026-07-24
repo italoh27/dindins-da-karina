@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recuperar senha</title><link rel="stylesheet" href="/static/style.css?v=20260723-recuperacao-automatica"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recuperar senha</title><link rel="stylesheet" href="/static/style.css?v=20260723-senha-visivel-compacta"></head>
 <body class="pagina-cliente pagina-premium-bg">
   <main class="cliente-shell cliente-shell-compacto">
     <a href="/cliente" class="btn-voltar-premium">← Voltar</a>
@@ -9,9 +9,10 @@
     <form action="/cliente/recuperar" method="post" class="glass-card cliente-form recuperacao-form">
       <label><span>Telefone cadastrado</span><input type="tel" name="telefone" placeholder="(81) 99999-9999" required autocomplete="tel"></label>
       <label><span>E-mail cadastrado</span><input type="email" name="email" placeholder="cliente@email.com" required autocomplete="email"></label>
-      <label><span>Nova senha</span><input type="password" name="nova_senha" minlength="6" required autocomplete="new-password"></label>
-      <label><span>Confirmar nova senha</span><input type="password" name="confirmar_senha" minlength="6" required autocomplete="new-password"></label>
+      <label><span>Nova senha</span><div class="senha-input-wrap"><input type="password" name="nova_senha" minlength="6" required autocomplete="new-password"><button type="button" class="btn-mostrar-senha" data-toggle-password aria-label="Mostrar nova senha" aria-pressed="false"><span aria-hidden="true">👁</span></button></div></label>
+      <label><span>Confirmar nova senha</span><div class="senha-input-wrap"><input type="password" name="confirmar_senha" minlength="6" required autocomplete="new-password"><button type="button" class="btn-mostrar-senha" data-toggle-password aria-label="Mostrar confirmação da senha" aria-pressed="false"><span aria-hidden="true">👁</span></button></div></label>
       <button class="btn-vibrante" type="submit">Redefinir minha senha</button>
     </form>
   </main>
+  <script src="/static/cliente_senha.js"></script>
 </body></html>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Área do cliente · Geladinhos Gourmet</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260723-senha-visivel">
+  <link rel="stylesheet" href="/static/style.css?v=20260723-senha-visivel-compacta">
 </head>
 <body class="pagina-cliente pagina-premium-bg">
   <main class="cliente-shell">
@@ -19,7 +19,7 @@
       <form action="/cliente/entrar" method="post" class="glass-card cliente-form">
         <div><span class="eyebrow-premium">Já tenho cadastro</span><h2>Entrar</h2></div>
         <label><span>Telefone</span><input type="tel" name="telefone" placeholder="(81) 99999-9999" required autocomplete="tel"></label>
-        <label><span>Senha</span><div class="senha-input-wrap"><input type="password" name="senha" placeholder="Sua senha" required autocomplete="current-password"><button type="button" class="btn-mostrar-senha" data-toggle-password aria-label="Mostrar senha" aria-pressed="false">Mostrar</button></div></label>
+        <label><span>Senha</span><div class="senha-input-wrap"><input type="password" name="senha" placeholder="Sua senha" required autocomplete="current-password"><button type="button" class="btn-mostrar-senha" data-toggle-password aria-label="Mostrar senha" aria-pressed="false"><span aria-hidden="true">👁</span></button></div></label>
         <button class="btn-vibrante" type="submit">Acessar meus pedidos</button>
         <a href="/cliente/recuperar" class="link-recuperar-senha">Esqueci minha senha</a>
       </form>

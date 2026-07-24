@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meus pedidos · Geladinhos Gourmet</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260723-senha-visivel">
+  <link rel="stylesheet" href="/static/style.css?v=20260723-senha-visivel-compacta">
 </head>
 <body class="pagina-cliente pagina-premium-bg">
   <main class="cliente-shell">
@@ -29,7 +29,7 @@
       <div class="glass-card cliente-vazio"><h2>Nenhum pedido encontrado</h2><p>Use no pedido o mesmo telefone informado no cadastro.</p><a href="/" class="btn-vibrante">Fazer meu pedido</a></div>
       {% endfor %}
     </section>
-    <details class="glass-card alterar-senha-card"><summary>Alterar minha senha</summary><form action="/cliente/alterar-senha" method="post" class="cliente-form"><label><span>Senha atual ou temporária</span><div class="senha-input-wrap"><input type="password" name="senha_atual" required autocomplete="current-password"><button type="button" class="btn-mostrar-senha" data-toggle-password aria-label="Mostrar senha atual" aria-pressed="false">Mostrar</button></div></label><label><span>Nova senha</span><div class="senha-input-wrap"><input type="password" name="nova_senha" minlength="6" required autocomplete="new-password"><button type="button" class="btn-mostrar-senha" data-toggle-password aria-label="Mostrar nova senha" aria-pressed="false">Mostrar</button></div></label><button class="btn-vibrante" type="submit">Salvar nova senha</button></form></details>
+    <details class="glass-card alterar-senha-card"><summary>Alterar minha senha</summary><form action="/cliente/alterar-senha" method="post" class="cliente-form"><label><span>Senha atual ou temporária</span><div class="senha-input-wrap"><input type="password" name="senha_atual" required autocomplete="current-password"><button type="button" class="btn-mostrar-senha" data-toggle-password aria-label="Mostrar senha atual" aria-pressed="false"><span aria-hidden="true">👁</span></button></div></label><label><span>Nova senha</span><div class="senha-input-wrap"><input type="password" name="nova_senha" minlength="6" required autocomplete="new-password"><button type="button" class="btn-mostrar-senha" data-toggle-password aria-label="Mostrar nova senha" aria-pressed="false"><span aria-hidden="true">👁</span></button></div></label><button class="btn-vibrante" type="submit">Salvar nova senha</button></form></details>
   </main>
   <script src="/static/cliente_senha.js"></script>
 </body>
