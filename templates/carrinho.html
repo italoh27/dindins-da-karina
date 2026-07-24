@@ -103,8 +103,7 @@
                     <label class="campo-rua"><span>Rua</span><input type="text" name="rua" id="ruaEntrega" autocomplete="address-line1" required></label>
                     <label><span>Número</span><input type="text" name="numero" id="numeroEntrega" inputmode="numeric" required></label>
                     <label><span>Bairro</span><input type="text" name="bairro" id="bairroEntrega" required></label>
-                    <label class="campo-cidade"><span>Cidade</span><input type="text" name="cidade" id="cidadeEntrega" autocomplete="address-level2" required></label>
-                    <label><span>UF</span><input type="text" name="uf" id="ufEntrega" maxlength="2" autocomplete="address-level1" required></label>
+                    <label class="campo-cidade"><span>Cidade <small>(opcional)</small></span><input type="text" name="cidade" id="cidadeEntrega" autocomplete="address-level2"></label>
                     <label class="campo-completo"><span>Complemento <small>(opcional)</small></span><input type="text" name="complemento" autocomplete="address-line2" placeholder="Apartamento, bloco, casa..."></label>
                     <label class="campo-completo"><span>Ponto de referência <small>(opcional)</small></span><input type="text" name="ponto_referencia" placeholder="Próximo a mercado, igreja..."></label>
                 </fieldset>
@@ -143,7 +142,6 @@
             document.getElementById('ruaEntrega').value = dados.logradouro || '';
             document.getElementById('bairroEntrega').value = dados.bairro || '';
             document.getElementById('cidadeEntrega').value = dados.localidade || '';
-            document.getElementById('ufEntrega').value = dados.uf || '';
             cepStatus.textContent = 'CEP encontrado';
             document.getElementById(dados.logradouro ? 'numeroEntrega' : 'ruaEntrega').focus();
           } catch (erro) {

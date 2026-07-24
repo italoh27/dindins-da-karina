@@ -241,12 +241,14 @@ def montar_endereco_entrega(form):
     numero = str(form.get("numero", "") or "").strip()
     bairro = str(form.get("bairro", "") or "").strip()
     cidade = str(form.get("cidade", "") or "").strip()
-    uf = str(form.get("uf", "") or "").strip().upper()[:2]
     complemento = str(form.get("complemento", "") or "").strip()
     referencia = str(form.get("ponto_referencia", "") or "").strip()
-    if len(cep) != 8 or not all((rua, numero, bairro, cidade, uf)):
-        raise ValueError("Preencha CEP, rua, número, bairro, cidade e UF para a entrega.")
-    partes = [f"{rua}, nº {numero}", bairro, f"{cidade}/{uf}", f"CEP {cep[:5]}-{cep[5:]}"]
+    if len(cep) != 8 or not all((rua, numero, bairro)):
+        raise ValueError("Preencha CEP, rua, número e bairro para a entrega.")
+    partes = [f"{rua}, nº {numero}", bairro]
+    if cidade:
+        partes.append(cidade)
+    partes.append(f"CEP {cep[:5]}-{cep[5:]}")
     if complemento:
         partes.append(f"Complemento: {complemento}")
     if referencia:
