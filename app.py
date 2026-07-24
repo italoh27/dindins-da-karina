@@ -12,10 +12,10 @@ import secrets
 import tempfile
 import requests
 import psycopg
-from psycopg_pool import ConnectionPool
+from psycopg_pool import ConnectionPool, PoolTimeout
 from werkzeug.security import check_password_hash, generate_password_hash
 from threading import Lock
-from time import monotonic
+from time import monotonic, sleep
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "troque-esta-chave-em-producao")
@@ -27,9 +27,13 @@ ARQUIVO_CONFIG = os.path.join(BASE_DIR, "config_loja.json")
 ARQUIVO_CLIENTES = os.path.join(BASE_DIR, "clientes.json")
 ARQUIVO_RECUPERACOES = os.path.join(BASE_DIR, "recuperacoes_senha.json")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
-DB_POOL_MIN_SIZE = max(0, int(os.environ.get("DB_POOL_MIN_SIZE", "1")))
+DB_POOL_MIN_SIZE = max(0, int(os.environ.get("DB_POOL_MIN_SIZE", "0")))
 DB_POOL_MAX_SIZE = max(DB_POOL_MIN_SIZE or 1, int(os.environ.get("DB_POOL_MAX_SIZE", "10")))
-DB_POOL_TIMEOUT = max(1, int(os.environ.get("DB_POOL_TIMEOUT", "10")))
+DB_POOL_TIMEOUT = max(5, int(os.environ.get("DB_POOL_TIMEOUT", "30")))
+DB_CONNECT_TIMEOUT = max(5, int(os.environ.get("DB_CONNECT_TIMEOUT", "30")))
+DB_RECONNECT_TIMEOUT = max(10, int(os.environ.get("DB_RECONNECT_TIMEOUT", "60")))
+DB_MAX_IDLE = max(60, int(os.environ.get("DB_MAX_IDLE", "300")))
+DB_MAX_LIFETIME = max(DB_MAX_IDLE, int(os.environ.get("DB_MAX_LIFETIME", "1800")))
 CONFIG_CACHE_TTL = max(0, int(os.environ.get("CONFIG_CACHE_TTL", "30")))
 SENHA_ADMIN = os.environ.get("ADMIN_PASSWORD", "Zaraba@27")
 
@@ -490,7 +494,7 @@ def get_conn():
     return psycopg.connect(
         DATABASE_URL,
         row_factory=dict_row,
-        connect_timeout=DB_POOL_TIMEOUT,
+        connect_timeout=DB_CONNECT_TIMEOUT,
         prepare_threshold=None,
     )
 
@@ -1584,7 +1588,30 @@ def add_cache_headers(response):
 # =========================
 @app.route("/healthz")
 def healthz():
-    return jsonify({"status": "ok"})
+    if not db_enabled():
+        return jsonify({"status": "ok", "database": "local"})
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+                cur.fetchone()
+        return jsonify({"status": "ok", "database": "connected"})
+    except Exception:
+        return jsonify({"status": "starting", "database": "reconnecting"}), 503
+
+
+@app.errorhandler(psycopg.Error)
+@app.errorhandler(PoolTimeout)
+def banco_temporariamente_indisponivel(error):
+    app.logger.warning("Banco temporariamente indisponível: %s", error)
+    if DB_POOL is not None:
+        try:
+            DB_POOL.check()
+        except Exception:
+            pass
+    if request.path.startswith("/admin/notificacoes") or request.accept_mimetypes.best == "application/json":
+        return jsonify({"ok": False, "erro": "Banco reconectando. Tente novamente."}), 503
+    return render_template("banco_reconectando.html"), 503
 
 
 @app.route("/cliente")
@@ -3153,18 +3180,32 @@ if db_enabled():
         min_size=DB_POOL_MIN_SIZE,
         max_size=DB_POOL_MAX_SIZE,
         timeout=DB_POOL_TIMEOUT,
+        max_idle=DB_MAX_IDLE,
+        max_lifetime=DB_MAX_LIFETIME,
+        reconnect_timeout=DB_RECONNECT_TIMEOUT,
         # Neon/PgBouncer pode trocar a conexão física entre transações. Desativar
         # prepared statements automáticos evita colisões como "_pg3_0 already exists".
         kwargs={
             "row_factory": dict_row,
-            "connect_timeout": DB_POOL_TIMEOUT,
+            "connect_timeout": DB_CONNECT_TIMEOUT,
             "prepare_threshold": None,
         },
         check=ConnectionPool.check_connection,
         open=True,
     )
-    ensure_database()
-    migrate_json_to_db_once()
+    ultimo_erro_inicializacao = None
+    for tentativa in range(1, 4):
+        try:
+            ensure_database()
+            migrate_json_to_db_once()
+            ultimo_erro_inicializacao = None
+            break
+        except (psycopg.Error, PoolTimeout, TimeoutError) as exc:
+            ultimo_erro_inicializacao = exc
+            if tentativa < 3:
+                sleep(tentativa * 2)
+    if ultimo_erro_inicializacao is not None:
+        raise ultimo_erro_inicializacao
 
 
 if __name__ == "__main__":
