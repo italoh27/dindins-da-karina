@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Senha temporária</title><link rel="stylesheet" href="/static/style.css?v=20260723-recuperacao"></head>
+<body class="pagina-admin pagina-admin-pro">
+  <main class="admin-wrapper admin-wrapper-pro recuperacao-admin-wrapper">
+    <a href="/admin/analise" class="btn-admin-voltar">← Voltar para análise</a>
+    <section class="admin-box senha-temporaria-card"><span class="eyebrow-premium">Recuperação aprovada</span><h1>Senha temporária criada</h1><p>Cliente: <strong>{{ cliente.nome }}</strong></p><p>Telefone: <strong>{{ cliente.telefone }}</strong></p><div class="senha-temporaria-valor"><span>Senha temporária</span><strong>{{ senha_temporaria }}</strong></div><p class="texto-ajuda-admin">Esta senha é exibida somente nesta tela. Envie ao cliente agora.</p><a href="{{ whatsapp_cliente }}" target="_blank" class="btn-vibrante">Enviar senha pelo WhatsApp</a></section>
+  </main>
+</body></html>

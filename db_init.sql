@@ -68,6 +68,14 @@ CREATE TABLE IF NOT EXISTS clientes (
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS recuperacoes_senha (
+    id BIGSERIAL PRIMARY KEY,
+    cliente_id BIGINT NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'pendente',
+    solicitado_em TIMESTAMP NOT NULL DEFAULT NOW(),
+    resolvido_em TIMESTAMP NULL
+);
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS oculto BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS ocultado_em TIMESTAMP NULL;
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS taxa_entrega NUMERIC(10,2) NOT NULL DEFAULT 0;
@@ -84,3 +92,4 @@ CREATE INDEX IF NOT EXISTS idx_pedidos_visiveis_id ON pedidos (id DESC) WHERE oc
 CREATE INDEX IF NOT EXISTS idx_pagamentos_log_pedido_id ON pagamentos_log (pedido_id);
 CREATE INDEX IF NOT EXISTS idx_pagamentos_log_payment_id ON pagamentos_log (payment_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_clientes_telefone ON clientes (telefone);
+CREATE INDEX IF NOT EXISTS idx_recuperacoes_status ON recuperacoes_senha (status, solicitado_em DESC);

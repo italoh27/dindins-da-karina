@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recuperar senha</title><link rel="stylesheet" href="/static/style.css?v=20260723-recuperacao-automatica"></head>
+<body class="pagina-cliente pagina-premium-bg">
+  <main class="cliente-shell cliente-shell-compacto">
+    <a href="/cliente" class="btn-voltar-premium">← Voltar</a>
+    <header class="cliente-hero"><span class="eyebrow-premium">Recuperação automática</span><h1>Criar uma nova senha</h1><p>Confirme o telefone e o e-mail usados no cadastro. A troca é feita na hora, sem aprovação.</p></header>
+    {% if mensagem %}<div class="alerta alerta-sucesso">{{ mensagem }}</div>{% endif %}
+    <form action="/cliente/recuperar" method="post" class="glass-card cliente-form recuperacao-form">
+      <label><span>Telefone cadastrado</span><input type="tel" name="telefone" placeholder="(81) 99999-9999" required autocomplete="tel"></label>
+      <label><span>E-mail cadastrado</span><input type="email" name="email" placeholder="cliente@email.com" required autocomplete="email"></label>
+      <label><span>Nova senha</span><input type="password" name="nova_senha" minlength="6" required autocomplete="new-password"></label>
+      <label><span>Confirmar nova senha</span><input type="password" name="confirmar_senha" minlength="6" required autocomplete="new-password"></label>
+      <button class="btn-vibrante" type="submit">Redefinir minha senha</button>
+    </form>
+  </main>
+</body></html>

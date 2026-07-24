@@ -1627,15 +1627,25 @@ def cliente_entrar():
 @app.route("/cliente/recuperar", methods=["GET", "POST"])
 def cliente_recuperar_senha():
     if request.method == "GET":
-        return render_template("cliente_recuperar_senha.html", solicitado=False, whatsapp_admin="", mensagem=pop_mensagem("mensagem_cliente"))
+        return render_template("cliente_recuperar_senha.html", mensagem=pop_mensagem("mensagem_cliente"))
     telefone = request.form.get("telefone", "")
+    email = str(request.form.get("email", "") or "").strip().lower()
+    nova_senha = request.form.get("nova_senha", "")
+    confirmar_senha = request.form.get("confirmar_senha", "")
     cliente = buscar_cliente_por_telefone(telefone)
-    if cliente:
-        solicitar_recuperacao_senha(cliente)
-    telefone_normalizado = normalizar_telefone_br(telefone)
-    mensagem = f"Olá! Solicitei recuperação de senha no site para o telefone {telefone_normalizado}. Pode verificar no painel administrativo?"
-    whatsapp_admin = criar_link_whatsapp(NUMERO_ITALO, mensagem)
-    return render_template("cliente_recuperar_senha.html", solicitado=True, whatsapp_admin=whatsapp_admin, mensagem=None)
+    email_cadastrado = str((cliente or {}).get("email", "") or "").strip().lower()
+    if not cliente or not email or email != email_cadastrado:
+        set_mensagem("mensagem_cliente", "Telefone ou e-mail não conferem com o cadastro.")
+        return redirect("/cliente/recuperar")
+    if len(nova_senha) < 6:
+        set_mensagem("mensagem_cliente", "A nova senha precisa ter pelo menos 6 caracteres.")
+        return redirect("/cliente/recuperar")
+    if nova_senha != confirmar_senha:
+        set_mensagem("mensagem_cliente", "A confirmação da nova senha não confere.")
+        return redirect("/cliente/recuperar")
+    definir_senha_cliente(cliente["id"], nova_senha)
+    set_mensagem("mensagem_cliente", "Senha redefinida com sucesso. Entre com sua nova senha.")
+    return redirect("/cliente")
 
 
 @app.route("/cliente/alterar-senha", methods=["POST"])
@@ -2379,7 +2389,6 @@ def admin_analise():
     incluir_ocultos = request.args.get('ocultos', '').strip().lower() == '1'
     somente_cadastrados = request.args.get('clientes_cadastrados', '').strip().lower() == '1'
     clientes_cadastrados = listar_clientes()
-    recuperacoes_pendentes = listar_recuperacoes_pendentes()
 
     if periodo == 'hoje' and not data_inicial and not data_final:
         data_inicial = hoje
@@ -2487,7 +2496,6 @@ def admin_analise():
         incluir_ocultos=incluir_ocultos,
         somente_cadastrados=somente_cadastrados,
         clientes_cadastrados=clientes_cadastrados,
-        recuperacoes_pendentes=recuperacoes_pendentes,
         request_path=request.full_path if request.query_string else request.path,
         mensagem=pop_mensagem('mensagem_admin'),
     )
