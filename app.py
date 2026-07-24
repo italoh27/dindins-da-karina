@@ -7,6 +7,7 @@ from io import BytesIO
 from psycopg.rows import dict_row
 import json
 import os
+import re
 import secrets
 import tempfile
 import requests
@@ -316,6 +317,8 @@ def criar_cliente(nome, telefone, email, senha):
     email = str(email or "").strip().lower()
     if len(nome) < 2 or not telefone or len(senha or "") < 6:
         raise ValueError("Informe nome, telefone válido e uma senha com pelo menos 6 caracteres.")
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        raise ValueError("Informe um e-mail válido para realizar o cadastro.")
     if buscar_cliente_por_telefone(telefone):
         raise ValueError("Este telefone já possui cadastro.")
     senha_hash = generate_password_hash(senha)
