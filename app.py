@@ -24,6 +24,7 @@ ARQUIVO_SABORES = os.path.join(BASE_DIR, "sabores.json")
 ARQUIVO_PEDIDOS = os.path.join(BASE_DIR, "pedidos.json")
 ARQUIVO_CONFIG = os.path.join(BASE_DIR, "config_loja.json")
 ARQUIVO_CLIENTES = os.path.join(BASE_DIR, "clientes.json")
+ARQUIVO_RECUPERACOES = os.path.join(BASE_DIR, "recuperacoes_senha.json")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 DB_POOL_MIN_SIZE = max(0, int(os.environ.get("DB_POOL_MIN_SIZE", "1")))
 DB_POOL_MAX_SIZE = max(DB_POOL_MIN_SIZE or 1, int(os.environ.get("DB_POOL_MAX_SIZE", "10")))
@@ -335,6 +336,85 @@ def criar_cliente(nome, telefone, email, senha):
     return cliente
 
 
+def solicitar_recuperacao_senha(cliente):
+    cliente_id = int(cliente["id"])
+    if not db_enabled():
+        pedidos = ler_json(ARQUIVO_RECUPERACOES, [])
+        existente = next((r for r in pedidos if int(r.get("cliente_id", 0)) == cliente_id and r.get("status") == "pendente"), None)
+        if existente:
+            return existente
+        registro = {"id": max([int(r.get("id", 0)) for r in pedidos], default=0) + 1, "cliente_id": cliente_id, "status": "pendente", "solicitado_em": now_local().isoformat()}
+        pedidos.append(registro)
+        salvar_json(ARQUIVO_RECUPERACOES, pedidos)
+        return registro
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM recuperacoes_senha WHERE cliente_id = %s AND status = 'pendente' ORDER BY id DESC LIMIT 1", (cliente_id,))
+            row = cur.fetchone()
+            if row:
+                return dict(row)
+            cur.execute("INSERT INTO recuperacoes_senha (cliente_id) VALUES (%s) RETURNING *", (cliente_id,))
+            registro = dict(cur.fetchone())
+        conn.commit()
+    return registro
+
+
+def listar_recuperacoes_pendentes():
+    if not db_enabled():
+        clientes = {int(c.get("id", 0)): c for c in ler_json(ARQUIVO_CLIENTES, [])}
+        return [{**r, "cliente": clientes.get(int(r.get("cliente_id", 0)), {})} for r in ler_json(ARQUIVO_RECUPERACOES, []) if r.get("status") == "pendente"]
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT r.id, r.solicitado_em, c.id AS cliente_id, c.nome, c.telefone, c.email
+                FROM recuperacoes_senha r JOIN clientes c ON c.id = r.cliente_id
+                WHERE r.status = 'pendente' ORDER BY r.solicitado_em DESC
+            """)
+            return [dict(row) for row in cur.fetchall()]
+
+
+def definir_senha_cliente(cliente_id, nova_senha):
+    senha_hash = generate_password_hash(nova_senha)
+    if not db_enabled():
+        clientes = ler_json(ARQUIVO_CLIENTES, [])
+        cliente = next((c for c in clientes if int(c.get("id", 0)) == int(cliente_id)), None)
+        if not cliente:
+            return None
+        cliente["senha_hash"] = senha_hash
+        salvar_json(ARQUIVO_CLIENTES, clientes)
+        return cliente
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE clientes SET senha_hash = %s, updated_at = NOW() WHERE id = %s RETURNING *", (senha_hash, int(cliente_id)))
+            row = cur.fetchone()
+        conn.commit()
+    return dict(row) if row else None
+
+
+def aprovar_recuperacao_senha(recuperacao_id):
+    alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    senha_temporaria = "".join(secrets.choice(alfabeto) for _ in range(8))
+    if not db_enabled():
+        recuperacoes = ler_json(ARQUIVO_RECUPERACOES, [])
+        registro = next((r for r in recuperacoes if int(r.get("id", 0)) == int(recuperacao_id) and r.get("status") == "pendente"), None)
+        if not registro:
+            return None, None
+        cliente = definir_senha_cliente(registro["cliente_id"], senha_temporaria)
+        registro.update({"status": "resolvido", "resolvido_em": now_local().isoformat()})
+        salvar_json(ARQUIVO_RECUPERACOES, recuperacoes)
+        return cliente, senha_temporaria
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT r.id, c.id AS cliente_id, c.nome, c.telefone FROM recuperacoes_senha r JOIN clientes c ON c.id = r.cliente_id WHERE r.id = %s AND r.status = 'pendente' FOR UPDATE", (int(recuperacao_id),))
+            row = cur.fetchone()
+            if not row:
+                return None, None
+            cur.execute("UPDATE clientes SET senha_hash = %s, updated_at = NOW() WHERE id = %s", (generate_password_hash(senha_temporaria), row["cliente_id"]))
+            cur.execute("UPDATE recuperacoes_senha SET status = 'resolvido', resolvido_em = NOW() WHERE id = %s", (int(recuperacao_id),))
+        conn.commit()
+    return dict(row), senha_temporaria
+
+
 def pedidos_do_cliente(telefone):
     telefone_normalizado = normalizar_telefone_br(telefone)
     return [p for p in ler_pedidos() if normalizar_telefone_br(p.get("cliente", {}).get("telefone", "")) == telefone_normalizado]
@@ -493,6 +573,14 @@ def ensure_database():
                     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
                 );
 
+                CREATE TABLE IF NOT EXISTS recuperacoes_senha (
+                    id BIGSERIAL PRIMARY KEY,
+                    cliente_id BIGINT NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+                    status VARCHAR(20) NOT NULL DEFAULT 'pendente',
+                    solicitado_em TIMESTAMP NOT NULL DEFAULT NOW(),
+                    resolvido_em TIMESTAMP NULL
+                );
+
                 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS oculto BOOLEAN NOT NULL DEFAULT FALSE;
                 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS ocultado_em TIMESTAMP NULL;
                 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS taxa_entrega NUMERIC(10,2) NOT NULL DEFAULT 0;
@@ -513,6 +601,7 @@ def ensure_database():
                 CREATE INDEX IF NOT EXISTS idx_pagamentos_log_pedido_id ON pagamentos_log (pedido_id);
                 CREATE INDEX IF NOT EXISTS idx_pagamentos_log_payment_id ON pagamentos_log (payment_id);
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_clientes_telefone ON clientes (telefone);
+                CREATE INDEX IF NOT EXISTS idx_recuperacoes_status ON recuperacoes_senha (status, solicitado_em DESC);
                 """
             )
         conn.commit()
@@ -1243,21 +1332,50 @@ def restaurar_estoque_do_pedido(pedido):
 
 def reservar_estoque(carrinho, destinatario):
     campo = estoque_campo_destinatario(destinatario)
+    campo_ativo = ativo_campo_destinatario(destinatario)
+    totais = {}
+    for item in carrinho:
+        nome = str(item.get("nome", "") or "").strip()
+        quantidade = int(item.get("quantidade", 0) or 0)
+        if not nome or quantidade <= 0:
+            raise ValueError("O carrinho contém um item inválido. Atualize a página e tente novamente.")
+        totais[nome] = totais.get(nome, 0) + quantidade
     with get_conn() as conn:
         with conn.cursor() as cur:
-            for item in carrinho:
-                cur.execute(f"SELECT {campo} AS estoque_destino, disponivel FROM sabores WHERE nome = %s FOR UPDATE", (item["nome"],))
-                row = cur.fetchone()
-                if not row or not row["disponivel"]:
-                    raise ValueError(f"O sabor {item['nome']} não está disponível no momento.")
-                if int(row["estoque_destino"]) < int(item["quantidade"]):
-                    raise ValueError(f"Estoque insuficiente para {item['nome']} com {get_nome_vendedor(destinatario)}. Restam {int(row['estoque_destino'])} unidade(s).")
-            for item in carrinho:
-                q=int(item["quantidade"])
+            for nome in sorted(totais):
+                quantidade = totais[nome]
                 cur.execute(
-                    f"UPDATE sabores SET {campo} = {campo} - %s, estoque = GREATEST((COALESCE(estoque_italo,0) + COALESCE(estoque_karina,0)) - %s, 0), updated_at = NOW() WHERE nome = %s",
-                    (q, q, item["nome"]),
+                    f"""
+                    UPDATE sabores
+                    SET {campo} = {campo} - %s,
+                        estoque = GREATEST((COALESCE(estoque_italo,0) + COALESCE(estoque_karina,0)) - %s, 0),
+                        updated_at = NOW()
+                    WHERE nome = %s AND disponivel = TRUE AND {campo_ativo} = TRUE AND {campo} >= %s
+                    RETURNING {campo} AS estoque_restante
+                    """,
+                    (quantidade, quantidade, nome, quantidade),
                 )
+                if cur.fetchone() is None:
+                    cur.execute(f"SELECT {campo} AS estoque_destino, disponivel, {campo_ativo} AS ativo FROM sabores WHERE nome = %s", (nome,))
+                    row = cur.fetchone()
+                    disponivel = int((row or {}).get("estoque_destino", 0) or 0)
+                    if not row or not row.get("disponivel") or not row.get("ativo"):
+                        raise ValueError(f"O sabor {nome} ficou indisponível. Nenhum item foi reservado.")
+                    raise ValueError(f"Estoque insuficiente para {nome}. Restam {disponivel} unidade(s). Nenhum item foi reservado.")
+        conn.commit()
+
+
+def devolver_estoque_itens(itens, destinatario):
+    campo = estoque_campo_destinatario(destinatario)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            for item in itens:
+                quantidade = max(0, int(item.get("quantidade", 0) or 0))
+                if quantidade:
+                    cur.execute(
+                        f"UPDATE sabores SET {campo} = {campo} + %s, estoque = COALESCE(estoque_italo,0) + COALESCE(estoque_karina,0) + %s, updated_at = NOW() WHERE nome = %s",
+                        (quantidade, quantidade, item.get("nome", "")),
+                    )
         conn.commit()
 
 
@@ -1503,6 +1621,37 @@ def cliente_entrar():
     session["cliente_id"] = int(cliente["id"])
     session["cliente_nome"] = cliente["nome"]
     session["cliente_telefone"] = cliente["telefone"]
+    return redirect("/cliente")
+
+
+@app.route("/cliente/recuperar", methods=["GET", "POST"])
+def cliente_recuperar_senha():
+    if request.method == "GET":
+        return render_template("cliente_recuperar_senha.html", solicitado=False, whatsapp_admin="", mensagem=pop_mensagem("mensagem_cliente"))
+    telefone = request.form.get("telefone", "")
+    cliente = buscar_cliente_por_telefone(telefone)
+    if cliente:
+        solicitar_recuperacao_senha(cliente)
+    telefone_normalizado = normalizar_telefone_br(telefone)
+    mensagem = f"Olá! Solicitei recuperação de senha no site para o telefone {telefone_normalizado}. Pode verificar no painel administrativo?"
+    whatsapp_admin = criar_link_whatsapp(NUMERO_ITALO, mensagem)
+    return render_template("cliente_recuperar_senha.html", solicitado=True, whatsapp_admin=whatsapp_admin, mensagem=None)
+
+
+@app.route("/cliente/alterar-senha", methods=["POST"])
+def cliente_alterar_senha():
+    if not cliente_logado():
+        return redirect("/cliente")
+    cliente = buscar_cliente_por_telefone(session.get("cliente_telefone", ""))
+    senha_atual = request.form.get("senha_atual", "")
+    nova_senha = request.form.get("nova_senha", "")
+    if not cliente or not check_password_hash(cliente.get("senha_hash", ""), senha_atual):
+        set_mensagem("mensagem_cliente", "A senha atual está incorreta.")
+    elif len(nova_senha) < 6:
+        set_mensagem("mensagem_cliente", "A nova senha precisa ter pelo menos 6 caracteres.")
+    else:
+        definir_senha_cliente(cliente["id"], nova_senha)
+        set_mensagem("mensagem_cliente", "Senha alterada com sucesso.")
     return redirect("/cliente")
 
 
@@ -1912,16 +2061,17 @@ def finalizar_pedido():
             pedido["pagamento_link"] = checkout.get("checkout_url", "")
             pedido["invoice_slug"] = str(checkout.get("raw", {}).get("slug", ""))
     except Exception as e:
-        with get_conn() as conn:
-            with conn.cursor() as cur:
-                for item in itens_pedido:
-                    campo = estoque_campo_destinatario(destinatario)
-                    cur.execute(f"UPDATE sabores SET {campo} = {campo} + %s, estoque = GREATEST(COALESCE(estoque_italo,0) + COALESCE(estoque_karina,0),0) WHERE nome = %s", (item["quantidade"], item["nome"]))
-            conn.commit()
+        devolver_estoque_itens(itens_pedido, destinatario)
         set_mensagem("mensagem_carrinho", f"Não foi possível iniciar o pagamento online agora. Detalhe: {str(e)[:180]}")
         return redirect("/carrinho")
 
-    criar_pedido_db(pedido)
+    try:
+        criar_pedido_db(pedido)
+    except Exception as e:
+        devolver_estoque_itens(itens_pedido, destinatario)
+        app.logger.exception("Falha ao gravar pedido %s; estoque restaurado", pedido_id)
+        set_mensagem("mensagem_carrinho", "Não foi possível confirmar o pedido. O estoque foi restaurado; tente novamente.")
+        return redirect("/carrinho")
 
     mensagem = montar_mensagem_whatsapp(pedido, pedido.get("pagamento_link", ""))
     whatsapp_destino = criar_link_whatsapp(get_numero_vendedor(destinatario), mensagem)
@@ -2229,6 +2379,7 @@ def admin_analise():
     incluir_ocultos = request.args.get('ocultos', '').strip().lower() == '1'
     somente_cadastrados = request.args.get('clientes_cadastrados', '').strip().lower() == '1'
     clientes_cadastrados = listar_clientes()
+    recuperacoes_pendentes = listar_recuperacoes_pendentes()
 
     if periodo == 'hoje' and not data_inicial and not data_final:
         data_inicial = hoje
@@ -2336,6 +2487,7 @@ def admin_analise():
         incluir_ocultos=incluir_ocultos,
         somente_cadastrados=somente_cadastrados,
         clientes_cadastrados=clientes_cadastrados,
+        recuperacoes_pendentes=recuperacoes_pendentes,
         request_path=request.full_path if request.query_string else request.path,
         mensagem=pop_mensagem('mensagem_admin'),
     )
@@ -2397,6 +2549,28 @@ def admin_excluir_cliente(cliente_id):
     else:
         set_mensagem("mensagem_admin", "Cliente não encontrado.")
     return redirect_admin_back("/admin/analise")
+
+
+@app.route("/admin/recuperacoes/<int:recuperacao_id>/aprovar", methods=["POST"])
+def admin_aprovar_recuperacao(recuperacao_id):
+    if not admin_logado():
+        return redirect("/admin/login")
+    cliente, senha_temporaria = aprovar_recuperacao_senha(recuperacao_id)
+    if not cliente:
+        set_mensagem("mensagem_admin", "Solicitação não encontrada ou já resolvida.")
+        return redirect_admin_back("/admin/analise")
+    mensagem = (
+        f"Olá, {cliente.get('nome', 'cliente')}! Sua recuperação de senha foi aprovada.\n\n"
+        f"Senha temporária: {senha_temporaria}\n\n"
+        "Entre na área do cliente e altere a senha assim que acessar."
+    )
+    whatsapp_cliente = criar_link_whatsapp(cliente.get("telefone", ""), mensagem)
+    return render_template(
+        "admin_recuperacao_senha.html",
+        cliente=cliente,
+        senha_temporaria=senha_temporaria,
+        whatsapp_cliente=whatsapp_cliente,
+    )
 
 
 @app.route("/admin/excluir-analise/<int:pedido_id>", methods=['POST'])
