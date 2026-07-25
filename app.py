@@ -1478,7 +1478,7 @@ def criar_checkout_infinitepay(pedido):
     if not infinitepay_ativo():
         return {"checkout_url": "", "order_nsu": str(pedido["id"])}
 
-    url = "https://api.infinitepay.io/invoices/public/checkout/links"
+    url = "https://api.checkout.infinitepay.io/links"
     payload = {
         "handle": INFINITEPAY_HANDLE,
         "items": [
@@ -1502,11 +1502,14 @@ def criar_checkout_infinitepay(pedido):
 
     telefone = normalizar_telefone_br(pedido["cliente"].get("telefone", ""))
     nome = str(pedido["cliente"].get("nome", "")).strip()
+    email = str(pedido["cliente"].get("email", "")).strip().lower()
     if telefone:
         payload["customer"] = {
             "name": nome or "Cliente",
             "phone_number": telefone,
         }
+        if email:
+            payload["customer"]["email"] = email
 
     resp = requests.post(url, json=payload, timeout=20)
     if not resp.ok:
@@ -1533,7 +1536,7 @@ def consultar_pagamento_infinitepay(order_nsu, transaction_nsu="", slug=""):
     if slug:
         payload["slug"] = slug
 
-    resp = requests.post("https://api.infinitepay.io/invoices/public/checkout/payment_check", json=payload, timeout=20)
+    resp = requests.post("https://api.checkout.infinitepay.io/payment_check", json=payload, timeout=20)
     if not resp.ok:
         return None
     return resp.json()
@@ -1548,6 +1551,8 @@ def atualizar_status_pagamento_infinitepay(pedido_id, payment_data):
         return False
 
     paid = bool(payment_data.get("paid"))
+    if pedido.get("pagamento_status") == "pago" and not paid:
+        return True
     capture_method = str(payment_data.get("capture_method", "")).strip()
     transaction_nsu = str(payment_data.get("transaction_nsu", "")).strip()
     receipt_url = str(payment_data.get("receipt_url", "")).strip()
@@ -1638,6 +1643,7 @@ def cliente_cadastro():
         session["cliente_id"] = int(cliente["id"])
         session["cliente_nome"] = cliente["nome"]
         session["cliente_telefone"] = cliente["telefone"]
+        session["cliente_email"] = cliente.get("email", "")
         set_mensagem("mensagem_cliente", "Cadastro realizado. Agora você pode acompanhar seus pedidos.")
     except Exception as exc:
         set_mensagem("mensagem_cliente", str(exc))
@@ -1653,6 +1659,7 @@ def cliente_entrar():
     session["cliente_id"] = int(cliente["id"])
     session["cliente_nome"] = cliente["nome"]
     session["cliente_telefone"] = cliente["telefone"]
+    session["cliente_email"] = cliente.get("email", "")
     return redirect("/cliente")
 
 
@@ -1699,7 +1706,7 @@ def cliente_alterar_senha():
 
 @app.route("/cliente/sair")
 def cliente_sair():
-    for chave in ("cliente_id", "cliente_nome", "cliente_telefone"):
+    for chave in ("cliente_id", "cliente_nome", "cliente_telefone", "cliente_email"):
         session.pop(chave, None)
     return redirect("/")
 
@@ -1738,6 +1745,39 @@ def home():
         bloquear_karina=pedidos_bloqueados_para(config, "karina"),
         mensagem_bloqueio_destinatario=mensagem_bloqueio_destinatario(destinatario_atual) if destinatario_bloqueado else "",
     )
+
+
+@app.route("/api/cep/<cep>")
+def consultar_cep(cep):
+    cep_numeros = "".join(ch for ch in str(cep) if ch.isdigit())
+    if len(cep_numeros) != 8:
+        return jsonify({"ok": False, "message": "CEP inválido. Digite 8 números."}), 400
+
+    try:
+        resposta = requests.get(
+            f"https://viacep.com.br/ws/{cep_numeros}/json/",
+            headers={"Accept": "application/json", "User-Agent": "DindinsDaKarina/1.0"},
+            timeout=8,
+        )
+        dados = resposta.json() if resposta.ok else {}
+    except (requests.RequestException, ValueError):
+        app.logger.warning("Falha temporária ao consultar o CEP %s", cep_numeros)
+        return jsonify({
+            "ok": False,
+            "message": "Não foi possível consultar agora. Preencha o endereço manualmente.",
+        }), 503
+
+    if not resposta.ok or dados.get("erro"):
+        return jsonify({"ok": False, "message": "CEP não encontrado."}), 404
+
+    return jsonify({
+        "ok": True,
+        "cep": dados.get("cep", ""),
+        "logradouro": dados.get("logradouro", ""),
+        "bairro": dados.get("bairro", ""),
+        "localidade": dados.get("localidade", ""),
+        "uf": dados.get("uf", ""),
+    })
 
 
 
@@ -2077,7 +2117,12 @@ def finalizar_pedido():
         "id": pedido_id,
         "data": agora.strftime("%d/%m/%Y %H:%M"),
         "data_filtro": agora.strftime("%Y-%m-%d"),
-        "cliente": {"nome": nome, "telefone": telefone, "endereco": endereco},
+        "cliente": {
+            "nome": nome,
+            "telefone": telefone,
+            "email": session.get("cliente_email", "") if config.get("exigir_cadastro", False) else "",
+            "endereco": endereco,
+        },
         "itens": itens_pedido,
         "total": float(total),
         "taxa_entrega": float(taxa_entrega),
@@ -2202,7 +2247,21 @@ def webhook_infinitepay():
     order_nsu = str(body.get("order_nsu", "")).strip()
     if not order_nsu.isdigit():
         return jsonify({"ok": False, "message": "order_nsu inválido"}), 400
-    atualizar_status_pagamento_infinitepay(int(order_nsu), body)
+
+    transaction_nsu = str(body.get("transaction_nsu", "")).strip()
+    slug = str(body.get("slug", body.get("invoice_slug", ""))).strip()
+    payment = consultar_pagamento_infinitepay(
+        order_nsu,
+        transaction_nsu=transaction_nsu,
+        slug=slug,
+    )
+    if not payment or not payment.get("paid"):
+        app.logger.warning("InfinitePay ainda não confirmou o pedido %s", order_nsu)
+        return jsonify({"ok": False, "message": "pagamento ainda não confirmado"}), 400
+
+    if body.get("receipt_url") and not payment.get("receipt_url"):
+        payment["receipt_url"] = body["receipt_url"]
+    atualizar_status_pagamento_infinitepay(int(order_nsu), payment)
     return jsonify({"ok": True}), 200
 
 

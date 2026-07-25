@@ -138,9 +138,12 @@
           if (cep.length !== 8) return;
           cepStatus.textContent = 'Buscando...';
           try {
-            const resposta = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const resposta = await fetch(`/api/cep/${cep}`, {
+              headers: { Accept: 'application/json' },
+              cache: 'no-store'
+            });
             const dados = await resposta.json();
-            if (!resposta.ok || dados.erro) throw new Error('CEP não encontrado');
+            if (!resposta.ok || !dados.ok) throw new Error(dados.message || 'CEP não encontrado');
             document.getElementById('ruaEntrega').value = dados.logradouro || '';
             document.getElementById('bairroEntrega').value = dados.bairro || '';
             document.getElementById('cidadeEntrega').value = dados.localidade || '';
