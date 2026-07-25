@@ -2027,11 +2027,13 @@ def finalizar_pedido():
 
     nome = session.get("cliente_nome", "") if config.get("exigir_cadastro", False) else request.form.get("nome", "").strip()
     telefone = session.get("cliente_telefone", "") if config.get("exigir_cadastro", False) else request.form.get("telefone", "").strip()
-    try:
-        endereco = montar_endereco_entrega(request.form)
-    except ValueError as exc:
-        set_mensagem("mensagem_carrinho", str(exc))
-        return redirect("/carrinho")
+    endereco = ""
+    if config.get("exigir_cadastro", False):
+        try:
+            endereco = montar_endereco_entrega(request.form)
+        except ValueError as exc:
+            set_mensagem("mensagem_carrinho", str(exc))
+            return redirect("/carrinho")
     destinatario = normalizar_destinatario(request.form.get("destinatario", session.get("destinatario_atual", "italo")))
     session["destinatario_atual"] = destinatario
     carrinho = session.get("carrinho", [])

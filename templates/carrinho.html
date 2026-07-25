@@ -97,6 +97,7 @@
 
                 <input type="text" name="nome" placeholder="Seu nome" value="{{ cliente_nome }}" {% if exigir_cadastro %}readonly{% endif %} required>
                 <input type="text" name="telefone" placeholder="Seu telefone" value="{{ cliente_telefone }}" {% if exigir_cadastro %}readonly{% endif %}>
+                {% if exigir_cadastro %}
                 <fieldset class="endereco-entrega-grid">
                     <legend>Endereço para entrega</legend>
                     <label class="campo-cep"><span>CEP</span><div class="cep-input-wrap"><input type="text" name="cep" id="cepEntrega" inputmode="numeric" maxlength="9" placeholder="00000-000" autocomplete="postal-code" required><span id="cepStatus" aria-live="polite"></span></div></label>
@@ -107,6 +108,7 @@
                     <label class="campo-completo"><span>Complemento <small>(opcional)</small></span><input type="text" name="complemento" autocomplete="address-line2" placeholder="Apartamento, bloco, casa..."></label>
                     <label class="campo-completo"><span>Ponto de referência <small>(opcional)</small></span><input type="text" name="ponto_referencia" placeholder="Próximo a mercado, igreja..."></label>
                 </fieldset>
+                {% endif %}
 
                 <div class="acoes-carrinho acoes-carrinho-duplas">
                     {% if exigir_pagamento_online %}<p class="aviso-pagamento-obrigatorio">O pagamento online será aberto ao finalizar.</p>{% endif %}

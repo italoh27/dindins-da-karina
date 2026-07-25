@@ -10,7 +10,7 @@
     <div class="admin-login-box">
         <h1 class="titulo-login-admin">🔐 Login Admin</h1>
         <form method="post" class="form-admin-login">
-            <input type="password" name="senha" placeholder="Digite a senha do admin" required>
+            <div class="senha-input-wrap"><input type="password" name="senha" placeholder="Digite a senha do admin" required autocomplete="current-password"><button type="button" class="btn-mostrar-senha" data-toggle-password aria-label="Mostrar senha do administrador" aria-pressed="false"><span aria-hidden="true">👁</span></button></div>
             {% if erro %}<p class="erro-login">{{ erro }}</p>{% endif %}
             <button class="btn-admin-entrar" type="submit">Entrar</button>
         </form>
@@ -19,13 +19,14 @@
         <details class="bloco-redefinir-senha">
             <summary>Redefinir senha do admin</summary>
             <form method="post" action="/admin/redefinir-senha" class="form-admin-login redefinir-senha-form">
-                <input type="password" name="senha_atual" placeholder="Senha antiga" required>
-                <input type="password" name="nova_senha" placeholder="Nova senha" required>
-                <input type="password" name="confirmar_senha" placeholder="Confirmar nova senha" required>
+                <div class="senha-input-wrap"><input type="password" name="senha_atual" placeholder="Senha antiga" required autocomplete="current-password"><button type="button" class="btn-mostrar-senha" data-toggle-password aria-label="Mostrar senha antiga" aria-pressed="false"><span aria-hidden="true">👁</span></button></div>
+                <div class="senha-input-wrap"><input type="password" name="nova_senha" placeholder="Nova senha" required autocomplete="new-password"><button type="button" class="btn-mostrar-senha" data-toggle-password aria-label="Mostrar nova senha" aria-pressed="false"><span aria-hidden="true">👁</span></button></div>
+                <div class="senha-input-wrap"><input type="password" name="confirmar_senha" placeholder="Confirmar nova senha" required autocomplete="new-password"><button type="button" class="btn-mostrar-senha" data-toggle-password aria-label="Mostrar confirmação da senha" aria-pressed="false"><span aria-hidden="true">👁</span></button></div>
                 <button class="btn-admin-entrar" type="submit">Atualizar senha</button>
             </form>
         </details>
         <a href="/" class="btn-admin-voltar-loja">← Voltar para loja</a>
     </div>
+    <script src="/static/cliente_senha.js?v=20260725-todos-campos"></script>
 </body>
 </html>
