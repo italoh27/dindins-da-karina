@@ -3795,3 +3795,29 @@ input:focus,select:focus,textarea:focus{outline:3px solid rgba(34,211,238,.22)!i
 .whatsapp-suporte-gatilho{display:flex!important;align-items:center!important;gap:10px!important;width:auto!important;min-height:58px!important;padding:8px 16px 8px 9px!important;border:1px solid rgba(255,255,255,.22)!important;border-radius:999px!important;background:linear-gradient(135deg,#22c55e,#15803d)!important;color:#fff!important;box-shadow:0 16px 38px rgba(21,128,61,.38)!important}.whatsapp-suporte-gatilho:hover{transform:translateY(-2px);box-shadow:0 20px 45px rgba(21,128,61,.5)!important}.whatsapp-suporte-icone{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.17);font-size:1.15rem}.whatsapp-suporte-texto{display:grid;text-align:left;line-height:1.08}.whatsapp-suporte-texto strong{font-size:.85rem}.whatsapp-suporte-texto small{margin-top:4px;color:#dcfce7;font-size:.64rem}
 @keyframes whatsappSuporteEntrar{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 @media(max-width:520px){.whatsapp-suporte{right:10px;bottom:10px}.whatsapp-suporte-gatilho{width:58px!important;padding:8px!important;border-radius:50%!important}.whatsapp-suporte-texto{display:none}.whatsapp-suporte-painel{width:calc(100vw - 20px)}}
+
+/* === Background gourmet animado da loja === */
+.pagina-loja,.pagina-carrinho,.pagina-cliente{
+  background-color:#070816;
+  background-image:linear-gradient(90deg,rgba(7,8,22,.92) 0%,rgba(7,8,22,.78) 44%,rgba(7,8,22,.56) 100%),url("/static/background-geladinhos-gourmet.webp");
+  background-repeat:no-repeat;
+  background-position:center center,58% center;
+  background-size:cover,112% auto;
+  background-attachment:fixed;
+  animation:background-gourmet-movimento 24s ease-in-out infinite alternate;
+}
+.pagina-loja::before,.pagina-carrinho::before,.pagina-cliente::before{opacity:.22;mix-blend-mode:screen}
+.pagina-loja::after,.pagina-carrinho::after,.pagina-cliente::after{opacity:.2}
+@keyframes background-gourmet-movimento{
+  0%{background-position:center center,55% center;background-size:cover,110% auto}
+  50%{background-position:center center,60% 48%;background-size:cover,116% auto}
+  100%{background-position:center center,64% 52%;background-size:cover,112% auto}
+}
+@media(max-width:760px){
+  .pagina-loja,.pagina-carrinho,.pagina-cliente{background-position:center center,66% center;background-size:cover,auto 100vh;background-attachment:scroll;animation-duration:30s}
+  @keyframes background-gourmet-movimento{
+    0%{background-position:center center,62% center;background-size:cover,auto 100vh}
+    100%{background-position:center center,72% center;background-size:cover,auto 108vh}
+  }
+}
+@media(prefers-reduced-motion:reduce){.pagina-loja,.pagina-carrinho,.pagina-cliente{animation:none}}
