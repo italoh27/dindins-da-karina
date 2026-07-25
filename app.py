@@ -207,7 +207,11 @@ def get_numero_vendedor(destinatario):
 def contexto_suporte_whatsapp():
     destinatario = normalizar_destinatario(session.get("destinatario_atual", "italo"))
     try:
-        suporte_ativo = bool(ler_config().get("whatsapp_suporte_ativo", True))
+        config = ler_config()
+        suporte_ativo = bool(
+            config.get("whatsapp_suporte_ativo", True)
+            and config.get("loja_aberta", True)
+        )
     except Exception:
         suporte_ativo = True
     return {

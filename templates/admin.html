@@ -273,7 +273,7 @@
                     <div class="admin-box-topo">
                         <h2>Configuração da loja</h2>
                     </div>
-                    <form class="js-admin-ajax-form" action="/admin/loja/toggle" method="post" class="stack-form-admin">
+                    <form action="/admin/loja/toggle" method="post" class="stack-form-admin">
                         <button type="submit" class="{{ 'btn-status-pendente' if config.loja_aberta else 'btn-status-entregue' }} btn-bloco-total">
                             {{ 'Bloquear pedidos' if config.loja_aberta else 'Liberar pedidos' }}
                         </button>
@@ -294,7 +294,7 @@
                             <input type="checkbox" name="exigir_pagamento_online" {% if config.exigir_pagamento_online %}checked{% endif %}>
                         </label>
                         <label class="check-admin check-admin-pro">
-                            <span>Exibir botão “Fale conosco” pelo WhatsApp</span>
+                            <span>Exibir botão “Fale conosco” pelo WhatsApp <small>(somente com a loja aberta)</small></span>
                             <input type="checkbox" name="whatsapp_suporte_ativo" {% if config.whatsapp_suporte_ativo %}checked{% endif %}>
                         </label>
                         <div class="config-entrega-grid">
