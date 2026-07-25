@@ -1,0 +1,39 @@
+{% if whatsapp_suporte_ativo %}
+<link rel="stylesheet" href="/static/style.css?v=20260725-whatsapp-suporte">
+<aside class="whatsapp-suporte" data-whatsapp-suporte data-numero="{{ whatsapp_suporte_numero }}" data-responsavel="{{ whatsapp_suporte_nome }}">
+  <section class="whatsapp-suporte-painel" id="whatsappSuportePainel" aria-label="Fale conosco pelo WhatsApp" hidden>
+    <header class="whatsapp-suporte-cabecalho">
+      <div class="whatsapp-suporte-avatar" aria-hidden="true">💬</div>
+      <div>
+        <strong>Fale conosco</strong>
+        <span><i></i> Atendimento pelo WhatsApp</span>
+      </div>
+      <button type="button" class="whatsapp-suporte-fechar" data-whatsapp-fechar aria-label="Fechar atendimento">×</button>
+    </header>
+    <div class="whatsapp-suporte-corpo">
+      <p>Olá! Como podemos ajudar?</p>
+      <label>
+        <span>Assunto</span>
+        <select data-whatsapp-assunto>
+          <option value="Tenho uma dúvida sobre meu pedido.">Dúvida sobre pedido</option>
+          <option value="Preciso de ajuda com o pagamento.">Problema com pagamento</option>
+          <option value="Preciso alterar meu endereço de entrega.">Alterar endereço</option>
+          <option value="Gostaria de consultar a entrega do meu pedido.">Consultar entrega</option>
+          <option value="Preciso de ajuda com outra dúvida.">Outra dúvida</option>
+        </select>
+      </label>
+      <label>
+        <span>Mensagem <small>(opcional)</small></span>
+        <textarea data-whatsapp-mensagem rows="3" placeholder="Conte rapidamente como podemos ajudar"></textarea>
+      </label>
+      <button type="button" class="whatsapp-suporte-enviar" data-whatsapp-enviar>Conversar no WhatsApp</button>
+      <small class="whatsapp-suporte-aviso">Você será atendido por {{ whatsapp_suporte_nome }}.</small>
+    </div>
+  </section>
+  <button type="button" class="whatsapp-suporte-gatilho" data-whatsapp-abrir aria-controls="whatsappSuportePainel" aria-expanded="false">
+    <span class="whatsapp-suporte-icone" aria-hidden="true">💬</span>
+    <span class="whatsapp-suporte-texto"><strong>Fale conosco</strong><small>Estamos online</small></span>
+  </button>
+</aside>
+<script src="/static/whatsapp_suporte.js?v=20260725-1"></script>
+{% endif %}

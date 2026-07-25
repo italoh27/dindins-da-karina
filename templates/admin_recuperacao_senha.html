@@ -6,4 +6,5 @@
     <a href="/admin/analise" class="btn-admin-voltar">← Voltar para análise</a>
     <section class="admin-box senha-temporaria-card"><span class="eyebrow-premium">Recuperação aprovada</span><h1>Senha temporária criada</h1><p>Cliente: <strong>{{ cliente.nome }}</strong></p><p>Telefone: <strong>{{ cliente.telefone }}</strong></p><div class="senha-temporaria-valor"><span>Senha temporária</span><strong>{{ senha_temporaria }}</strong></div><p class="texto-ajuda-admin">Esta senha é exibida somente nesta tela. Envie ao cliente agora.</p><a href="{{ whatsapp_cliente }}" target="_blank" class="btn-vibrante">Enviar senha pelo WhatsApp</a></section>
   </main>
+  {% include "_whatsapp_suporte.html" %}
 </body></html>

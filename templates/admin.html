@@ -278,7 +278,7 @@
                             {{ 'Bloquear pedidos' if config.loja_aberta else 'Liberar pedidos' }}
                         </button>
                     </form>
-                    <form class="js-admin-ajax-form form-admin-config form-admin-config-pro" action="/admin/configuracoes" method="post">
+                    <form class="form-admin-config form-admin-config-pro" action="/admin/configuracoes" method="post">
                         <input type="text" name="mensagem_loja_fechada" placeholder="Mensagem quando a loja estiver fechada" value="{{ config.mensagem_loja_fechada }}">
                         <div class="status-integration-box">{{ 'InfinitePay ativa' if config.infinitepay_ativo else 'InfinitePay desativada' }}</div>
                         <label class="check-admin check-admin-pro">
@@ -292,6 +292,10 @@
                         <label class="check-admin check-admin-pro">
                             <span>Exigir pagamento online ao finalizar</span>
                             <input type="checkbox" name="exigir_pagamento_online" {% if config.exigir_pagamento_online %}checked{% endif %}>
+                        </label>
+                        <label class="check-admin check-admin-pro">
+                            <span>Exibir botão “Fale conosco” pelo WhatsApp</span>
+                            <input type="checkbox" name="whatsapp_suporte_ativo" {% if config.whatsapp_suporte_ativo %}checked{% endif %}>
                         </label>
                         <div class="config-entrega-grid">
                             <label class="check-admin check-admin-pro">
@@ -480,5 +484,6 @@
         };
         window.initAdminPage();
     </script>
+    {% include "_whatsapp_suporte.html" %}
 </body>
 </html>

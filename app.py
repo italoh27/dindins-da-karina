@@ -99,6 +99,7 @@ def configuracao_padrao():
         "exigir_pagamento_online": False,
         "entrega_gratis": True,
         "taxa_entrega": 0.0,
+        "whatsapp_suporte_ativo": True,
     }
 
 
@@ -200,6 +201,21 @@ def get_nome_vendedor(destinatario):
 
 def get_numero_vendedor(destinatario):
     return NUMERO_KARINA if destinatario == "karina" else NUMERO_ITALO
+
+
+@app.context_processor
+def contexto_suporte_whatsapp():
+    destinatario = normalizar_destinatario(session.get("destinatario_atual", "italo"))
+    try:
+        suporte_ativo = bool(ler_config().get("whatsapp_suporte_ativo", True))
+    except Exception:
+        suporte_ativo = True
+    return {
+        "whatsapp_suporte_ativo": suporte_ativo,
+        "whatsapp_suporte_numero": get_numero_vendedor(destinatario),
+        "whatsapp_suporte_nome": get_nome_vendedor(destinatario),
+    }
+
 
 def pedidos_bloqueados_para(config, destinatario):
     destino = normalizar_destinatario(destinatario)
@@ -2727,6 +2743,7 @@ def admin_configuracoes():
     config["bloquear_karina"] = request.form.get("bloquear_karina") == "on"
     config["exigir_cadastro"] = request.form.get("exigir_cadastro") == "on"
     config["exigir_pagamento_online"] = request.form.get("exigir_pagamento_online") == "on"
+    config["whatsapp_suporte_ativo"] = request.form.get("whatsapp_suporte_ativo") == "on"
     config["entrega_gratis"] = request.form.get("entrega_gratis") == "on"
     try:
         config["taxa_entrega"] = float(money(request.form.get("taxa_entrega", 0)))
