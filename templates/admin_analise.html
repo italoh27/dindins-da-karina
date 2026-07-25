@@ -7,11 +7,18 @@
   <link rel="stylesheet" href="/static/style.css?v=20260723-recuperacao">
 </head>
 <body class="admin-page admin-analise-page">
-  <div data-ajax-shell="admin">
+  <div data-admin-shell="page">
+  <div class="admin-topo admin-topo-sticky">
+    <div class="admin-topo-acoes">
+      <a href="/admin" class="btn-admin-voltar js-admin-ajax-link">← Voltar para painel</a>
+    </div>
+    <div class="admin-topo-mobile-voltar">
+      <a href="/admin" class="btn-admin-voltar js-admin-ajax-link">← Voltar para painel</a>
+    </div>
+  </div>
   <div class="admin-wrapper admin-wrapper-pro admin-analise-wrapper">
     <header class="admin-topo admin-topo-analise">
       <div>
-        <a href="/admin" class="btn-admin-voltar-flutuante js-admin-ajax-link">← Voltar ao admin</a>
         <h1>Análise de dados</h1>
         <p class="texto-ajuda-admin">Filtre período, responsável e status para acompanhar faturamento, clientes com saldo devedor e sabores mais vendidos.</p>
       </div>

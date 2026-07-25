@@ -1,4 +1,27 @@
 (function () {
+  const ANALISE_SCROLL_KEY = 'admin-analise-scroll-y';
+
+  function isAnalysisPage() {
+    return window.location.pathname === '/admin/analise';
+  }
+
+  function saveAnalysisScroll(y = window.scrollY) {
+    if (!isAnalysisPage()) return;
+    try {
+      sessionStorage.setItem(ANALISE_SCROLL_KEY, String(Math.max(0, Number(y) || 0)));
+    } catch (e) {}
+  }
+
+  function restoreAnalysisScroll() {
+    if (!isAnalysisPage()) return;
+    try {
+      const saved = sessionStorage.getItem(ANALISE_SCROLL_KEY);
+      if (saved === null) return;
+      sessionStorage.removeItem(ANALISE_SCROLL_KEY);
+      requestAnimationFrame(() => window.scrollTo({ top: Number(saved) || 0, behavior: 'auto' }));
+    } catch (e) {}
+  }
+
   function getShell() {
     return document.querySelector('[data-admin-shell="page"]');
   }
@@ -78,6 +101,7 @@
     const actionUrl = new URL(form.action, window.location.origin);
     const preserveScroll = true;
     const restoreY = window.scrollY;
+    saveAnalysisScroll(restoreY);
     const fetchOptions = { method, headers: { 'X-Requested-With': 'XMLHttpRequest' } };
 
     if (method === 'GET') {
@@ -98,6 +122,7 @@
       return;
     }
     await swapPageFromHtml(html, response.url || actionUrl.toString(), { push: true, preserveScroll, restoreY });
+    try { sessionStorage.removeItem(ANALISE_SCROLL_KEY); } catch (e) {}
   }
 
   function bindAdminQuantityControls() {
@@ -249,6 +274,7 @@
     bindAdminMobileNav();
     bindSaboresSelectState();
     updateAdminReturnTargets();
+    restoreAnalysisScroll();
   }
 
   document.addEventListener('click', async (e) => {
