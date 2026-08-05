@@ -175,18 +175,17 @@
     if (!lista || !adicionar || adicionar.dataset.quickOrderBound === '1') return;
     adicionar.dataset.quickOrderBound = '1';
 
-    function bindRemove(button) {
-      if (!button || button.dataset.quickRemoveBound === '1') return;
-      button.dataset.quickRemoveBound = '1';
-      button.addEventListener('click', () => {
+    if (lista.dataset.quickRemoveBound !== '1') {
+      lista.dataset.quickRemoveBound = '1';
+      lista.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-remove-quick-row]');
+        if (!button || !lista.contains(button)) return;
         const rows = lista.querySelectorAll('[data-item-row]');
         if (rows.length <= 1) return;
         const row = button.closest('[data-item-row]');
         if (row) row.remove();
       });
     }
-
-    lista.querySelectorAll('[data-remove-quick-row]').forEach(bindRemove);
 
     adicionar.addEventListener('click', () => {
       const first = lista.querySelector('[data-item-row]');
@@ -195,7 +194,6 @@
       clone.querySelectorAll('select').forEach((el) => { el.value = ''; });
       clone.querySelectorAll('input').forEach((el) => { el.value = el.name === 'item_quantidade[]' ? '1' : ''; });
       lista.appendChild(clone);
-      bindRemove(clone.querySelector('[data-remove-quick-row]'));
     });
   }
 

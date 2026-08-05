@@ -103,41 +103,7 @@
       </section>
     </div>
   </div>
-  <script src="/static/admin_ajax.js"></script>
-  <script>
-    (function () {
-      function bindQuickOrderRows() {
-        const lista = document.getElementById('listaItensPedidoRapido');
-        const adicionar = document.getElementById('adicionarLinhaPedidoRapido');
-        if (!lista || !adicionar || adicionar.dataset.bound === '1') return;
-        adicionar.dataset.bound = '1';
-
-        function bindRemove(button) {
-          if (!button || button.dataset.bound === '1') return;
-          button.dataset.bound = '1';
-          button.addEventListener('click', () => {
-            const rows = lista.querySelectorAll('[data-item-row]');
-            if (rows.length <= 1) return;
-            button.closest('[data-item-row]')?.remove();
-          });
-        }
-
-        lista.querySelectorAll('[data-remove-quick-row]').forEach(bindRemove);
-
-        adicionar.addEventListener('click', () => {
-          const first = lista.querySelector('[data-item-row]');
-          if (!first) return;
-          const clone = first.cloneNode(true);
-          clone.querySelectorAll('select').forEach((el) => el.value = '');
-          clone.querySelectorAll('input').forEach((el) => { if (el.name === 'item_quantidade[]') el.value = '1'; else el.value = ''; });
-          lista.appendChild(clone);
-          bindRemove(clone.querySelector('[data-remove-quick-row]'));
-        });
-      }
-      bindQuickOrderRows();
-      window.initAdminPage && window.initAdminPage();
-    })();
-  </script>
+  <script src="/static/admin_ajax.js?v=20260805-remover-linhas"></script>
   {% include "_whatsapp_suporte.html" %}
 </body>
 </html>
