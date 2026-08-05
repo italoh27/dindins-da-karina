@@ -3217,6 +3217,56 @@ def admin_atualizar_estoque(sabor_id):
     return redirect_admin_back("/admin/sabores")
 
 
+@app.route("/admin/sabores/editar/<int:sabor_id>", methods=["POST"])
+def admin_editar_sabor(sabor_id):
+    if not admin_logado():
+        return redirect("/admin/login")
+
+    sabor_atual = next((s for s in ler_sabores() if s.get("id") == sabor_id), None)
+    if not sabor_atual:
+        set_mensagem("mensagem_admin", "Sabor não encontrado.")
+        return redirect_admin_back("/admin/sabores")
+
+    nome = str(request.form.get("nome", "") or "").strip()
+    img = normalizar_imagem_sabor(request.form.get("img", ""))
+    try:
+        preco_texto = str(request.form.get("preco", "") or "").strip().replace(",", ".")
+        preco = money(preco_texto)
+        estoque_italo = int(str(request.form.get("estoque_italo", "")).strip())
+        estoque_karina = int(str(request.form.get("estoque_karina", "")).strip())
+    except (ValueError, TypeError):
+        set_mensagem("mensagem_admin", "Informe preço e estoques válidos.")
+        return redirect_admin_back("/admin/sabores")
+
+    if not nome or not img or preco <= 0 or estoque_italo < 0 or estoque_karina < 0:
+        set_mensagem("mensagem_admin", "Preencha nome, preço, imagem e estoques corretamente.")
+        return redirect_admin_back("/admin/sabores")
+
+    nome_repetido = next(
+        (
+            sabor for sabor in ler_sabores()
+            if sabor.get("id") != sabor_id
+            and str(sabor.get("nome", "")).strip().casefold() == nome.casefold()
+        ),
+        None,
+    )
+    if nome_repetido:
+        set_mensagem("mensagem_admin", "Já existe outro sabor com esse nome.")
+        return redirect_admin_back("/admin/sabores")
+
+    atualizar_sabor(
+        sabor_id,
+        nome=nome,
+        preco=preco,
+        img=img,
+        estoque_italo=estoque_italo,
+        estoque_karina=estoque_karina,
+        estoque=estoque_italo + estoque_karina,
+    )
+    set_mensagem("mensagem_admin", f"Sabor {nome} atualizado com sucesso.")
+    return redirect_admin_back("/admin/sabores")
+
+
 @app.route("/admin/sabores/toggle/<int:sabor_id>", methods=["POST"])
 def admin_toggle_sabor(sabor_id):
     if not admin_logado():

@@ -3821,3 +3821,7 @@ input:focus,select:focus,textarea:focus{outline:3px solid rgba(34,211,238,.22)!i
   }
 }
 @media(prefers-reduced-motion:reduce){.pagina-loja,.pagina-carrinho,.pagina-cliente{animation:none}}
+
+/* === Edição completa dos sabores cadastrados === */
+.sabor-edicao-card{margin:16px 0;border:1px solid rgba(103,232,249,.2);border-radius:16px;background:rgba(34,211,238,.055);overflow:hidden}.sabor-edicao-card summary{cursor:pointer;padding:14px 16px;color:#a5f3fc;font-weight:900;list-style:none}.sabor-edicao-card summary::-webkit-details-marker{display:none}.sabor-edicao-card summary::after{content:"+";float:right;font-size:1.15rem}.sabor-edicao-card[open] summary::after{content:"−"}.sabor-edicao-card[open] summary{border-bottom:1px solid rgba(255,255,255,.1)}.sabor-edicao-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;padding:16px}.sabor-edicao-form label{display:grid;gap:6px;min-width:0;color:#cbd5e1;font-size:.78rem;font-weight:850}.sabor-edicao-form input{width:100%;box-sizing:border-box;background:rgba(255,255,255,.07)!important;color:#fff!important;padding:10px 12px}.sabor-edicao-imagem{grid-column:1/-1}.sabor-edicao-salvar{grid-column:1/-1;width:100%}
+@media(max-width:620px){.sabor-edicao-form{grid-template-columns:1fr}.sabor-edicao-imagem,.sabor-edicao-salvar{grid-column:auto}}

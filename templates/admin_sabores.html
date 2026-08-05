@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gerenciador de sabores</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260723-fluxo-final">
+  <link rel="stylesheet" href="/static/style.css?v=20260805-editar-sabores">
 </head>
 <body class="pagina-admin pagina-admin-pro">
   <div data-admin-shell="page">
@@ -64,6 +64,34 @@
               <span class="badge {{ 'badge-entregue' if sabor.ativo_karina else 'badge-pendente' }}">Karina {{ 'ativa' if sabor.ativo_karina else 'oculta' }}</span>
             </div>
           </div>
+
+          <details class="sabor-edicao-card">
+            <summary>✏️ Editar sabor</summary>
+            <form class="js-admin-ajax-form sabor-edicao-form" action="/admin/sabores/editar/{{ sabor.id }}" method="post">
+              <input type="hidden" name="return_to" value="{{ request_path }}#sabor-{{ sabor.id }}">
+              <label>
+                <span>Nome do sabor</span>
+                <input type="text" name="nome" value="{{ sabor.nome }}" required>
+              </label>
+              <label>
+                <span>Preço (R$)</span>
+                <input type="number" min="0.01" step="0.01" name="preco" value="{{ '%.2f'|format(sabor.preco) }}" required>
+              </label>
+              <label class="sabor-edicao-imagem">
+                <span>Imagem</span>
+                <input type="text" name="img" value="{{ sabor.img }}" placeholder="/static/nome_da_imagem.jpg" required>
+              </label>
+              <label>
+                <span>Estoque Italo</span>
+                <input type="number" min="0" step="1" name="estoque_italo" value="{{ sabor.estoque_italo }}" required>
+              </label>
+              <label>
+                <span>Estoque Karina</span>
+                <input type="number" min="0" step="1" name="estoque_karina" value="{{ sabor.estoque_karina }}" required>
+              </label>
+              <button class="btn-admin-topo sabor-edicao-salvar" type="submit">Salvar alterações</button>
+            </form>
+          </details>
 
           <div class="pedido-topo-botoes pedido-topo-botoes-grid pedido-topo-botoes-sabores">
             <form class="js-admin-ajax-form sabor-estoque-form" action="/admin/sabores/estoque/{{ sabor.id }}" method="post">
