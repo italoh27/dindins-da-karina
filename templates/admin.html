@@ -293,6 +293,13 @@
                             <span>Exigir pagamento online ao finalizar</span>
                             <input type="checkbox" name="exigir_pagamento_online" {% if config.exigir_pagamento_online %}checked{% endif %}>
                         </label>
+                        <label class="check-admin check-admin-pro check-modo-pagamento-confirmado">
+                            <span>
+                                Criar e liberar o pedido somente após o pagamento
+                                <small>O pedido fica invisível até a InfinitePay confirmar. Esta opção ativa o pagamento online obrigatório.</small>
+                            </span>
+                            <input type="checkbox" name="pedido_somente_apos_pagamento" {% if config.pedido_somente_apos_pagamento %}checked{% endif %}>
+                        </label>
                         <label class="check-admin check-admin-pro">
                             <span>Exibir botão “Fale conosco” pelo WhatsApp <small>(somente com a loja aberta)</small></span>
                             <input type="checkbox" name="whatsapp_suporte_ativo" {% if config.whatsapp_suporte_ativo %}checked{% endif %}>

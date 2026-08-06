@@ -24,6 +24,21 @@
     <div class="alerta alerta-sucesso">{{ mensagem }}</div>
     {% endif %}
 
+    {% if pagamento_pendente %}
+    <section class="pagamento-pendente-loja" aria-label="Pagamento pendente">
+        <div>
+            <strong>Pagamento pendente</strong>
+            <span>Referência #{{ pagamento_pendente.id }} · R$ {{ "%.2f"|format(pagamento_pendente.total) }}</span>
+        </div>
+        <div class="pagamento-pendente-acoes">
+            <a href="/pedido/{{ pagamento_pendente.id }}/pagar" class="btn-finalizar">Retomar pagamento</a>
+            <form action="/pedido/{{ pagamento_pendente.id }}/cancelar-pagamento" method="post" onsubmit="return confirm('Cancelar este pagamento e devolver os itens ao estoque?');">
+                <button type="submit" class="btn-voltar-inline">Cancelar</button>
+            </form>
+        </div>
+    </section>
+    {% endif %}
+
     {% if not loja_aberta %}
     <div class="alerta alerta-fechado">{{ mensagem_loja }}</div>
     {% endif %}

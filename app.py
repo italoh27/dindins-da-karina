@@ -39,6 +39,8 @@ SENHA_ADMIN = os.environ.get("ADMIN_PASSWORD", "Zaraba@27")
 
 NUMERO_ITALO = os.environ.get("NUMERO_ITALO", "5581999616265")
 NUMERO_KARINA = os.environ.get("NUMERO_KARINA", "5585981998730")
+PAGAMENTO_LIBERACAO_PENDENTE = "aguardando_pagamento_para_liberar"
+PAGAMENTO_LIBERACAO_CONFIRMADO = "pedido_liberado_apos_pagamento"
 
 CHAVE_PIX = os.environ.get("CHAVE_PIX", "italo-henrique-27@jim.com")
 NOME_PIX = os.environ.get("NOME_PIX", "Italo Henrique de Oliveira Farias")
@@ -97,6 +99,7 @@ def configuracao_padrao():
         "bloquear_karina": False,
         "exigir_cadastro": False,
         "exigir_pagamento_online": False,
+        "pedido_somente_apos_pagamento": False,
         "entrega_gratis": True,
         "taxa_entrega": 0.0,
         "whatsapp_suporte_ativo": True,
@@ -446,7 +449,40 @@ def aprovar_recuperacao_senha(recuperacao_id):
 
 def pedidos_do_cliente(telefone):
     telefone_normalizado = normalizar_telefone_br(telefone)
-    return [p for p in ler_pedidos() if normalizar_telefone_br(p.get("cliente", {}).get("telefone", "")) == telefone_normalizado]
+    return [
+        p for p in ler_pedidos()
+        if not pedido_aguardando_liberacao(p)
+        and normalizar_telefone_br(p.get("cliente", {}).get("telefone", "")) == telefone_normalizado
+    ]
+
+
+def pedido_aguardando_liberacao(pedido):
+    return (
+        str((pedido or {}).get("payment_detail", "")).strip() == PAGAMENTO_LIBERACAO_PENDENTE
+        and str((pedido or {}).get("pagamento_status", "")).strip().lower() != "pago"
+    )
+
+
+def pedido_modo_pos_pagamento(pedido):
+    return str((pedido or {}).get("payment_detail", "")).strip() in {
+        PAGAMENTO_LIBERACAO_PENDENTE,
+        PAGAMENTO_LIBERACAO_CONFIRMADO,
+    }
+
+
+def pagamento_pendente_da_sessao():
+    pedido_id = session.get("pagamento_pendente_id")
+    if not pedido_id:
+        return None
+    try:
+        pedido = buscar_pedido(int(pedido_id))
+    except (TypeError, ValueError):
+        pedido = None
+    if pedido and pedido_aguardando_liberacao(pedido) and pedido.get("pagamento_link"):
+        return pedido
+    session.pop("pagamento_pendente_id", None)
+    session.modified = True
+    return None
 
 
 def normalizar_imagem_sabor(img):
@@ -1577,17 +1613,24 @@ def atualizar_status_pagamento_infinitepay(pedido_id, payment_data):
     transaction_nsu = str(payment_data.get("transaction_nsu", "")).strip()
     receipt_url = str(payment_data.get("receipt_url", "")).strip()
     slug = str(payment_data.get("slug", payment_data.get("invoice_slug", ""))).strip()
+    liberar_apos_pagamento = paid and pedido_modo_pos_pagamento(pedido)
 
-    atualizar_pedido_db(
-        pedido_id,
+    campos_atualizacao = dict(
         pagamento_status="pago" if paid else "aguardando_pagamento",
         payment_method=capture_method,
-        payment_detail="Pagamento confirmado pela InfinitePay" if paid else "Aguardando pagamento InfinitePay",
+        payment_detail=(
+            PAGAMENTO_LIBERACAO_CONFIRMADO
+            if liberar_apos_pagamento
+            else ("Pagamento confirmado pela InfinitePay" if paid else pedido.get("payment_detail") or "Aguardando pagamento InfinitePay")
+        ),
         capture_method=capture_method,
         transaction_nsu=transaction_nsu,
         invoice_slug=slug,
         receipt_url=receipt_url,
     )
+    if liberar_apos_pagamento:
+        campos_atualizacao.update(oculto=False, ocultado_em=None)
+    atualizar_pedido_db(pedido_id, **campos_atualizacao)
     registrar_pagamento_log(pedido_id, transaction_nsu, "paid" if paid else "pending", payment_data)
     return True
 
@@ -1747,6 +1790,7 @@ def home():
         if sabor_ativo_para_destinatario(s, destinatario_atual)
     ]
     destinatario_bloqueado = pedidos_bloqueados_para(config, destinatario_atual)
+    pagamento_pendente = pagamento_pendente_da_sessao() if db_enabled() else None
     return render_template(
         "index.html",
         sabores=sabores,
@@ -1764,6 +1808,7 @@ def home():
         bloquear_italo=pedidos_bloqueados_para(config, "italo"),
         bloquear_karina=pedidos_bloqueados_para(config, "karina"),
         mensagem_bloqueio_destinatario=mensagem_bloqueio_destinatario(destinatario_atual) if destinatario_bloqueado else "",
+        pagamento_pendente=pagamento_pendente,
     )
 
 
@@ -2081,9 +2126,15 @@ def finalizar_pedido():
     if config.get("exigir_cadastro", False) and not cliente_logado():
         set_mensagem("mensagem_cliente", "Cadastre-se ou entre para finalizar seu pedido.")
         return redirect("/cliente")
-    if config.get("exigir_pagamento_online", False) and not infinitepay_ativo():
+    pedido_somente_apos_pagamento = bool(config.get("pedido_somente_apos_pagamento", False))
+    if (config.get("exigir_pagamento_online", False) or pedido_somente_apos_pagamento) and not infinitepay_ativo():
         set_mensagem("mensagem_carrinho", "O pagamento online obrigatório está indisponível. Fale com a loja.")
         return redirect("/carrinho")
+    if pedido_somente_apos_pagamento:
+        pagamento_pendente = pagamento_pendente_da_sessao()
+        if pagamento_pendente:
+            set_mensagem("mensagem_home", "Você já tem um pagamento pendente. Conclua ou cancele antes de iniciar outro pedido.")
+            return redirect("/")
 
     nome = session.get("cliente_nome", "") if config.get("exigir_cadastro", False) else request.form.get("nome", "").strip()
     telefone = session.get("cliente_telefone", "") if config.get("exigir_cadastro", False) else request.form.get("telefone", "").strip()
@@ -2158,9 +2209,9 @@ def finalizar_pedido():
         "preference_id": "",
         "payment_id": "",
         "payment_method": "",
-        "payment_detail": "",
+        "payment_detail": PAGAMENTO_LIBERACAO_PENDENTE if pedido_somente_apos_pagamento else "",
         "estoque_devolvido": False,
-        "oculto": False,
+        "oculto": pedido_somente_apos_pagamento,
         "ocultado_em": "",
     }
 
@@ -2182,10 +2233,14 @@ def finalizar_pedido():
         set_mensagem("mensagem_carrinho", "Não foi possível confirmar o pedido. O estoque foi restaurado; tente novamente.")
         return redirect("/carrinho")
 
-    mensagem = montar_mensagem_whatsapp(pedido, pedido.get("pagamento_link", ""))
-    whatsapp_destino = criar_link_whatsapp(get_numero_vendedor(destinatario), mensagem)
+    whatsapp_destino = ""
+    if not pedido_somente_apos_pagamento:
+        mensagem = montar_mensagem_whatsapp(pedido, pedido.get("pagamento_link", ""))
+        whatsapp_destino = criar_link_whatsapp(get_numero_vendedor(destinatario), mensagem)
 
     session["carrinho"] = []
+    if pedido_somente_apos_pagamento:
+        session["pagamento_pendente_id"] = pedido_id
     session.modified = True
 
     return render_template(
@@ -2195,11 +2250,14 @@ def finalizar_pedido():
         responsavel_nome=get_nome_vendedor(destinatario),
         pagamento_link=pedido.get("pagamento_link", ""),
         pix_checkout_automatico=infinitepay_ativo(),
-        pagamento_obrigatorio=config.get("exigir_pagamento_online", False),
+        pagamento_obrigatorio=config.get("exigir_pagamento_online", False) or pedido_somente_apos_pagamento,
+        pedido_somente_apos_pagamento=pedido_somente_apos_pagamento,
+        pagamento_confirmado=False,
+        abrir_whatsapp_automaticamente=False,
     )
 
 
-def montar_mensagem_whatsapp(pedido, pagamento_link=""):
+def montar_mensagem_whatsapp(pedido, pagamento_link="", pagamento_confirmado=False):
     cliente = pedido.get("cliente", {})
     itens = pedido.get("itens", [])
     linhas_itens = []
@@ -2225,7 +2283,9 @@ def montar_mensagem_whatsapp(pedido, pagamento_link=""):
     )
     if pagamento_link:
         mensagem += f"\n\n💳 Link de pagamento InfinitePay: {pagamento_link}"
-    if CHAVE_PIX:
+    if pagamento_confirmado:
+        mensagem += "\n\n✅ *Pagamento confirmado pela InfinitePay.*"
+    if CHAVE_PIX and not pagamento_confirmado:
         mensagem += f"\n\n📌 Chave Pix para pagamento: {CHAVE_PIX}"
         if NOME_PIX:
             mensagem += f"\nTitular Pix: {NOME_PIX}"
@@ -2248,12 +2308,37 @@ def retorno_pagamento():
 
     if order_nsu.isdigit():
         pedido_id = int(order_nsu)
+        pedido_antes = buscar_pedido(pedido_id)
+        modo_pos_pagamento = pedido_modo_pos_pagamento(pedido_antes)
         payment = consultar_pagamento_infinitepay(order_nsu, transaction_nsu=transaction_nsu, slug=slug) or {}
         if receipt_url and "receipt_url" not in payment:
             payment["receipt_url"] = receipt_url
         if capture_method and "capture_method" not in payment:
             payment["capture_method"] = capture_method
         atualizar_status_pagamento_infinitepay(pedido_id, payment)
+        if modo_pos_pagamento and payment.get("paid"):
+            pedido_confirmado = buscar_pedido(pedido_id)
+            if pedido_confirmado:
+                if str(session.get("pagamento_pendente_id", "")) == str(pedido_id):
+                    session.pop("pagamento_pendente_id", None)
+                    session.modified = True
+                mensagem = montar_mensagem_whatsapp(pedido_confirmado, pagamento_confirmado=True)
+                whatsapp_destino = criar_link_whatsapp(
+                    get_numero_vendedor(pedido_confirmado.get("destinatario", "italo")),
+                    mensagem,
+                )
+                return render_template(
+                    "pedido_criado.html",
+                    pedido=pedido_confirmado,
+                    whatsapp_destino=whatsapp_destino,
+                    responsavel_nome=pedido_confirmado.get("nome_vendedor", "Responsável"),
+                    pagamento_link="",
+                    pix_checkout_automatico=True,
+                    pagamento_obrigatorio=False,
+                    pedido_somente_apos_pagamento=True,
+                    pagamento_confirmado=True,
+                    abrir_whatsapp_automaticamente=True,
+                )
         set_mensagem("mensagem_home", f"Retorno recebido do pedido #{pedido_id}.")
     else:
         set_mensagem("mensagem_home", "Retorno de pagamento recebido.")
@@ -2332,7 +2417,7 @@ def admin():
     if not admin_logado():
         return redirect("/admin/login")
 
-    pedidos = ler_pedidos()
+    pedidos = [p for p in ler_pedidos() if not pedido_aguardando_liberacao(p)]
     sabores = ler_sabores()
     config = ler_config()
 
@@ -2492,7 +2577,7 @@ def filtrar_pedidos_analise(pedidos, data_inicial='', data_final='', responsavel
 def admin_analise():
     if not admin_logado():
         return redirect('/admin/login')
-    pedidos = ler_pedidos()
+    pedidos = [p for p in ler_pedidos() if not pedido_aguardando_liberacao(p)]
     hoje = now_local().strftime('%Y-%m-%d')
     periodo = request.args.get('periodo', 'todos').strip().lower()
     data_inicial = request.args.get('data_inicial', '').strip()
@@ -2747,6 +2832,9 @@ def admin_configuracoes():
     config["bloquear_karina"] = request.form.get("bloquear_karina") == "on"
     config["exigir_cadastro"] = request.form.get("exigir_cadastro") == "on"
     config["exigir_pagamento_online"] = request.form.get("exigir_pagamento_online") == "on"
+    config["pedido_somente_apos_pagamento"] = request.form.get("pedido_somente_apos_pagamento") == "on"
+    if config["pedido_somente_apos_pagamento"]:
+        config["exigir_pagamento_online"] = True
     config["whatsapp_suporte_ativo"] = request.form.get("whatsapp_suporte_ativo") == "on"
     config["entrega_gratis"] = request.form.get("entrega_gratis") == "on"
     try:
@@ -3014,6 +3102,30 @@ def pagar_pedido(pedido_id):
         set_mensagem("mensagem_home", "Link de pagamento não encontrado para este pedido.")
         return redirect("/")
     return redirect(pedido.get("pagamento_link"))
+
+
+@app.route("/pedido/<int:pedido_id>/cancelar-pagamento", methods=["POST"])
+def cancelar_pagamento_pendente(pedido_id):
+    if str(session.get("pagamento_pendente_id", "")) != str(pedido_id):
+        set_mensagem("mensagem_home", "Não foi possível identificar esse pagamento nesta sessão.")
+        return redirect("/")
+
+    pedido = buscar_pedido(pedido_id)
+    if pedido and pedido_aguardando_liberacao(pedido):
+        restaurar_estoque_do_pedido(pedido)
+        atualizar_pedido_db(
+            pedido_id,
+            status="cancelado",
+            pagamento_status="cancelado",
+            payment_detail="pagamento_cancelado_pelo_cliente",
+            oculto=True,
+        )
+        set_mensagem("mensagem_home", "Pagamento cancelado. Os itens voltaram ao estoque e você pode montar outro carrinho.")
+    else:
+        set_mensagem("mensagem_home", "Esse pagamento já foi processado ou não está mais pendente.")
+    session.pop("pagamento_pendente_id", None)
+    session.modified = True
+    return redirect("/")
 
 
 def montar_pedido_rapido_admin(cliente_nome, cliente_telefone, cliente_endereco, destinatario, pagamento_status, status, itens):
