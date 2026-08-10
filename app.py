@@ -2631,7 +2631,10 @@ def admin_analise():
     pedidos_por_dia = {}
     devedores = {}
     for pedido in filtrados:
-        pedidos_por_dia[pedido.get('data_filtro', '')] = pedidos_por_dia.get(pedido.get('data_filtro', ''), {'pedidos': 0, 'faturamento': 0.0})
+        pedidos_por_dia[pedido.get('data_filtro', '')] = pedidos_por_dia.get(
+            pedido.get('data_filtro', ''),
+            {'pedidos': 0, 'tabus': 0, 'faturamento': 0.0},
+        )
         pedidos_por_dia[pedido.get('data_filtro', '')]['pedidos'] += 1
         pedidos_por_dia[pedido.get('data_filtro', '')]['faturamento'] += float(pedido.get('total', 0) or 0)
         cliente = pedido.get('cliente', {}).get('nome', 'Cliente')
@@ -2649,6 +2652,7 @@ def admin_analise():
             nome = item.get('nome', 'Sem nome')
             qtd = int(item.get('quantidade', 0) or 0)
             subtotal = float(item.get('subtotal', 0) or 0)
+            pedidos_por_dia[pedido.get('data_filtro', '')]['tabus'] += qtd
             sabores[nome] = sabores.get(nome, 0) + qtd
             faturamento_sabor[nome] = faturamento_sabor.get(nome, 0.0) + subtotal
 
@@ -2661,7 +2665,12 @@ def admin_analise():
         item['percentual'] = round((item['quantidade'] / max_qtd) * 100, 1) if max_qtd else 0
 
     pedidos_dia_lista = [
-        {'data': data, 'pedidos': info['pedidos'], 'faturamento': round(info['faturamento'], 2)}
+        {
+            'data': data,
+            'pedidos': info['pedidos'],
+            'tabus': info['tabus'],
+            'faturamento': round(info['faturamento'], 2),
+        }
         for data, info in sorted(pedidos_por_dia.items())
     ]
 

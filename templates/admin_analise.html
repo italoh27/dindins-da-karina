@@ -187,7 +187,7 @@
 
       <aside class="admin-coluna-lateral">
         <div class="admin-box"><div class="admin-box-topo"><h2>Sabores mais vendidos</h2></div>{% for item in ranking_sabores[:10] %}<div class="grafico-barra-item"><div class="grafico-barra-topo"><span>{{ item.nome }}</span><strong>{{ item.quantidade }}</strong></div><div class="grafico-barra-trilho"><div class="grafico-barra-preenchimento" style="width: {{ item.percentual }}%"></div></div><small>Faturamento: R$ {{ '%.2f'|format(item.faturamento) }}</small></div>{% else %}<p class="texto-ajuda-admin">Sem dados no período.</p>{% endfor %}</div>
-        <div class="admin-box"><div class="admin-box-topo"><h2>Pedidos por dia</h2></div>{% for item in pedidos_dia_lista %}<div class="metrica-linha"><span>{{ item.data }}</span><strong>{{ item.pedidos }} pedido(s) · R$ {{ '%.2f'|format(item.faturamento) }}</strong></div>{% else %}<p class="texto-ajuda-admin">Sem dados diários no período.</p>{% endfor %}</div>
+        <div class="admin-box"><div class="admin-box-topo"><h2>Pedidos por dia</h2></div>{% for item in pedidos_dia_lista %}<div class="metrica-linha"><span>{{ item.data }}</span><strong>{{ item.pedidos }} pedido(s) &middot; {{ item.tabus }} tabu(s) &middot; R$ {{ '%.2f'|format(item.faturamento) }}</strong></div>{% else %}<p class="texto-ajuda-admin">Sem dados diários no período.</p>{% endfor %}</div>
       </aside>
     </section>
   </div>
