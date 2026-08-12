@@ -100,6 +100,7 @@ def configuracao_padrao():
         "exigir_cadastro": False,
         "exigir_pagamento_online": False,
         "pedido_somente_apos_pagamento": False,
+        "fidelidade_ativa": False,
         "entrega_gratis": True,
         "taxa_entrega": 0.0,
         "whatsapp_suporte_ativo": True,
@@ -646,6 +647,34 @@ def ensure_database():
                     resolvido_em TIMESTAMP NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS fidelidade_saldos (
+                    cliente_id BIGINT PRIMARY KEY REFERENCES clientes(id) ON DELETE CASCADE,
+                    progresso_5 INTEGER NOT NULL DEFAULT 0,
+                    progresso_7 INTEGER NOT NULL DEFAULT 0,
+                    premios_5 INTEGER NOT NULL DEFAULT 0,
+                    premios_7 INTEGER NOT NULL DEFAULT 0,
+                    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+                );
+
+                CREATE TABLE IF NOT EXISTS fidelidade_movimentos (
+                    pedido_id BIGINT PRIMARY KEY REFERENCES pedidos(id) ON DELETE CASCADE,
+                    cliente_id BIGINT NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+                    quantidade_5 INTEGER NOT NULL DEFAULT 0,
+                    quantidade_7 INTEGER NOT NULL DEFAULT 0,
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                );
+
+                CREATE TABLE IF NOT EXISTS fidelidade_notificacoes (
+                    id BIGSERIAL PRIMARY KEY,
+                    cliente_id BIGINT NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+                    pedido_id BIGINT REFERENCES pedidos(id) ON DELETE SET NULL,
+                    faixa INTEGER NOT NULL,
+                    quantidade INTEGER NOT NULL DEFAULT 1,
+                    entregue BOOLEAN NOT NULL DEFAULT FALSE,
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                    entregue_em TIMESTAMP NULL
+                );
+
                 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS oculto BOOLEAN NOT NULL DEFAULT FALSE;
                 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS ocultado_em TIMESTAMP NULL;
                 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS taxa_entrega NUMERIC(10,2) NOT NULL DEFAULT 0;
@@ -667,6 +696,7 @@ def ensure_database():
                 CREATE INDEX IF NOT EXISTS idx_pagamentos_log_payment_id ON pagamentos_log (payment_id);
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_clientes_telefone ON clientes (telefone);
                 CREATE INDEX IF NOT EXISTS idx_recuperacoes_status ON recuperacoes_senha (status, solicitado_em DESC);
+                CREATE INDEX IF NOT EXISTS idx_fidelidade_notificacoes_pendentes ON fidelidade_notificacoes (entregue, id DESC);
                 """
             )
         conn.commit()
@@ -1376,6 +1406,123 @@ def registrar_pagamento_log(pedido_id, payment_id, status, raw_payload):
         conn.commit()
 
 
+def quantidades_fidelidade_pedido(pedido):
+    quantidade_5 = sum(
+        int(item.get("quantidade", 0) or 0)
+        for item in (pedido or {}).get("itens", [])
+        if money(item.get("preco_unitario", 0)) == Decimal("5.00")
+    )
+    quantidade_7 = sum(
+        int(item.get("quantidade", 0) or 0)
+        for item in (pedido or {}).get("itens", [])
+        if money(item.get("preco_unitario", 0)) == Decimal("7.00")
+    )
+    return quantidade_5, quantidade_7
+
+
+def processar_fidelidade_pedido(pedido_id):
+    """Credita uma única vez as unidades elegíveis de um pedido pago."""
+    if not db_enabled() or not ler_config().get("fidelidade_ativa", False):
+        return []
+    pedido = buscar_pedido(pedido_id)
+    if not pedido or pedido.get("pagamento_status") != "pago":
+        return []
+
+    telefone = normalizar_telefone_br(pedido.get("cliente", {}).get("telefone", ""))
+    if not telefone:
+        return []
+    quantidade_5, quantidade_7 = quantidades_fidelidade_pedido(pedido)
+    if quantidade_5 <= 0 and quantidade_7 <= 0:
+        return []
+
+    novos_premios = []
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM clientes WHERE telefone = %s", (telefone,))
+            cliente = cur.fetchone()
+            if not cliente:
+                return []
+            cliente_id = int(cliente["id"])
+            cur.execute(
+                """
+                INSERT INTO fidelidade_movimentos (pedido_id, cliente_id, quantidade_5, quantidade_7)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (pedido_id) DO NOTHING
+                RETURNING pedido_id
+                """,
+                (int(pedido_id), cliente_id, quantidade_5, quantidade_7),
+            )
+            if not cur.fetchone():
+                return []
+            cur.execute(
+                "INSERT INTO fidelidade_saldos (cliente_id) VALUES (%s) ON CONFLICT (cliente_id) DO NOTHING",
+                (cliente_id,),
+            )
+            cur.execute("SELECT * FROM fidelidade_saldos WHERE cliente_id = %s FOR UPDATE", (cliente_id,))
+            saldo = cur.fetchone()
+            total_5 = int(saldo["progresso_5"] or 0) + quantidade_5
+            total_7 = int(saldo["progresso_7"] or 0) + quantidade_7
+            ganhou_5, progresso_5 = divmod(total_5, 10)
+            ganhou_7, progresso_7 = divmod(total_7, 10)
+            cur.execute(
+                """
+                UPDATE fidelidade_saldos
+                SET progresso_5 = %s, progresso_7 = %s,
+                    premios_5 = premios_5 + %s, premios_7 = premios_7 + %s,
+                    updated_at = NOW()
+                WHERE cliente_id = %s
+                """,
+                (progresso_5, progresso_7, ganhou_5, ganhou_7, cliente_id),
+            )
+            for faixa, quantidade in ((5, ganhou_5), (7, ganhou_7)):
+                if quantidade:
+                    cur.execute(
+                        """
+                        INSERT INTO fidelidade_notificacoes (cliente_id, pedido_id, faixa, quantidade)
+                        VALUES (%s, %s, %s, %s) RETURNING id
+                        """,
+                        (cliente_id, int(pedido_id), faixa, quantidade),
+                    )
+                    novos_premios.append({"faixa": faixa, "quantidade": quantidade, "id": int(cur.fetchone()["id"])})
+        conn.commit()
+    return novos_premios
+
+
+def processar_fidelidade_com_seguranca(pedido_id):
+    try:
+        return processar_fidelidade_pedido(pedido_id)
+    except Exception:
+        app.logger.exception("Falha ao processar fidelidade do pedido %s", pedido_id)
+        return []
+
+
+def listar_premios_fidelidade_pendentes():
+    if not db_enabled():
+        return []
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT n.id, n.pedido_id, n.faixa, n.quantidade, n.created_at,
+                       c.nome, c.telefone
+                FROM fidelidade_notificacoes n
+                JOIN clientes c ON c.id = n.cliente_id
+                WHERE n.entregue = FALSE
+                ORDER BY n.id DESC
+                """
+            )
+            return cur.fetchall()
+
+
+def ultimo_id_notificacao_fidelidade():
+    if not db_enabled():
+        return 0
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COALESCE(MAX(id), 0) AS id FROM fidelidade_notificacoes")
+            return int(cur.fetchone()["id"] or 0)
+
+
 def restaurar_estoque_do_pedido(pedido):
     if not pedido or pedido.get("estoque_devolvido"):
         return False
@@ -1607,6 +1754,7 @@ def atualizar_status_pagamento_infinitepay(pedido_id, payment_data):
         return False
 
     paid = bool(payment_data.get("paid"))
+    ja_estava_pago = pedido.get("pagamento_status") == "pago"
     if pedido.get("pagamento_status") == "pago" and not paid:
         return True
     capture_method = str(payment_data.get("capture_method", "")).strip()
@@ -1632,6 +1780,8 @@ def atualizar_status_pagamento_infinitepay(pedido_id, payment_data):
         campos_atualizacao.update(oculto=False, ocultado_em=None)
     atualizar_pedido_db(pedido_id, **campos_atualizacao)
     registrar_pagamento_log(pedido_id, transaction_nsu, "paid" if paid else "pending", payment_data)
+    if paid and not ja_estava_pago:
+        processar_fidelidade_com_seguranca(pedido_id)
     return True
 
 # =========================
@@ -2511,6 +2661,8 @@ def admin():
     }
 
     ultimo_pedido_id = max([int(p.get("id", 0) or 0) for p in pedidos], default=0)
+    premios_fidelidade = listar_premios_fidelidade_pendentes() if config.get("fidelidade_ativa", False) else []
+    ultimo_fidelidade_id = ultimo_id_notificacao_fidelidade()
     resumo_status = resumo_status_pedidos(pedidos_filtrados)
 
     return render_template(
@@ -2537,6 +2689,8 @@ def admin():
         infinitepay_ativo=infinitepay_ativo(),
         abas_pedidos=abas_pedidos,
         ultimo_pedido_id=ultimo_pedido_id,
+        premios_fidelidade=premios_fidelidade,
+        ultimo_fidelidade_id=ultimo_fidelidade_id,
         metricas_responsavel=metricas_responsavel,
         request_path=request.full_path if request.query_string else request.path,
         quick_order_url="/admin/pedido_rapido",
@@ -2740,6 +2894,7 @@ def marcar_pago_cliente():
         if db_enabled():
             if atualizar_pedido_db(int(pedido.get('id')), pagamento_status='pago'):
                 atualizados += 1
+                processar_fidelidade_com_seguranca(int(pedido.get('id')))
         else:
             pedido['pagamento_status'] = 'pago'
             atualizados += 1
@@ -2842,6 +2997,7 @@ def admin_configuracoes():
     config["exigir_cadastro"] = request.form.get("exigir_cadastro") == "on"
     config["exigir_pagamento_online"] = request.form.get("exigir_pagamento_online") == "on"
     config["pedido_somente_apos_pagamento"] = request.form.get("pedido_somente_apos_pagamento") == "on"
+    config["fidelidade_ativa"] = request.form.get("fidelidade_ativa") == "on"
     if config["pedido_somente_apos_pagamento"]:
         config["exigir_pagamento_online"] = True
     config["whatsapp_suporte_ativo"] = request.form.get("whatsapp_suporte_ativo") == "on"
@@ -2932,6 +3088,7 @@ def marcar_pago(pedido_id):
     if not admin_logado():
         return redirect("/admin/login")
     atualizar_pedido_db(pedido_id, pagamento_status="pago")
+    processar_fidelidade_com_seguranca(pedido_id)
     return redirect_admin_back("/admin")
 
 
@@ -3021,6 +3178,10 @@ def admin_notificacoes():
         ultimo_visto = int(request.args.get("ultimo_id", 0) or 0)
     except ValueError:
         ultimo_visto = 0
+    try:
+        ultimo_fidelidade = int(request.args.get("ultimo_fidelidade_id", 0) or 0)
+    except ValueError:
+        ultimo_fidelidade = 0
     if db_enabled():
         with get_conn() as conn:
             with conn.cursor() as cur:
@@ -3035,6 +3196,18 @@ def admin_notificacoes():
                     (ultimo_visto,),
                 )
                 rows = cur.fetchall()
+                cur.execute(
+                    """
+                    SELECT n.id, n.faixa, n.quantidade, c.nome
+                    FROM fidelidade_notificacoes n
+                    JOIN clientes c ON c.id = n.cliente_id
+                    WHERE n.id > %s
+                    ORDER BY n.id
+                    LIMIT 100
+                    """,
+                    (ultimo_fidelidade,),
+                )
+                rows_fidelidade = cur.fetchall()
         novos = [
             {
                 "id": int(row["id"]),
@@ -3045,9 +3218,15 @@ def admin_notificacoes():
             }
             for row in rows
         ]
+        fidelidade = [
+            {"id": int(row["id"]), "cliente": row["nome"], "faixa": int(row["faixa"]), "quantidade": int(row["quantidade"])}
+            for row in rows_fidelidade
+        ]
         return jsonify({
             "novos": novos,
             "ultimo_id": max([ultimo_visto] + [item["id"] for item in novos]),
+            "fidelidade": fidelidade,
+            "ultimo_fidelidade_id": max([ultimo_fidelidade] + [item["id"] for item in fidelidade]),
         })
 
     novos = []
@@ -3066,7 +3245,34 @@ def admin_notificacoes():
     return jsonify({
         "novos": novos,
         "ultimo_id": max([ultimo_visto] + [item["id"] for item in novos]),
+        "fidelidade": [],
+        "ultimo_fidelidade_id": ultimo_fidelidade,
     })
+
+
+@app.route("/admin/fidelidade/<int:notificacao_id>/entregar", methods=["POST"])
+def entregar_premio_fidelidade(notificacao_id):
+    if not admin_logado():
+        return redirect("/admin/login")
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM fidelidade_notificacoes WHERE id = %s FOR UPDATE", (notificacao_id,))
+            premio = cur.fetchone()
+            if not premio or premio["entregue"]:
+                set_mensagem("mensagem_admin", "Esse brinde já foi entregue ou não foi encontrado.")
+                return redirect_admin_back("/admin")
+            campo = "premios_5" if int(premio["faixa"]) == 5 else "premios_7"
+            cur.execute(
+                f"UPDATE fidelidade_saldos SET {campo} = GREATEST(0, {campo} - %s), updated_at = NOW() WHERE cliente_id = %s",
+                (int(premio["quantidade"]), int(premio["cliente_id"])),
+            )
+            cur.execute(
+                "UPDATE fidelidade_notificacoes SET entregue = TRUE, entregue_em = NOW() WHERE id = %s",
+                (notificacao_id,),
+            )
+        conn.commit()
+    set_mensagem("mensagem_admin", "Brinde de fidelidade marcado como entregue.")
+    return redirect_admin_back("/admin")
 
 
 
@@ -3238,6 +3444,8 @@ def admin_pedido_rapido_criar():
         itens=itens,
     )
     criar_pedido_db(pedido)
+    if pedido.get("pagamento_status") == "pago":
+        processar_fidelidade_com_seguranca(pedido["id"])
     set_mensagem("mensagem_admin", f"Pedido rápido #{pedido['id']} criado com sucesso.")
     return redirect("/admin")
 
