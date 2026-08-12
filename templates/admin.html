@@ -144,12 +144,11 @@
                     <div class="pedidos-grid-admin pedidos-grid-admin-pro pedidos-grid-unificado" id="pedidosGridAdmin">
                         {% for pedido in abas_pedidos['todos'] %}
                         <details class="pedido-card pedido-card-admin-melhorado pedido-card-operacional pedido-lista-expansivel {% if loop.first %}pedido-card-recente{% endif %} {% if pedido.oculto %}pedido-card-oculto{% endif %}"
-                                 data-filter-tags="todos {% if pedido.pagamento_status == 'aguardando_pagamento' %}nao_pagos{% endif %} {% if pedido.pagamento_status == 'pago' %}pagos{% endif %} {% if pedido.status == 'cancelado' or pedido.pagamento_status == 'cancelado' %}cancelados{% endif %} {% if pedido.oculto %}ocultos{% endif %}">
+                                 data-filter-tags="todos {% if pedido.status == 'cancelado' or pedido.pagamento_status == 'cancelado' %}cancelados{% elif pedido.pagamento_status == 'aguardando_pagamento' %}nao_pagos{% elif pedido.pagamento_status == 'pago' %}pagos{% endif %} {% if pedido.oculto %}ocultos{% endif %}">
                             <summary class="pedido-lista-resumo">
                                 <span class="pedido-lista-indicador" aria-hidden="true"></span>
                                 <span class="pedido-lista-cliente">{{ pedido.cliente.nome }}</span>
                                 <span class="pedido-lista-data">{{ pedido.data }}</span>
-                                <span class="pedido-lista-abrir">Ver pedido</span>
                             </summary>
                             <div class="pedido-lista-detalhes">
                             <div class="pedido-cabecalho-operacional">
@@ -440,6 +439,8 @@
                     const tags = String(card.dataset.filterTags || '').split(/\s+/).filter(Boolean);
                     const mostrar = filterName === 'todos' || tags.includes(filterName);
                     card.hidden = !mostrar;
+                    card.style.display = mostrar ? '' : 'none';
+                    if (!mostrar && card.open) card.open = false;
                     if (mostrar) visiveis += 1;
                 });
                 if (contadorPedidosVisiveis) contadorPedidosVisiveis.textContent = String(visiveis);

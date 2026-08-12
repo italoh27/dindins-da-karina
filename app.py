@@ -2618,12 +2618,8 @@ def admin():
 
     aliases_status_rapidos = {"todos", "nao_pagos", "pagos", "cancelados", "ocultos"}
     status_rapido = filtro_status if filtro_status in aliases_status_rapidos else ""
-    if status_rapido in {"nao_pagos", "pagos"} and not filtro_pagamento:
-        filtro_pagamento = "aguardando_pagamento" if status_rapido == "nao_pagos" else "pago"
-    if status_rapido == "cancelados":
-        filtro_pagamento = filtro_pagamento if filtro_pagamento in {"cancelado"} else filtro_pagamento
     filtro_vendedor = request.args.get("vendedor", "").strip().lower()
-    filtro_ocultos = request.args.get("ocultos", "ocultar").strip().lower()
+    filtro_ocultos = request.args.get("ocultos", "todos").strip().lower()
 
     pedidos_filtrados = []
     for pedido in pedidos:
@@ -2637,13 +2633,7 @@ def admin():
             continue
         if filtro_data and filtro_data != data_pedido:
             continue
-        if status_rapido == "cancelados":
-            if not (status_pedido == "cancelado" or pagamento_status == "cancelado"):
-                continue
-        elif status_rapido == "ocultos":
-            if not oculto:
-                continue
-        elif filtro_status and not status_rapido and filtro_status != status_pedido:
+        if filtro_status and not status_rapido and filtro_status != status_pedido:
             continue
 
         if filtro_pagamento and pagamento_status != filtro_pagamento:
@@ -2691,7 +2681,7 @@ def admin():
     pedidos_visiveis = [p for p in pedidos_filtrados if not p.get("oculto", False)]
     pedidos_ocultos = [p for p in pedidos_filtrados if p.get("oculto", False)]
     abas_pedidos = {
-        "todos": pedidos_visiveis,
+        "todos": pedidos_filtrados,
         "nao_pagos": [p for p in pedidos_visiveis if p.get("pagamento_status") == "aguardando_pagamento"],
         "pagos": [p for p in pedidos_visiveis if p.get("pagamento_status") == "pago"],
         "cancelados": [p for p in pedidos_visiveis if p.get("status") == "cancelado" or p.get("pagamento_status") == "cancelado"],
