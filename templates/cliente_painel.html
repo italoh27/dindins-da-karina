@@ -11,6 +11,15 @@
     <nav class="cliente-nav"><a href="/" class="btn-voltar-premium btn-voltar-loja-padrao">← Voltar para a loja</a><a href="/cliente/sair" class="btn-voltar-premium">Sair</a></nav>
     <header class="cliente-hero cliente-hero-painel"><span class="eyebrow-premium">Olá, {{ cliente_nome }}</span><h1>Seus pedidos</h1><p>Acompanhe o andamento em tempo real.</p></header>
     {% if mensagem %}<div class="alerta alerta-sucesso">{{ mensagem }}</div>{% endif %}
+    {% if fidelidade_ativa %}
+    <section class="glass-card fidelidade-cliente-card">
+      <div class="fidelidade-cliente-titulo"><div><span class="eyebrow-premium">Clube de fidelidade</span><h2>Seu caminho até o próximo brinde</h2></div><span class="fidelidade-presente">🎁</span></div>
+      <div class="fidelidade-cliente-faixas">
+        <div class="fidelidade-cliente-faixa"><div><strong>Dindins de R$ 5</strong><span>{{ fidelidade.progresso_5 }}/10 comprados</span></div><div class="fidelidade-barra fidelidade-barra-cliente"><i style="width: {{ fidelidade.progresso_5 * 10 }}%"></i></div>{% if fidelidade.premios_5 %}<p>Você tem {{ fidelidade.premios_5 }} brinde(s) de até R$ 5 aguardando retirada.</p>{% else %}<small>Faltam {{ 10 - fidelidade.progresso_5 }} para ganhar um.</small>{% endif %}</div>
+        <div class="fidelidade-cliente-faixa"><div><strong>Dindins de R$ 7</strong><span>{{ fidelidade.progresso_7 }}/10 comprados</span></div><div class="fidelidade-barra fidelidade-barra-cliente"><i style="width: {{ fidelidade.progresso_7 * 10 }}%"></i></div>{% if fidelidade.premios_7 %}<p>Você tem {{ fidelidade.premios_7 }} brinde(s) de até R$ 7 aguardando retirada.</p>{% else %}<small>Faltam {{ 10 - fidelidade.progresso_7 }} para ganhar um.</small>{% endif %}</div>
+      </div>
+    </section>
+    {% endif %}
     <section class="pedidos-cliente-grid">
       {% for pedido in pedidos %}
       <article class="glass-card pedido-cliente-card">

@@ -1514,6 +1514,41 @@ def listar_premios_fidelidade_pendentes():
             return cur.fetchall()
 
 
+def listar_progresso_fidelidade_clientes():
+    if not db_enabled():
+        return []
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT c.id, c.nome, c.telefone,
+                       s.progresso_5, s.progresso_7, s.premios_5, s.premios_7
+                FROM fidelidade_saldos s
+                JOIN clientes c ON c.id = s.cliente_id
+                WHERE s.progresso_5 > 0 OR s.progresso_7 > 0
+                   OR s.premios_5 > 0 OR s.premios_7 > 0
+                ORDER BY (s.premios_5 + s.premios_7) DESC,
+                         GREATEST(s.progresso_5, s.progresso_7) DESC,
+                         c.nome
+                """
+            )
+            return [dict(row) for row in cur.fetchall()]
+
+
+def obter_progresso_fidelidade_cliente(cliente_id):
+    vazio = {"progresso_5": 0, "progresso_7": 0, "premios_5": 0, "premios_7": 0}
+    if not db_enabled() or not cliente_id:
+        return vazio
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT progresso_5, progresso_7, premios_5, premios_7 FROM fidelidade_saldos WHERE cliente_id = %s",
+                (int(cliente_id),),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else vazio
+
+
 def ultimo_id_notificacao_fidelidade():
     if not db_enabled():
         return 0
@@ -1838,10 +1873,13 @@ def area_cliente():
         return render_template("cliente_acesso.html", mensagem=pop_mensagem("mensagem_cliente"))
     telefone = session.get("cliente_telefone", "")
     pedidos = pedidos_do_cliente(telefone)
+    config = ler_config()
     return render_template(
         "cliente_painel.html",
         cliente_nome=session.get("cliente_nome", "Cliente"),
         pedidos=pedidos,
+        fidelidade_ativa=config.get("fidelidade_ativa", False),
+        fidelidade=obter_progresso_fidelidade_cliente(session.get("cliente_id")),
         mensagem=pop_mensagem("mensagem_cliente"),
     )
 
@@ -2662,6 +2700,7 @@ def admin():
 
     ultimo_pedido_id = max([int(p.get("id", 0) or 0) for p in pedidos], default=0)
     premios_fidelidade = listar_premios_fidelidade_pendentes() if config.get("fidelidade_ativa", False) else []
+    progresso_fidelidade = listar_progresso_fidelidade_clientes() if config.get("fidelidade_ativa", False) else []
     ultimo_fidelidade_id = ultimo_id_notificacao_fidelidade()
     resumo_status = resumo_status_pedidos(pedidos_filtrados)
 
@@ -2690,6 +2729,7 @@ def admin():
         abas_pedidos=abas_pedidos,
         ultimo_pedido_id=ultimo_pedido_id,
         premios_fidelidade=premios_fidelidade,
+        progresso_fidelidade=progresso_fidelidade,
         ultimo_fidelidade_id=ultimo_fidelidade_id,
         metricas_responsavel=metricas_responsavel,
         request_path=request.full_path if request.query_string else request.path,

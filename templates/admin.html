@@ -143,8 +143,15 @@
 
                     <div class="pedidos-grid-admin pedidos-grid-admin-pro pedidos-grid-unificado" id="pedidosGridAdmin">
                         {% for pedido in abas_pedidos['todos'] %}
-                        <article class="pedido-card pedido-card-admin-melhorado pedido-card-operacional {% if loop.first %}pedido-card-recente{% endif %} {% if pedido.oculto %}pedido-card-oculto{% endif %}"
+                        <details class="pedido-card pedido-card-admin-melhorado pedido-card-operacional pedido-lista-expansivel {% if loop.first %}pedido-card-recente{% endif %} {% if pedido.oculto %}pedido-card-oculto{% endif %}"
                                  data-filter-tags="todos {% if pedido.pagamento_status == 'aguardando_pagamento' %}nao_pagos{% endif %} {% if pedido.pagamento_status == 'pago' %}pagos{% endif %} {% if pedido.status == 'cancelado' or pedido.pagamento_status == 'cancelado' %}cancelados{% endif %} {% if pedido.oculto %}ocultos{% endif %}">
+                            <summary class="pedido-lista-resumo">
+                                <span class="pedido-lista-indicador" aria-hidden="true"></span>
+                                <span class="pedido-lista-cliente">{{ pedido.cliente.nome }}</span>
+                                <span class="pedido-lista-data">{{ pedido.data }}</span>
+                                <span class="pedido-lista-abrir">Ver pedido</span>
+                            </summary>
+                            <div class="pedido-lista-detalhes">
                             <div class="pedido-cabecalho-operacional">
                                 <div class="pedido-identificacao">
                                     <div class="pedido-numero-linha">
@@ -244,7 +251,8 @@
                                 {% if pedido.pagamento_link %}<a href="{{ pedido.pagamento_link }}" target="_blank" class="btn-exportar-excel">InfinitePay</a>{% endif %}
                                 {% if pedido.receipt_url %}<a href="{{ pedido.receipt_url }}" target="_blank" class="btn-exportar-excel">Comprovante</a>{% endif %}
                             </div>
-                        </article>
+                            </div>
+                        </details>
                         {% endfor %}
                     </div>
                     <div class="central-pedidos-vazio" id="centralPedidosVazio" {% if abas_pedidos['todos']|length %}hidden{% endif %}>
@@ -279,6 +287,18 @@
                         </article>
                         {% else %}
                         <p class="texto-ajuda-admin">Nenhum brinde pendente no momento.</p>
+                        {% endfor %}
+                    </div>
+                    <div class="fidelidade-progresso-admin">
+                        <h3>Clientes a caminho do brinde</h3>
+                        {% for cliente in progresso_fidelidade %}
+                        <article class="fidelidade-progresso-cliente">
+                            <div class="fidelidade-progresso-topo"><strong>{{ cliente.nome }}</strong><span>{{ cliente.telefone }}</span></div>
+                            <div class="fidelidade-faixa-linha"><span>Faixa R$ 5</span><div class="fidelidade-barra"><i style="width: {{ cliente.progresso_5 * 10 }}%"></i></div><strong>{{ cliente.progresso_5 }}/10</strong>{% if cliente.premios_5 %}<em>{{ cliente.premios_5 }} brinde(s)</em>{% endif %}</div>
+                            <div class="fidelidade-faixa-linha"><span>Faixa R$ 7</span><div class="fidelidade-barra"><i style="width: {{ cliente.progresso_7 * 10 }}%"></i></div><strong>{{ cliente.progresso_7 }}/10</strong>{% if cliente.premios_7 %}<em>{{ cliente.premios_7 }} brinde(s)</em>{% endif %}</div>
+                        </article>
+                        {% else %}
+                        <p class="texto-ajuda-admin">Ainda não há compras acumuladas na campanha.</p>
                         {% endfor %}
                     </div>
                 </div>
