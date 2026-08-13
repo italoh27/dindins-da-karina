@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260812-config-lista-v4">
+  <link rel="stylesheet" href="/static/style.css?v=20260812-visual-unificado-v5">
 </head>
 <body class="pagina-admin pagina-admin-pro">
     <div data-admin-shell="page">
@@ -90,16 +90,6 @@
                     <div class="admin-box-topo admin-box-topo-coluna">
                         <div>
                             <h2>Central de pedidos</h2>
-                            <p class="texto-ajuda-admin">Agora a central usa uma grade única, com filtro rápido real e sem repetir pedidos em várias abas.</p>
-                        </div>
-                        <div class="admin-box-filtros-rapidos admin-box-filtros-rapidos-ativo">
-                            <span class="filtro-rapido-label">Filtro rápido:</span>
-                            <div class="filtro-rapido-acoes">
-                                <button type="button" class="btn-filtro-rapido ativo" data-filter="todos">Todos</button>
-                                <button type="button" class="btn-filtro-rapido" data-filter="nao_pagos">Não pagos</button>
-                                <button type="button" class="btn-filtro-rapido" data-filter="pagos">Pagos</button>
-                                <button type="button" class="btn-filtro-rapido" data-filter="cancelados">Cancelados</button>
-                            </div>
                         </div>
                         <div class="resumo-filtros-pedidos">
                             <div class="resumo-filtro-chip ativo" data-filter="todos">
@@ -386,7 +376,6 @@
             const ultimoPedidoLido = document.getElementById('ultimoPedidoLido');
             const ultimoPedidoLidoCard = document.getElementById('ultimoPedidoLidoCard');
             const ativarBtns = [document.getElementById('ativarNotificacoesLateral')].filter(Boolean);
-            const quickFilters = document.querySelectorAll('.btn-filtro-rapido');
             const resumoChips = document.querySelectorAll('.resumo-filtro-chip');
             const pedidosCards = document.querySelectorAll('#pedidosGridAdmin .pedido-card-admin-melhorado');
             const contadorPedidosVisiveis = document.getElementById('contadorPedidosVisiveis');
@@ -398,7 +387,6 @@
             let monitoramentoAtivo = localStorage.getItem(STORAGE_MONITOR) === '1';
 
             function atualizarResumoFiltro(filterName) {
-                quickFilters.forEach((btn) => btn.classList.toggle('ativo', btn.dataset.filter === filterName));
                 resumoChips.forEach((chip) => chip.classList.toggle('ativo', chip.dataset.filter === filterName));
             }
 
@@ -434,7 +422,6 @@
                 atualizarURLFiltro(filterName);
             }
 
-            quickFilters.forEach((btn) => btn.addEventListener('click', () => aplicarFiltroPedidos(btn.dataset.filter)));
             resumoChips.forEach((chip) => chip.addEventListener('click', () => aplicarFiltroPedidos(chip.dataset.filter)));
             const initialTab = '{{ filtro_status or '' }}' || sessionStorage.getItem(STORAGE_TAB) || 'todos';
             aplicarFiltroPedidos(initialTab);
