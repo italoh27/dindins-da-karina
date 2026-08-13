@@ -1,5 +1,6 @@
 (function () {
   const ANALISE_SCROLL_KEY = 'admin-analise-scroll-y';
+  const ADMIN_OPEN_ORDER_KEY = 'admin-pedido-aberto';
 
   function isAnalysisPage() {
     return window.location.pathname === '/admin/analise';
@@ -20,6 +21,32 @@
       sessionStorage.removeItem(ANALISE_SCROLL_KEY);
       requestAnimationFrame(() => window.scrollTo({ top: Number(saved) || 0, behavior: 'auto' }));
     } catch (e) {}
+  }
+
+  function saveOpenOrder(orderId) {
+    try {
+      if (orderId) sessionStorage.setItem(ADMIN_OPEN_ORDER_KEY, String(orderId));
+      else sessionStorage.removeItem(ADMIN_OPEN_ORDER_KEY);
+    } catch (e) {}
+  }
+
+  function restoreOpenOrder() {
+    if (window.location.pathname !== '/admin') return;
+    let saved = '';
+    try { saved = sessionStorage.getItem(ADMIN_OPEN_ORDER_KEY) || ''; } catch (e) {}
+    document.querySelectorAll('details[data-pedido-id]').forEach((card) => {
+      card.open = saved !== '' && card.dataset.pedidoId === saved;
+      if (card.dataset.openStateBound === '1') return;
+      card.dataset.openStateBound = '1';
+      card.addEventListener('toggle', () => {
+        if (card.open) saveOpenOrder(card.dataset.pedidoId);
+        else {
+          try {
+            if (sessionStorage.getItem(ADMIN_OPEN_ORDER_KEY) === card.dataset.pedidoId) saveOpenOrder('');
+          } catch (e) {}
+        }
+      });
+    });
   }
 
   function getShell() {
@@ -70,6 +97,9 @@
     if (push) history.pushState({}, '', url);
 
     initAdminPage();
+    if (typeof window.initAdminPage === 'function' && window.initAdminPage !== initAdminPage) {
+      window.initAdminPage();
+    }
 
     if (preserveScroll) {
       window.scrollTo({ top: restoreY, behavior: 'auto' });
@@ -101,6 +131,8 @@
     const actionUrl = new URL(form.action, window.location.origin);
     const preserveScroll = true;
     const restoreY = window.scrollY;
+    const pedidoAberto = form.closest('details[data-pedido-id]');
+    if (pedidoAberto) saveOpenOrder(pedidoAberto.dataset.pedidoId);
     saveAnalysisScroll(restoreY);
     const fetchOptions = { method, headers: { 'X-Requested-With': 'XMLHttpRequest' } };
 
@@ -273,6 +305,7 @@
     bindSaboresSelectState();
     updateAdminReturnTargets();
     restoreAnalysisScroll();
+    restoreOpenOrder();
   }
 
   document.addEventListener('click', async (e) => {

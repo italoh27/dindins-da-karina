@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260725-admin-pedidos-pro">
+  <link rel="stylesheet" href="/static/style.css?v=20260812-central-pedidos-v3">
 </head>
 <body class="pagina-admin pagina-admin-pro">
     <div data-admin-shell="page">
@@ -144,6 +144,7 @@
                     <div class="pedidos-grid-admin pedidos-grid-admin-pro pedidos-grid-unificado" id="pedidosGridAdmin">
                         {% for pedido in abas_pedidos['todos'] %}
                         <details class="pedido-card pedido-card-admin-melhorado pedido-card-operacional pedido-lista-expansivel {% if loop.first %}pedido-card-recente{% endif %} {% if pedido.oculto %}pedido-card-oculto{% endif %}"
+                                 data-pedido-id="{{ pedido.id }}"
                                  data-filter-tags="todos {% if pedido.status == 'cancelado' or pedido.pagamento_status == 'cancelado' %}cancelados{% elif pedido.pagamento_status == 'aguardando_pagamento' %}nao_pagos{% elif pedido.pagamento_status == 'pago' %}pagos{% endif %} {% if pedido.oculto %}ocultos{% endif %}">
                             <summary class="pedido-lista-resumo">
                                 <span class="pedido-lista-indicador" aria-hidden="true"></span>
@@ -221,16 +222,17 @@
                                 {% if not pedido.oculto %}
                                     {% if pedido.pagamento_status == 'pago' %}
                                     <form class="js-admin-ajax-form" action="/admin/nao_pago/{{ pedido.id }}" method="post">
-                                    <input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-pendente" type="submit">Marcar não pago</button></form>
+                                    <input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-pendente status-acao {% if pedido.pagamento_status != 'pago' %}status-acao-ativa{% endif %}" type="submit" aria-pressed="{{ 'true' if pedido.pagamento_status != 'pago' else 'false' }}"><i aria-hidden="true"></i>Marcar não pago</button></form>
                                     {% else %}
                                     <form class="js-admin-ajax-form" action="/admin/pago/{{ pedido.id }}" method="post">
-                                    <input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-entregue" type="submit">Marcar pago</button></form>
+                                    <input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-entregue status-acao {% if pedido.pagamento_status == 'pago' %}status-acao-ativa{% endif %}" type="submit" aria-pressed="{{ 'true' if pedido.pagamento_status == 'pago' else 'false' }}"><i aria-hidden="true"></i>Marcar pago</button></form>
                                     {% endif %}
 
                                     {% if pedido.status != 'cancelado' %}
-                                    <form class="js-admin-ajax-form" action="/admin/pedido/{{ pedido.id }}/status/em_preparacao" method="post"><input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-preparo" type="submit">Em preparação</button></form>
-                                    <form class="js-admin-ajax-form" action="/admin/pedido/{{ pedido.id }}/status/saiu_entrega" method="post"><input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-rota" type="submit">Saiu p/ entrega</button></form>
-                                    <form class="js-admin-ajax-form" action="/admin/pedido/{{ pedido.id }}/status/entregue" method="post"><input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-entregue" type="submit">Entregue</button></form>
+                                    <form class="js-admin-ajax-form" action="/admin/pendente/{{ pedido.id }}" method="post"><input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-pendente status-acao {% if pedido.status == 'pendente' %}status-acao-ativa{% endif %}" type="submit" aria-pressed="{{ 'true' if pedido.status == 'pendente' else 'false' }}"><i aria-hidden="true"></i>Recebido</button></form>
+                                    <form class="js-admin-ajax-form" action="/admin/pedido/{{ pedido.id }}/status/em_preparacao" method="post"><input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-preparo status-acao {% if pedido.status == 'em_preparacao' %}status-acao-ativa{% endif %}" type="submit" aria-pressed="{{ 'true' if pedido.status == 'em_preparacao' else 'false' }}"><i aria-hidden="true"></i>Em preparação</button></form>
+                                    <form class="js-admin-ajax-form" action="/admin/pedido/{{ pedido.id }}/status/saiu_entrega" method="post"><input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-rota status-acao {% if pedido.status == 'saiu_entrega' %}status-acao-ativa{% endif %}" type="submit" aria-pressed="{{ 'true' if pedido.status == 'saiu_entrega' else 'false' }}"><i aria-hidden="true"></i>Saiu p/ entrega</button></form>
+                                    <form class="js-admin-ajax-form" action="/admin/pedido/{{ pedido.id }}/status/entregue" method="post"><input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-entregue status-acao {% if pedido.status == 'entregue' %}status-acao-ativa{% endif %}" type="submit" aria-pressed="{{ 'true' if pedido.status == 'entregue' else 'false' }}"><i aria-hidden="true"></i>Entregue</button></form>
                                     {% endif %}
 
                                     {% if pedido.status != 'cancelado' %}
@@ -389,7 +391,7 @@
 
     </div>
 
-    <script src="/static/admin_ajax.js"></script>
+    <script src="/static/admin_ajax.js?v=20260812-preserva-pedido-v2"></script>
     <script>
         window.initAdminPage = function () {
             const STORAGE_TAB = 'adminActiveTab';
