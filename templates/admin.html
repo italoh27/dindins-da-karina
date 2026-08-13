@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260812-central-pedidos-v3">
+  <link rel="stylesheet" href="/static/style.css?v=20260812-config-lista-v4">
 </head>
 <body class="pagina-admin pagina-admin-pro">
     <div data-admin-shell="page">
@@ -99,7 +99,6 @@
                                 <button type="button" class="btn-filtro-rapido" data-filter="nao_pagos">Não pagos</button>
                                 <button type="button" class="btn-filtro-rapido" data-filter="pagos">Pagos</button>
                                 <button type="button" class="btn-filtro-rapido" data-filter="cancelados">Cancelados</button>
-                                <button type="button" class="btn-filtro-rapido" data-filter="ocultos">Ocultos</button>
                             </div>
                         </div>
                         <div class="resumo-filtros-pedidos">
@@ -118,10 +117,6 @@
                             <div class="resumo-filtro-chip" data-filter="cancelados">
                                 <strong>Cancelados</strong>
                                 <span>{{ resumo_status['cancelados'] }}</span>
-                            </div>
-                            <div class="resumo-filtro-chip" data-filter="ocultos">
-                                <strong>Ocultos</strong>
-                                <span>{{ resumo_status['ocultos'] }}</span>
                             </div>
                         </div>
                         <form class="filtro-data-pedidos js-admin-ajax-form" method="get" action="/admin" id="filtroDataPedidosForm">
@@ -143,9 +138,9 @@
 
                     <div class="pedidos-grid-admin pedidos-grid-admin-pro pedidos-grid-unificado" id="pedidosGridAdmin">
                         {% for pedido in abas_pedidos['todos'] %}
-                        <details class="pedido-card pedido-card-admin-melhorado pedido-card-operacional pedido-lista-expansivel {% if loop.first %}pedido-card-recente{% endif %} {% if pedido.oculto %}pedido-card-oculto{% endif %}"
+                        <details class="pedido-card pedido-card-admin-melhorado pedido-card-operacional pedido-lista-expansivel {% if loop.first %}pedido-card-recente{% endif %}"
                                  data-pedido-id="{{ pedido.id }}"
-                                 data-filter-tags="todos {% if pedido.status == 'cancelado' or pedido.pagamento_status == 'cancelado' %}cancelados{% elif pedido.pagamento_status == 'aguardando_pagamento' %}nao_pagos{% elif pedido.pagamento_status == 'pago' %}pagos{% endif %} {% if pedido.oculto %}ocultos{% endif %}">
+                                 data-filter-tags="todos {% if pedido.status == 'cancelado' or pedido.pagamento_status == 'cancelado' %}cancelados{% elif pedido.pagamento_status == 'aguardando_pagamento' %}nao_pagos{% elif pedido.pagamento_status == 'pago' %}pagos{% endif %}">
                             <summary class="pedido-lista-resumo">
                                 <span class="pedido-lista-indicador" aria-hidden="true"></span>
                                 <span class="pedido-lista-cliente">{{ pedido.cliente.nome }}</span>
@@ -156,7 +151,7 @@
                                 <div class="pedido-identificacao">
                                     <div class="pedido-numero-linha">
                                         <span class="pedido-id-destaque">Pedido #{{ pedido.id }}</span>
-                                        {% if loop.first and not pedido.oculto %}<span class="pedido-novo-sinal"><i></i> Mais recente</span>{% endif %}
+                                        {% if loop.first %}<span class="pedido-novo-sinal"><i></i> Mais recente</span>{% endif %}
                                     </div>
                                     <h3>{{ pedido.cliente.nome }}</h3>
                                     <p class="pedido-data-operacional">{{ pedido.data }}</p>
@@ -164,7 +159,6 @@
                                 <div class="pedido-status-box pedido-status-operacional">
                                     <span class="badge {{ 'badge-pago' if pedido.pagamento_status == 'pago' else 'badge-pendente' }}">{{ pedido.pagamento_status_legivel }}</span>
                                     <span class="badge status-{{ pedido.status }}">{{ pedido.status_legivel }}</span>
-                                    {% if pedido.oculto %}<span class="badge badge-estoque">Oculto</span>{% endif %}
                                 </div>
                             </div>
 
@@ -185,12 +179,6 @@
                                 <div class="pedido-info-bloco">
                                     <span class="pedido-info-rotulo">Pagamento</span>
                                     <strong>{{ pedido.payment_method }}</strong>
-                                </div>
-                                {% endif %}
-                                {% if pedido.ocultado_em %}
-                                <div class="pedido-info-bloco">
-                                    <span class="pedido-info-rotulo">Ocultado em</span>
-                                    <strong>{{ pedido.ocultado_em }}</strong>
                                 </div>
                                 {% endif %}
                             </div>
@@ -219,7 +207,6 @@
                                 <a href="/admin/pedido/{{ pedido.id }}/editar" class="btn-editar-pedido-mini js-admin-ajax-link">Editar pedido</a>
                             </div>
                             <div class="pedido-topo-botoes pedido-topo-botoes-grid pedido-acoes-grid-pro">
-                                {% if not pedido.oculto %}
                                     {% if pedido.pagamento_status == 'pago' %}
                                     <form class="js-admin-ajax-form" action="/admin/nao_pago/{{ pedido.id }}" method="post">
                                     <input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-status-pendente status-acao {% if pedido.pagamento_status != 'pago' %}status-acao-ativa{% endif %}" type="submit" aria-pressed="{{ 'true' if pedido.pagamento_status != 'pago' else 'false' }}"><i aria-hidden="true"></i>Marcar não pago</button></form>
@@ -238,15 +225,6 @@
                                     {% if pedido.status != 'cancelado' %}
                                     <form class="js-admin-ajax-form" action="/admin/cancelar/{{ pedido.id }}" method="post" onsubmit="return confirm('Deseja cancelar este pedido? Se ainda não foi pago, o estoque será devolvido.');"><button class="btn-excluir-um" type="submit">Cancelar</button></form>
                                     {% endif %}
-
-                                    {% if pedido.status == 'cancelado' or pedido.pagamento_status in ['aguardando_pagamento', 'cancelado', 'falhou'] %}
-                                    <form class="js-admin-ajax-form" action="/admin/ocultar/{{ pedido.id }}" method="post">
-                                    <input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-limpar" type="submit">Ocultar</button></form>
-                                    {% endif %}
-                                {% else %}
-                                    <form class="js-admin-ajax-form" action="/admin/reexibir/{{ pedido.id }}" method="post">
-                                    <input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-admin-topo" type="submit">Reexibir</button></form>
-                                {% endif %}
 
                                 <form class="js-admin-ajax-form" action="/admin/excluir/{{ pedido.id }}" method="post" onsubmit="return confirm('Deseja excluir permanentemente este pedido?');"><button class="btn-excluir-um" type="submit">Deletar pedido</button></form>
                                 {% if pedido.pagamento_link %}<a href="{{ pedido.pagamento_link }}" target="_blank" class="btn-exportar-excel">InfinitePay</a>{% endif %}
@@ -323,63 +301,66 @@
                     <div class="admin-box-topo">
                         <h2>Configuração da loja</h2>
                     </div>
-                    <form action="/admin/loja/toggle" method="post" class="stack-form-admin">
+                    <div class="config-lista-loja">
+                    <form action="/admin/loja/toggle" method="post" class="stack-form-admin config-lista-item config-lista-status-loja">
+                        <span><strong>Status dos pedidos</strong><small>{{ 'Loja aberta e recebendo pedidos' if config.loja_aberta else 'Loja fechada para novos pedidos' }}</small></span>
                         <button type="submit" class="{{ 'btn-status-pendente' if config.loja_aberta else 'btn-status-entregue' }} btn-bloco-total">
                             {{ 'Bloquear pedidos' if config.loja_aberta else 'Liberar pedidos' }}
                         </button>
                     </form>
                     <form class="form-admin-config form-admin-config-pro" action="/admin/configuracoes" method="post">
-                        <input type="text" name="mensagem_loja_fechada" placeholder="Mensagem quando a loja estiver fechada" value="{{ config.mensagem_loja_fechada }}">
-                        <div class="status-integration-box">{{ 'InfinitePay ativa' if config.infinitepay_ativo else 'InfinitePay desativada' }}</div>
-                        <label class="check-admin check-admin-pro">
+                        <label class="config-lista-item config-lista-campo"><span><strong>Mensagem da loja fechada</strong><small>Texto exibido ao cliente quando os pedidos estiverem bloqueados.</small></span><input type="text" name="mensagem_loja_fechada" placeholder="Mensagem quando a loja estiver fechada" value="{{ config.mensagem_loja_fechada }}"></label>
+                        <div class="status-integration-box config-lista-item"><span><strong>Integração de pagamento</strong><small>Status atual do checkout</small></span><b>{{ 'InfinitePay ativa' if config.infinitepay_ativo else 'InfinitePay desativada' }}</b></div>
+                        <label class="check-admin check-admin-pro config-lista-item">
                             <span>Ativar checkout InfinitePay</span>
                             <input type="checkbox" name="infinitepay_ativo" {% if config.infinitepay_ativo %}checked{% endif %}>
                         </label>
-                        <label class="check-admin check-admin-pro">
+                        <label class="check-admin check-admin-pro config-lista-item">
                             <span>Exigir cadastro para fazer pedidos</span>
                             <input type="checkbox" name="exigir_cadastro" {% if config.exigir_cadastro %}checked{% endif %}>
                         </label>
-                        <label class="check-admin check-admin-pro">
+                        <label class="check-admin check-admin-pro config-lista-item">
                             <span>Exigir pagamento online ao finalizar</span>
                             <input type="checkbox" name="exigir_pagamento_online" {% if config.exigir_pagamento_online %}checked{% endif %}>
                         </label>
-                        <label class="check-admin check-admin-pro check-fidelidade-admin">
+                        <label class="check-admin check-admin-pro check-fidelidade-admin config-lista-item">
                             <span>
                                 Ativar campanha de fidelidade
                                 <small>A cada 10 dindins de R$ 5 ou R$ 7, o cliente cadastrado ganha 1 dindin da mesma faixa.</small>
                             </span>
                             <input type="checkbox" name="fidelidade_ativa" {% if config.fidelidade_ativa %}checked{% endif %}>
                         </label>
-                        <label class="check-admin check-admin-pro check-modo-pagamento-confirmado">
+                        <label class="check-admin check-admin-pro check-modo-pagamento-confirmado config-lista-item">
                             <span>
                                 Criar e liberar o pedido somente após o pagamento
                                 <small>O pedido fica invisível até a InfinitePay confirmar. Esta opção ativa o pagamento online obrigatório.</small>
                             </span>
                             <input type="checkbox" name="pedido_somente_apos_pagamento" {% if config.pedido_somente_apos_pagamento %}checked{% endif %}>
                         </label>
-                        <label class="check-admin check-admin-pro">
+                        <label class="check-admin check-admin-pro config-lista-item">
                             <span>Exibir botão “Fale conosco” pelo WhatsApp <small>(somente com a loja aberta)</small></span>
                             <input type="checkbox" name="whatsapp_suporte_ativo" {% if config.whatsapp_suporte_ativo %}checked{% endif %}>
                         </label>
                         <div class="config-entrega-grid">
-                            <label class="check-admin check-admin-pro">
+                            <label class="check-admin check-admin-pro config-lista-item">
                                 <span>Entrega grátis</span>
                                 <input type="checkbox" name="entrega_gratis" {% if config.entrega_gratis %}checked{% endif %}>
                             </label>
-                            <label class="campo-taxa-entrega"><span>Valor da entrega (R$)</span><input type="number" name="taxa_entrega" min="0" step="0.01" value="{{ '%.2f'|format(config.taxa_entrega or 0) }}"></label>
+                            <label class="campo-taxa-entrega config-lista-item"><span><strong>Valor da entrega</strong><small>Taxa aplicada quando a entrega grátis estiver desligada.</small></span><input type="number" name="taxa_entrega" min="0" step="0.01" value="{{ '%.2f'|format(config.taxa_entrega or 0) }}"></label>
                         </div>
                         <div class="bloqueios-responsavel-grid">
-                            <label class="check-admin check-admin-pro check-bloqueio-destinatario">
+                            <label class="check-admin check-admin-pro check-bloqueio-destinatario config-lista-item">
                                 <span>Bloquear pedidos do Italo</span>
                                 <input type="checkbox" name="bloquear_italo" {% if config.bloquear_italo %}checked{% endif %}>
                             </label>
-                            <label class="check-admin check-admin-pro check-bloqueio-destinatario">
+                            <label class="check-admin check-admin-pro check-bloqueio-destinatario config-lista-item">
                                 <span>Bloquear pedidos da Karina</span>
                                 <input type="checkbox" name="bloquear_karina" {% if config.bloquear_karina %}checked{% endif %}>
                             </label>
                         </div>
                         <button class="btn-admin-salvar-contigurações btn-bloco-total" type="submit">Salvar configurações</button>
                     </form>
+                    </div>
                     <p class="texto-ajuda-admin">O checkout online depende do <strong>INFINITEPAY_HANDLE</strong> configurado no Render, sem o símbolo $.</p>
                 </div>
 
@@ -422,7 +403,7 @@
             }
 
             function nomeFiltro(filterName) {
-                const mapa = { todos: 'Todos', nao_pagos: 'Não pagos', pagos: 'Pagos', cancelados: 'Cancelados', ocultos: 'Ocultos' };
+                const mapa = { todos: 'Todos', nao_pagos: 'Não pagos', pagos: 'Pagos', cancelados: 'Cancelados' };
                 return mapa[filterName] || 'Todos';
             }
 

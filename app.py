@@ -2605,7 +2605,10 @@ def admin():
     if not admin_logado():
         return redirect("/admin/login")
 
-    pedidos = [p for p in ler_pedidos() if not pedido_aguardando_liberacao(p)]
+    pedidos = [
+        p for p in ler_pedidos()
+        if not pedido_aguardando_liberacao(p) and not p.get("oculto", False)
+    ]
     sabores = ler_sabores()
     config = ler_config()
 
@@ -2616,10 +2619,9 @@ def admin():
     filtro_status = request.args.get("status", "").strip().lower()
     filtro_pagamento = request.args.get("pagamento", "").strip().lower()
 
-    aliases_status_rapidos = {"todos", "nao_pagos", "pagos", "cancelados", "ocultos"}
+    aliases_status_rapidos = {"todos", "nao_pagos", "pagos", "cancelados"}
     status_rapido = filtro_status if filtro_status in aliases_status_rapidos else ""
     filtro_vendedor = request.args.get("vendedor", "").strip().lower()
-    filtro_ocultos = request.args.get("ocultos", "todos").strip().lower()
 
     pedidos_filtrados = []
     for pedido in pedidos:
@@ -2628,7 +2630,6 @@ def admin():
         status_pedido = str(pedido.get("status", "pendente")).lower()
         pagamento_status = str(pedido.get("pagamento_status", "aguardando_pagamento")).lower()
         vendedor = str(pedido.get("destinatario", "italo")).lower()
-        oculto = bool(pedido.get("oculto", False))
         if filtro_cliente and filtro_cliente not in nome_cliente:
             continue
         if filtro_data and filtro_data != data_pedido:
@@ -2639,10 +2640,6 @@ def admin():
         if filtro_pagamento and pagamento_status != filtro_pagamento:
             continue
         if filtro_vendedor and filtro_vendedor != vendedor:
-            continue
-        if filtro_ocultos == "ocultar" and oculto:
-            continue
-        if filtro_ocultos == "somente" and not oculto:
             continue
         pedidos_filtrados.append(pedido)
 
@@ -2678,14 +2675,11 @@ def admin():
     pedidos_italo = [p for p in pedidos_filtrados if p.get("destinatario") == "italo"]
     pedidos_karina = [p for p in pedidos_filtrados if p.get("destinatario") == "karina"]
 
-    pedidos_visiveis = [p for p in pedidos_filtrados if not p.get("oculto", False)]
-    pedidos_ocultos = [p for p in pedidos_filtrados if p.get("oculto", False)]
     abas_pedidos = {
         "todos": pedidos_filtrados,
-        "nao_pagos": [p for p in pedidos_visiveis if p.get("pagamento_status") == "aguardando_pagamento"],
-        "pagos": [p for p in pedidos_visiveis if p.get("pagamento_status") == "pago"],
-        "cancelados": [p for p in pedidos_visiveis if p.get("status") == "cancelado" or p.get("pagamento_status") == "cancelado"],
-        "ocultos": pedidos_ocultos,
+        "nao_pagos": [p for p in pedidos_filtrados if p.get("pagamento_status") == "aguardando_pagamento"],
+        "pagos": [p for p in pedidos_filtrados if p.get("pagamento_status") == "pago"],
+        "cancelados": [p for p in pedidos_filtrados if p.get("status") == "cancelado" or p.get("pagamento_status") == "cancelado"],
     }
 
     ultimo_pedido_id = max([int(p.get("id", 0) or 0) for p in pedidos], default=0)
@@ -2711,7 +2705,6 @@ def admin():
         filtro_status=filtro_status,
         filtro_pagamento=request.args.get("pagamento", ""),
         filtro_vendedor=request.args.get("vendedor", ""),
-        filtro_ocultos=filtro_ocultos,
         sabores=sabores,
         config=config,
         mensagem=pop_mensagem("mensagem_admin"),
@@ -2739,7 +2732,7 @@ def admin_sabores():
     )
 
 
-def filtrar_pedidos_analise(pedidos, data_inicial='', data_final='', responsavel='', pagamento='', incluir_ocultos=False):
+def filtrar_pedidos_analise(pedidos, data_inicial='', data_final='', responsavel='', pagamento=''):
     resultado = []
     for pedido in pedidos:
         data_pedido = str(pedido.get('data_filtro', '') or '')
@@ -2751,8 +2744,6 @@ def filtrar_pedidos_analise(pedidos, data_inicial='', data_final='', responsavel
             continue
         if pagamento and str(pedido.get('pagamento_status', '')).lower() != pagamento:
             continue
-        if not incluir_ocultos and pedido.get('oculto', False):
-            continue
         resultado.append(pedido)
     return resultado
 
@@ -2761,14 +2752,16 @@ def filtrar_pedidos_analise(pedidos, data_inicial='', data_final='', responsavel
 def admin_analise():
     if not admin_logado():
         return redirect('/admin/login')
-    pedidos = [p for p in ler_pedidos() if not pedido_aguardando_liberacao(p)]
+    pedidos = [
+        p for p in ler_pedidos()
+        if not pedido_aguardando_liberacao(p) and not p.get('oculto', False)
+    ]
     hoje = now_local().strftime('%Y-%m-%d')
     periodo = request.args.get('periodo', 'todos').strip().lower()
     data_inicial = request.args.get('data_inicial', '').strip()
     data_final = request.args.get('data_final', '').strip()
     responsavel = request.args.get('responsavel', '').strip().lower()
     pagamento = request.args.get('pagamento', '').strip().lower()
-    incluir_ocultos = request.args.get('ocultos', '').strip().lower() == '1'
     somente_cadastrados = request.args.get('clientes_cadastrados', '').strip().lower() == '1'
     clientes_cadastrados = listar_clientes()
 
@@ -2791,7 +2784,7 @@ def admin_analise():
         data_inicial = ''
         data_final = ''
 
-    filtrados = filtrar_pedidos_analise(pedidos, data_inicial, data_final, responsavel, pagamento, incluir_ocultos)
+    filtrados = filtrar_pedidos_analise(pedidos, data_inicial, data_final, responsavel, pagamento)
     if somente_cadastrados:
         telefones_cadastrados = {normalizar_telefone_br(c.get('telefone', '')) for c in clientes_cadastrados}
         filtrados = [p for p in filtrados if normalizar_telefone_br(p.get('cliente', {}).get('telefone', '')) in telefones_cadastrados]
@@ -2884,7 +2877,6 @@ def admin_analise():
         data_final=data_final,
         responsavel=responsavel,
         pagamento=pagamento,
-        incluir_ocultos=incluir_ocultos,
         somente_cadastrados=somente_cadastrados,
         clientes_cadastrados=clientes_cadastrados,
         request_path=request.full_path if request.query_string else request.path,

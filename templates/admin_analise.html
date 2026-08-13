@@ -58,7 +58,6 @@
             <option value="cancelado" {% if pagamento=='cancelado' %}selected{% endif %}>Cancelado</option>
           </select>
         </label>
-        <label class="checkbox-analise"><input type="checkbox" name="ocultos" value="1" {% if incluir_ocultos %}checked{% endif %}> <span>Incluir ocultos</span></label>
         <label class="checkbox-analise"><input type="checkbox" name="clientes_cadastrados" value="1" {% if somente_cadastrados %}checked{% endif %}> <span>Somente clientes cadastrados</span></label>
         <div class="filtro-acoes-analise">
           <button class="btn-admin-filtrar" type="submit">Aplicar filtros</button>
