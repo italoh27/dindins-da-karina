@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260812-visual-unificado-v7">
+  <link rel="stylesheet" href="/static/style.css?v=20260812-visual-unificado-v8">
 </head>
 <body class="pagina-admin pagina-admin-pro pagina-admin-dashboard">
     <div data-admin-shell="page">
@@ -265,6 +265,16 @@
                             <div class="fidelidade-progresso-topo"><strong>{{ cliente.nome }}</strong><span>{{ cliente.telefone }}</span></div>
                             <div class="fidelidade-faixa-linha"><span>Faixa R$ 5</span><div class="fidelidade-barra"><i style="width: {{ cliente.progresso_5 * 10 }}%"></i></div><strong>{{ cliente.progresso_5 }}/10</strong>{% if cliente.premios_5 %}<em>{{ cliente.premios_5 }} brinde(s)</em>{% endif %}</div>
                             <div class="fidelidade-faixa-linha"><span>Faixa R$ 7</span><div class="fidelidade-barra"><i style="width: {{ cliente.progresso_7 * 10 }}%"></i></div><strong>{{ cliente.progresso_7 }}/10</strong>{% if cliente.premios_7 %}<em>{{ cliente.premios_7 }} brinde(s)</em>{% endif %}</div>
+                            <details class="fidelidade-ajuste-detalhes">
+                                <summary>Editar contagem</summary>
+                                <form class="fidelidade-ajuste-form js-admin-ajax-form" method="post" action="/admin/fidelidade/cliente/{{ cliente.id }}/ajustar">
+                                    <input type="hidden" name="return_to" value="{{ request_path }}#fidelidadeSecao">
+                                    <label><span>Dindins de R$ 5 no ciclo</span><input type="number" name="progresso_5" min="0" max="9" step="1" value="{{ cliente.progresso_5 }}" required></label>
+                                    <label><span>Dindins de R$ 7 no ciclo</span><input type="number" name="progresso_7" min="0" max="9" step="1" value="{{ cliente.progresso_7 }}" required></label>
+                                    <button class="btn-admin-topo" type="submit">Salvar contagem</button>
+                                </form>
+                                <small>Edite de 0 a 9. Os próximos pedidos válidos continuarão somando normalmente.</small>
+                            </details>
                         </article>
                         {% else %}
                         <p class="texto-ajuda-admin">Ainda não há compras acumuladas na campanha.</p>

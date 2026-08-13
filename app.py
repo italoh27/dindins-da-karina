@@ -1420,12 +1420,138 @@ def quantidades_fidelidade_pedido(pedido):
     return quantidade_5, quantidade_7
 
 
+def calcular_saldo_fidelidade_apos_estorno(progresso, premios, quantidade):
+    """Remove unidades de um pedido sem deixar progresso ou prêmios negativos."""
+    progresso_atual = max(0, int(progresso or 0))
+    premios_atuais = max(0, int(premios or 0))
+    quantidade_estornada = max(0, int(quantidade or 0))
+    total_restante = max(0, progresso_atual + (premios_atuais * 10) - quantidade_estornada)
+    novos_premios, novo_progresso = divmod(total_restante, 10)
+    premios_removidos = max(0, premios_atuais - novos_premios)
+    return novo_progresso, novos_premios, premios_removidos
+
+
+def _reduzir_notificacoes_fidelidade(cur, cliente_id, faixa, quantidade):
+    restante = max(0, int(quantidade or 0))
+    if restante <= 0:
+        return
+    cur.execute(
+        """
+        SELECT id, quantidade
+        FROM fidelidade_notificacoes
+        WHERE cliente_id = %s AND faixa = %s AND entregue = FALSE
+        ORDER BY id DESC
+        FOR UPDATE
+        """,
+        (int(cliente_id), int(faixa)),
+    )
+    for notificacao in cur.fetchall():
+        if restante <= 0:
+            break
+        quantidade_notificacao = max(0, int(notificacao["quantidade"] or 0))
+        if quantidade_notificacao <= restante:
+            cur.execute("DELETE FROM fidelidade_notificacoes WHERE id = %s", (int(notificacao["id"]),))
+            restante -= quantidade_notificacao
+        else:
+            cur.execute(
+                "UPDATE fidelidade_notificacoes SET quantidade = quantidade - %s WHERE id = %s",
+                (restante, int(notificacao["id"])),
+            )
+            restante = 0
+
+
+def estornar_fidelidade_pedido(pedido_id, connection=None):
+    """Estorna uma única vez a fidelidade creditada por um pedido."""
+    if not db_enabled():
+        return False
+
+    def aplicar(conn):
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT pedido_id, cliente_id, quantidade_5, quantidade_7
+                FROM fidelidade_movimentos
+                WHERE pedido_id = %s
+                FOR UPDATE
+                """,
+                (int(pedido_id),),
+            )
+            movimento = cur.fetchone()
+            if not movimento:
+                return False
+
+            cliente_id = int(movimento["cliente_id"])
+            cur.execute(
+                "INSERT INTO fidelidade_saldos (cliente_id) VALUES (%s) ON CONFLICT (cliente_id) DO NOTHING",
+                (cliente_id,),
+            )
+            cur.execute("SELECT * FROM fidelidade_saldos WHERE cliente_id = %s FOR UPDATE", (cliente_id,))
+            saldo = cur.fetchone()
+            cur.execute(
+                """
+                SELECT faixa, COALESCE(SUM(quantidade), 0) AS quantidade
+                FROM fidelidade_notificacoes
+                WHERE pedido_id = %s AND entregue = TRUE
+                GROUP BY faixa
+                """,
+                (int(pedido_id),),
+            )
+            premios_entregues = {
+                int(row["faixa"]): max(0, int(row["quantidade"] or 0))
+                for row in cur.fetchall()
+            }
+            quantidade_5_estornavel = max(
+                0, int(movimento["quantidade_5"] or 0) - (premios_entregues.get(5, 0) * 10)
+            )
+            quantidade_7_estornavel = max(
+                0, int(movimento["quantidade_7"] or 0) - (premios_entregues.get(7, 0) * 10)
+            )
+            progresso_5, premios_5, remover_premios_5 = calcular_saldo_fidelidade_apos_estorno(
+                saldo["progresso_5"], saldo["premios_5"], quantidade_5_estornavel
+            )
+            progresso_7, premios_7, remover_premios_7 = calcular_saldo_fidelidade_apos_estorno(
+                saldo["progresso_7"], saldo["premios_7"], quantidade_7_estornavel
+            )
+            _reduzir_notificacoes_fidelidade(cur, cliente_id, 5, remover_premios_5)
+            _reduzir_notificacoes_fidelidade(cur, cliente_id, 7, remover_premios_7)
+            cur.execute(
+                """
+                UPDATE fidelidade_saldos
+                SET progresso_5 = %s, progresso_7 = %s,
+                    premios_5 = %s, premios_7 = %s, updated_at = NOW()
+                WHERE cliente_id = %s
+                """,
+                (progresso_5, progresso_7, premios_5, premios_7, cliente_id),
+            )
+            cur.execute("DELETE FROM fidelidade_movimentos WHERE pedido_id = %s", (int(pedido_id),))
+            return True
+
+    if connection is not None:
+        return aplicar(connection)
+    with get_conn() as conn:
+        estornado = aplicar(conn)
+        conn.commit()
+        return estornado
+
+
+def estornar_fidelidade_com_seguranca(pedido_id):
+    try:
+        return estornar_fidelidade_pedido(pedido_id)
+    except Exception:
+        app.logger.exception("Falha ao estornar fidelidade do pedido %s", pedido_id)
+        return False
+
+
 def processar_fidelidade_pedido(pedido_id):
     """Credita uma única vez as unidades elegíveis de um pedido pago."""
     if not db_enabled() or not ler_config().get("fidelidade_ativa", False):
         return []
     pedido = buscar_pedido(pedido_id)
-    if not pedido or pedido.get("pagamento_status") != "pago":
+    if (
+        not pedido
+        or pedido.get("pagamento_status") != "pago"
+        or pedido.get("status") == "cancelado"
+    ):
         return []
 
     telefone = normalizar_telefone_br(pedido.get("cliente", {}).get("telefone", ""))
@@ -1438,6 +1564,17 @@ def processar_fidelidade_pedido(pedido_id):
     novos_premios = []
     with get_conn() as conn:
         with conn.cursor() as cur:
+            cur.execute(
+                "SELECT status, pagamento_status FROM pedidos WHERE id = %s FOR UPDATE",
+                (int(pedido_id),),
+            )
+            estado_pedido = cur.fetchone()
+            if (
+                not estado_pedido
+                or estado_pedido["pagamento_status"] != "pago"
+                or estado_pedido["status"] == "cancelado"
+            ):
+                return []
             cur.execute("SELECT id FROM clientes WHERE telefone = %s", (telefone,))
             cliente = cur.fetchone()
             if not cliente:
@@ -1522,13 +1659,16 @@ def listar_progresso_fidelidade_clientes():
             cur.execute(
                 """
                 SELECT c.id, c.nome, c.telefone,
-                       s.progresso_5, s.progresso_7, s.premios_5, s.premios_7
-                FROM fidelidade_saldos s
-                JOIN clientes c ON c.id = s.cliente_id
-                WHERE s.progresso_5 > 0 OR s.progresso_7 > 0
-                   OR s.premios_5 > 0 OR s.premios_7 > 0
-                ORDER BY (s.premios_5 + s.premios_7) DESC,
-                         GREATEST(s.progresso_5, s.progresso_7) DESC,
+                       COALESCE(s.progresso_5, 0) AS progresso_5,
+                       COALESCE(s.progresso_7, 0) AS progresso_7,
+                       COALESCE(s.premios_5, 0) AS premios_5,
+                       COALESCE(s.premios_7, 0) AS premios_7
+                FROM clientes c
+                LEFT JOIN fidelidade_saldos s ON s.cliente_id = c.id
+                WHERE COALESCE(s.progresso_5, 0) > 0 OR COALESCE(s.progresso_7, 0) > 0
+                   OR COALESCE(s.premios_5, 0) > 0 OR COALESCE(s.premios_7, 0) > 0
+                ORDER BY (COALESCE(s.premios_5, 0) + COALESCE(s.premios_7, 0)) DESC,
+                         GREATEST(COALESCE(s.progresso_5, 0), COALESCE(s.progresso_7, 0)) DESC,
                          c.nome
                 """
             )
@@ -3119,6 +3259,7 @@ def marcar_nao_pago(pedido_id):
     if not admin_logado():
         return redirect("/admin/login")
     atualizar_pedido_db(pedido_id, pagamento_status="aguardando_pagamento")
+    estornar_fidelidade_com_seguranca(pedido_id)
     return redirect_admin_back("/admin")
 
 
@@ -3160,6 +3301,7 @@ def cancelar_pedido(pedido_id):
         set_mensagem("mensagem_admin", "Pedido não encontrado.")
         return redirect("/admin")
     atualizar_pedido_db(pedido_id, status="cancelado", pagamento_status="cancelado")
+    estornar_fidelidade_com_seguranca(pedido_id)
     if pedido.get("pagamento_status") != "pago":
         restaurar_estoque_do_pedido(pedido)
     set_mensagem("mensagem_admin", f"Pedido #{pedido_id} cancelado.")
@@ -3297,6 +3439,46 @@ def entregar_premio_fidelidade(notificacao_id):
     return redirect_admin_back("/admin")
 
 
+@app.route("/admin/fidelidade/cliente/<int:cliente_id>/ajustar", methods=["POST"])
+def ajustar_progresso_fidelidade(cliente_id):
+    if not admin_logado():
+        return redirect("/admin/login")
+    try:
+        progresso_5 = int(request.form.get("progresso_5", 0) or 0)
+        progresso_7 = int(request.form.get("progresso_7", 0) or 0)
+    except (TypeError, ValueError):
+        set_mensagem("mensagem_admin", "Informe quantidades válidas para a fidelidade.")
+        return redirect_admin_back("/admin")
+    if not (0 <= progresso_5 <= 9 and 0 <= progresso_7 <= 9):
+        set_mensagem("mensagem_admin", "A contagem de cada faixa deve ficar entre 0 e 9.")
+        return redirect_admin_back("/admin")
+    if not db_enabled():
+        set_mensagem("mensagem_admin", "O ajuste de fidelidade requer o banco de dados ativo.")
+        return redirect_admin_back("/admin")
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT nome FROM clientes WHERE id = %s", (int(cliente_id),))
+            cliente = cur.fetchone()
+            if not cliente:
+                set_mensagem("mensagem_admin", "Cliente não encontrado.")
+                return redirect_admin_back("/admin")
+            cur.execute(
+                """
+                INSERT INTO fidelidade_saldos (cliente_id, progresso_5, progresso_7)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (cliente_id) DO UPDATE
+                SET progresso_5 = EXCLUDED.progresso_5,
+                    progresso_7 = EXCLUDED.progresso_7,
+                    updated_at = NOW()
+                """,
+                (int(cliente_id), progresso_5, progresso_7),
+            )
+        conn.commit()
+    set_mensagem("mensagem_admin", f"Contagem de fidelidade de {cliente['nome']} atualizada.")
+    return redirect_admin_back("/admin")
+
+
 
 
 def excluir_pedido_db(pedido_id):
@@ -3309,6 +3491,10 @@ def excluir_pedido_db(pedido_id):
         return True
     with get_conn() as conn:
         with conn.cursor() as cur:
+            cur.execute("SELECT id FROM pedidos WHERE id = %s FOR UPDATE", (int(pedido_id),))
+            if not cur.fetchone():
+                return False
+            estornar_fidelidade_pedido(pedido_id, connection=conn)
             cur.execute("DELETE FROM pedidos WHERE id = %s", (int(pedido_id),))
             deleted = cur.rowcount > 0
         conn.commit()
@@ -3357,6 +3543,7 @@ def cancelar_pagamento_pendente(pedido_id):
             payment_detail="pagamento_cancelado_pelo_cliente",
             oculto=True,
         )
+        estornar_fidelidade_com_seguranca(pedido_id)
         set_mensagem("mensagem_home", "Pagamento cancelado. Os itens voltaram ao estoque e você pode montar outro carrinho.")
     else:
         set_mensagem("mensagem_home", "Esse pagamento já foi processado ou não está mais pendente.")

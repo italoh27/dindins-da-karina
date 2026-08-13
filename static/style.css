@@ -3820,6 +3820,10 @@ input:focus,select:focus,textarea:focus{outline:3px solid rgba(34,211,238,.22)!i
     100%{background-position:center center,72% center;background-size:cover,auto 108vh}
   }
 }
+
+/* === Ajuste manual da contagem de fidelidade === */
+.fidelidade-ajuste-detalhes{margin-top:3px;border-top:1px solid rgba(251,191,36,.2);padding-top:9px}.fidelidade-ajuste-detalhes summary{cursor:pointer;color:#fde68a;font-size:.75rem;font-weight:900;list-style:none}.fidelidade-ajuste-detalhes summary::-webkit-details-marker{display:none}.fidelidade-ajuste-detalhes summary::after{content:'+';float:right}.fidelidade-ajuste-detalhes[open] summary::after{content:'−'}.fidelidade-ajuste-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) auto;align-items:end;gap:9px;margin-top:11px}.fidelidade-ajuste-form label{display:grid;gap:5px;color:#e2e8f0;font-size:.7rem;font-weight:800}.fidelidade-ajuste-form input{width:100%;min-height:42px;box-sizing:border-box}.fidelidade-ajuste-form button{min-height:42px!important;white-space:nowrap}.fidelidade-ajuste-detalhes>small{display:block;margin-top:8px;color:#aebbd0;font-size:.66rem;line-height:1.4}
+@media(max-width:680px){.fidelidade-ajuste-form{grid-template-columns:1fr 1fr}.fidelidade-ajuste-form button{grid-column:1/-1;width:100%}}
 @media(prefers-reduced-motion:reduce){.pagina-loja,.pagina-carrinho,.pagina-cliente{animation:none}}
 
 /* === Edição completa dos sabores cadastrados === */
