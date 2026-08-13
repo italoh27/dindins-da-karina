@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260812-visual-unificado-v6">
+  <link rel="stylesheet" href="/static/style.css?v=20260812-visual-unificado-v7">
 </head>
-<body class="pagina-admin pagina-admin-pro">
+<body class="pagina-admin pagina-admin-pro pagina-admin-dashboard">
     <div data-admin-shell="page">
     <div class="admin-topo admin-topo-sticky">
         <div class="admin-topo-flutuante">
@@ -26,8 +26,7 @@
                 <div class="admin-topo-mobile-nav">
             <label for="adminNavSelect" class="sr-only">Navegação rápida do painel</label>
             <select id="adminNavSelect" data-admin-mobile-nav>
-                <option value="" selected>Selecione uma ação</option>
-                <option value="/">Voltar para loja</option>
+                <option value="" selected>Ações do admin</option>
                                 <option value="scroll:#centralPedidosSecao">Ir para pedidos</option>
                 <option value="scroll:#configuracaoLojaSecao">Configurações da loja</option>
                 <option value="scroll:#notificacoesTempoRealSecao">Notificações em tempo real</option>
@@ -363,7 +362,7 @@
 
     </div>
 
-    <script src="/static/admin_ajax.js?v=20260812-preserva-pedido-v3"></script>
+    <script src="/static/admin_ajax.js?v=20260812-preserva-pedido-v4"></script>
     <script>
         window.initAdminPage = function () {
             const STORAGE_TAB = 'adminActiveTab';

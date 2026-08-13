@@ -236,6 +236,7 @@
       select.addEventListener('change', async () => {
         const value = select.value;
         const resetSelect = () => {
+          if (select.hasAttribute('data-admin-sync-scroll')) return;
           select.value = '';
           select.selectedIndex = 0;
           select.blur();
