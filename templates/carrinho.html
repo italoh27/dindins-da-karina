@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carrinho - Geladinhos Gourmet</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260812-visual-unificado-v5">
+  <link rel="stylesheet" href="/static/style.css?v=20260813-checkout-v1">
 </head>
 <body class="pagina-carrinho" data-ajax-shell="public" data-cart-count="{{ qtd_itens }}">
     <div class="pagina-carrinho-topo">
@@ -67,23 +67,10 @@
                 <div class="total-carrinho" data-cart-total-wrap><span class="texto-resumo-carrinho total-carrinho-label">Total do pedido:</span> <span data-cart-total>R$ {{ "%.2f"|format(total) }}</span></div>
             </div>
 
-            <div class="pagamento pagamento-carrinho pagamento-carrinho-pro">
-                <h2>💳 Formas de pagamento</h2>
-                <p class="pix-label">Pix manual</p>
-                <div class="pix-box">
-                    <input type="text" id="pix" value="{{ chave_pix }}" readonly>
-                    <button type="button" class="btn-copiar-pix js-copy-pix" data-copy-target="#pix" data-copy-value="{{ chave_pix }}">Copiar chave Pix</button>
-                </div>
-                <div class="pix-dados">
-                    <p><strong>Nome:</strong> {{ nome_pix }}</p>
-                    <p><strong>Banco:</strong> {{ banco_pix }}</p>
-                </div>
-            </div>
-
             {% if exigir_cadastro and not cliente_logado %}
             <div class="cadastro-obrigatorio-box"><h2>Entre para finalizar</h2><p>A loja está exigindo cadastro para novos pedidos. É rápido e permite acompanhar a entrega.</p><a href="/cliente" class="btn-vibrante">Cadastrar ou entrar</a></div>
             {% else %}
-            <form class="form-cliente" action="/finalizar_pedido" method="post" id="finalizarPedidoForm" {% if exigir_pagamento_online %}data-preparar-whatsapp="1"{% endif %}>
+            <form class="form-cliente" action="/finalizar_pedido" method="post" id="finalizarPedidoForm">
                 <h2>Finalizar pedido</h2>
 
                 <div class="responsavel-destaque">
@@ -111,9 +98,9 @@
                 {% endif %}
 
                 <div class="acoes-carrinho acoes-carrinho-duplas">
-                    {% if exigir_pagamento_online %}<p class="aviso-pagamento-obrigatorio">O pagamento online será aberto ao finalizar.</p>{% endif %}
+                    <p class="aviso-proxima-etapa">As formas de pagamento aparecerão na próxima etapa.</p>
                     <button class="btn-limpar" type="button" data-submit-external-form="#formLimparCarrinho">Limpar pedido</button>
-                    <button class="btn-finalizar" type="submit" {% if not loja_aberta or destinatario_bloqueado %}disabled{% endif %}>Finalizar pedido e gerar pagamento</button>
+                    <button class="btn-finalizar" type="submit" {% if not loja_aberta or destinatario_bloqueado %}disabled{% endif %}>Continuar e escolher pagamento</button>
                 </div>
             </form>
             {% endif %}
@@ -160,11 +147,6 @@
             if (numeros.length === 8) preencherCep();
           });
           cepInput.addEventListener('blur', preencherCep);
-        }
-        if (form && form.dataset.prepararWhatsapp === '1') {
-          form.addEventListener('submit', () => {
-            try { window.open('about:blank', 'pedidoWhatsapp'); } catch (e) {}
-          });
         }
       })();
     </script>

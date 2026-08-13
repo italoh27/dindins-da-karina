@@ -4,13 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if pagamento_confirmado %}Pagamento confirmado{% elif pedido_somente_apos_pagamento %}Finalize o pagamento{% else %}Pedido criado{% endif %}</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260812-visual-unificado-v5">
+  <link rel="stylesheet" href="/static/style.css?v=20260813-checkout-v1">
 </head>
 <body class="pagina-carrinho" data-ajax-shell="public">
     <div class="carrinho-wrapper pedido-final-wrapper">
         <h1 class="titulo-carrinho">{% if pagamento_confirmado %}✅ Pagamento confirmado e pedido criado{% elif pedido_somente_apos_pagamento %}💳 Finalize o pagamento{% else %}✅ Pedido criado com sucesso{% endif %}</h1>
 
         <div class="box-carrinho pedido-final-box pedido-final-box-pro">
+            <section class="pedido-agradecimento">
+                <span aria-hidden="true">🎉</span>
+                <div>
+                    <h2>Obrigado pelo seu pedido, {{ pedido.cliente.nome }}!</h2>
+                    <p>{% if pagamento_confirmado %}Seu pagamento foi confirmado. Agora é só aguardar o preparo com todo carinho.{% elif pedido_somente_apos_pagamento %}Recebemos seus dados. Falta somente concluir o pagamento para confirmar e liberar o pedido para a loja.{% else %}Recebemos seu pedido. Escolha abaixo a forma de pagamento que preferir para concluir esta etapa.{% endif %}</p>
+                </div>
+            </section>
+
             <div class="pedido-resumo-topo">
                 <div>
                     <p class="pedido-numero">{% if pedido_somente_apos_pagamento and not pagamento_confirmado %}Referência de pagamento{% else %}Pedido{% endif %} #{{ pedido.id }}</p>
@@ -30,39 +38,50 @@
                 <p><strong>Entrega:</strong> {% if pedido.taxa_entrega > 0 %}R$ {{ "%.2f"|format(pedido.taxa_entrega) }}{% else %}Grátis{% endif %}</p>
             </div>
 
+            {% if not pagamento_confirmado %}
+            <section class="pagamento-pedido-realizado" aria-labelledby="tituloPagamentoPedido">
+                <div class="pagamento-pedido-cabecalho">
+                    <span class="eyebrow-premium">Próxima etapa</span>
+                    <h2 id="tituloPagamentoPedido">Escolha como deseja pagar</h2>
+                    <p>{% if pagamento_link %}Recomendamos pagar pela InfinitePay: é rápido, seguro e a confirmação do pagamento acontece automaticamente.{% else %}Use os dados abaixo para concluir o pagamento do seu pedido.{% endif %}</p>
+                </div>
+                <div class="formas-pagamento-pedido{% if pedido_somente_apos_pagamento or not pagamento_link %} forma-unica{% endif %}">
+                    {% if pagamento_link %}
+                    <article class="forma-pagamento-card forma-pagamento-infinitepay">
+                        <span class="forma-pagamento-selo">Recomendado</span>
+                        <h3>InfinitePay</h3>
+                        <p>Pague por Pix ou cartão no ambiente seguro da InfinitePay e tenha confirmação automática.</p>
+                        <a href="/pedido/{{ pedido.id }}/pagar" class="btn-finalizar btn-pagamento-destaque btn-pagar-checkout{% if not pedido_somente_apos_pagamento %} js-open-whatsapp-before-pay{% endif %}" id="btnPagarCheckout" data-whatsapp="{{ whatsapp_destino }}">{% if pedido_somente_apos_pagamento %}Pagar e confirmar pedido{% else %}Pagar agora pela InfinitePay{% endif %}</a>
+                    </article>
+                    {% endif %}
+                    {% if not pedido_somente_apos_pagamento %}
+                    <article class="forma-pagamento-card forma-pagamento-pix">
+                        <h3>Pix manual</h3>
+                        <p>Se preferir, copie a chave abaixo. A confirmação desse pagamento será feita manualmente pela loja.</p>
+                        <div class="pix-box pix-box-confirmacao">
+                            <input type="text" id="pixPedidoCriado" value="{{ chave_pix }}" readonly aria-label="Chave Pix">
+                            <button type="button" class="btn-copiar-pix js-copy-pix" data-copy-target="#pixPedidoCriado" data-copy-value="{{ chave_pix }}">Copiar chave Pix</button>
+                        </div>
+                        <div class="pix-dados"><p><strong>Nome:</strong> {{ nome_pix }}</p><p><strong>Banco:</strong> {{ banco_pix }}</p></div>
+                    </article>
+                    {% endif %}
+                </div>
+            </section>
+            {% endif %}
+
             <div class="acoes-finais-pedido acoes-finais-pedido-pro">
                 {% if whatsapp_destino %}<a href="{{ whatsapp_destino }}" target="_blank" class="btn-admin-topo btn-final-card" id="btnWhatsResponsavel">Enviar pedido para {{ responsavel_nome }}</a>{% endif %}
-                {% if pagamento_link %}
-                <a href="/pedido/{{ pedido.id }}/pagar" class="btn-finalizar btn-pagamento-destaque btn-pagar-checkout{% if not pedido_somente_apos_pagamento %} js-open-whatsapp-before-pay{% endif %}" id="btnPagarCheckout" data-whatsapp="{{ whatsapp_destino }}">{% if pedido_somente_apos_pagamento %}Pagar e confirmar pedido{% elif pagamento_obrigatorio %}Enviar pedido e pagar agora{% else %}Pagar no Pix ou Cartão{% endif %}</a>
-                {% endif %}
                 <a href="/" class="btn-voltar-inline js-ajax-link btn-final-card">Voltar para loja</a>
             </div>
 
             <p class="texto-ajuda-admin texto-ajuda-destaque">
                 {% if pagamento_confirmado %}Seu pedido já foi liberado no painel. O WhatsApp será aberto com a mensagem pronta para envio.
                 {% elif pedido_somente_apos_pagamento %}O pedido só será liberado para a loja depois que a InfinitePay confirmar o pagamento.
-                {% else %}Ao tocar em <strong>Pagar no Pix ou Cartão</strong>, o checkout da InfinitePay será aberto e a mensagem do pedido enviada ao responsável também leva sua chave Pix.{% endif %}
+                {% else %}Ao pagar pela <strong>InfinitePay</strong>, a confirmação é automática. Se escolher o Pix manual, envie o comprovante pelo WhatsApp para agilizar.{% endif %}
             </p>
         </div>
     </div>
     <div class="toast-global" id="toastGlobal" hidden></div>
-    {% if pedido_somente_apos_pagamento and pagamento_link %}
-    <script>setTimeout(() => window.location.replace('/pedido/{{ pedido.id }}/pagar'), 700);</script>
-    {% elif pagamento_obrigatorio and pagamento_link %}
-    <script>
-      (() => {
-        let whatsappAberto = false;
-        try {
-          const popup = window.open('', 'pedidoWhatsapp');
-          if (popup && !popup.closed) {
-            popup.location.replace({{ whatsapp_destino|tojson }});
-            whatsappAberto = true;
-          }
-        } catch (e) {}
-        if (whatsappAberto) setTimeout(() => window.location.replace('/pedido/{{ pedido.id }}/pagar'), 700);
-      })();
-    </script>
-    {% endif %}
     {% if abrir_whatsapp_automaticamente and whatsapp_destino %}
     <script>setTimeout(() => window.location.replace({{ whatsapp_destino|tojson }}), 1200);</script>
     {% endif %}

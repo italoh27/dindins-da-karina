@@ -2582,6 +2582,9 @@ def finalizar_pedido():
         pedido_somente_apos_pagamento=pedido_somente_apos_pagamento,
         pagamento_confirmado=False,
         abrir_whatsapp_automaticamente=False,
+        chave_pix=CHAVE_PIX,
+        nome_pix=NOME_PIX,
+        banco_pix=BANCO_PIX,
     )
 
 
@@ -2666,6 +2669,9 @@ def retorno_pagamento():
                     pedido_somente_apos_pagamento=True,
                     pagamento_confirmado=True,
                     abrir_whatsapp_automaticamente=True,
+                    chave_pix=CHAVE_PIX,
+                    nome_pix=NOME_PIX,
+                    banco_pix=BANCO_PIX,
                 )
         set_mensagem("mensagem_home", f"Retorno recebido do pedido #{pedido_id}.")
     else:
