@@ -3849,3 +3849,13 @@ input:focus,select:focus,textarea:focus{outline:3px solid rgba(34,211,238,.22)!i
 .pedido-lista-resumo,.config-lista-item,.fidelidade-premio-card,.fidelidade-progresso-cliente,.pedido-item-linha,.item-admin-card{border-color:var(--ui-line)!important;background:rgba(30,41,59,.52)!important}.pedido-lista-resumo:hover,.config-lista-item:hover{background:rgba(14,116,144,.16)!important;border-color:var(--ui-line-strong)!important}
 input,select,textarea{border:1px solid rgba(148,163,184,.26)!important;border-radius:11px!important;background:rgba(2,6,23,.62)!important;color:#fff!important}input:focus,select:focus,textarea:focus{border-color:var(--ui-cyan)!important;box-shadow:0 0 0 3px rgba(34,211,238,.14)!important}
 @media(max-width:760px){.admin-topo-acoes,.topo-acoes-loja,.cliente-nav{width:100%!important;box-sizing:border-box!important;overflow-x:auto!important;flex-wrap:nowrap!important;justify-content:flex-start!important;scrollbar-width:none}.admin-topo-acoes::-webkit-scrollbar,.topo-acoes-loja::-webkit-scrollbar,.cliente-nav::-webkit-scrollbar{display:none}.admin-topo-acoes>a,.admin-topo-acoes>button,.topo-acoes-loja>a,.cliente-nav>a{flex:0 0 auto!important}.resumo-filtros-pedidos{display:flex!important;flex-flow:row nowrap!important;overflow-x:auto!important;gap:9px!important;scroll-snap-type:x proximity;scrollbar-width:thin}.resumo-filtro-chip{flex:0 0 132px!important;scroll-snap-align:start}.btn-admin-topo,.btn-admin-voltar,.btn-admin-voltar-loja,.btn-voltar-premium,.btn-voltar-inline,.btn-cliente-topo,.btn-carrinho-topo,.btn-exportar-excel{min-height:42px!important;padding:10px 13px!important}.admin-box,.glass-card,.box-carrinho{border-radius:17px!important}}
+
+/* === Navegação compacta do admin no celular === */
+.pagina-admin-pro .admin-topo-mobile-nav{display:none!important}
+@media(max-width:760px){
+  .pagina-admin-pro .admin-topo .admin-topo-acoes-premium,
+  .pagina-admin-pro .admin-topo .admin-topo-flutuante{display:none!important}
+  .pagina-admin-pro .admin-topo .admin-topo-mobile-nav{display:block!important;width:100%;padding:10px;box-sizing:border-box}
+  .pagina-admin-pro .admin-topo .admin-topo-mobile-nav select{display:block!important;width:100%;min-height:50px;margin:0;padding:0 44px 0 15px;border:1px solid rgba(103,232,249,.38)!important;border-radius:13px!important;background-color:#172033!important;color:#fff!important;font-size:.95rem;font-weight:850;box-shadow:0 10px 24px rgba(2,6,23,.24);cursor:pointer}
+  .pagina-admin-pro .admin-topo .admin-topo-mobile-nav select:focus{border-color:#38bdf8!important;outline:3px solid rgba(56,189,248,.22)!important}
+}

@@ -235,16 +235,25 @@
       select.dataset.mobileNavBound = '1';
       select.addEventListener('change', async () => {
         const value = select.value;
-        if (!value) return;
+        const resetSelect = () => {
+          select.value = '';
+          select.selectedIndex = 0;
+          select.blur();
+        };
+        if (!value) {
+          resetSelect();
+          return;
+        }
         if (value.startsWith('#')) {
           history.replaceState({}, '', value);
           updateAdminReturnTargets(value);
           scrollToTarget(value);
+          resetSelect();
           return;
         }
         if (value.startsWith('scroll:')) {
           scrollToTarget(value.replace('scroll:', ''));
-          select.value = '';
+          resetSelect();
           return;
         }
         try {
@@ -253,7 +262,7 @@
         } catch (err) {
           window.location.href = value;
         } finally {
-          if (!select.hasAttribute('data-admin-sync-scroll')) select.value = '';
+          resetSelect();
         }
       });
     });
