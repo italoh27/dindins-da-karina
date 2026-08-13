@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260812-visual-unificado-v8">
+  <link rel="stylesheet" href="/static/style.css?v=20260813-checkout-v2">
 </head>
 <body class="pagina-admin pagina-admin-pro pagina-admin-dashboard">
     <div data-admin-shell="page">
@@ -314,6 +314,13 @@
                         <label class="check-admin check-admin-pro config-lista-item">
                             <span>Ativar checkout InfinitePay</span>
                             <input type="checkbox" name="infinitepay_ativo" {% if config.infinitepay_ativo %}checked{% endif %}>
+                        </label>
+                        <label class="check-admin check-admin-pro config-lista-item">
+                            <span>
+                                Exibir Pix manual na página do pedido
+                                <small>Quando desligado, a etapa de pagamento mostrará somente a InfinitePay. Se a InfinitePay for desativada, o Pix manual permanecerá disponível.</small>
+                            </span>
+                            <input type="checkbox" name="pix_manual_ativo" {% if config.pix_manual_ativo %}checked{% endif %}>
                         </label>
                         <label class="check-admin check-admin-pro config-lista-item">
                             <span>Exigir cadastro para fazer pedidos</span>

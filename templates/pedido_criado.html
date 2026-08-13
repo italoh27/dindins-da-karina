@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if pagamento_confirmado %}Pagamento confirmado{% elif pedido_somente_apos_pagamento %}Finalize o pagamento{% else %}Pedido criado{% endif %}</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260813-checkout-v1">
+  <link rel="stylesheet" href="/static/style.css?v=20260813-checkout-v2">
 </head>
 <body class="pagina-carrinho" data-ajax-shell="public">
     <div class="carrinho-wrapper pedido-final-wrapper">
@@ -42,19 +42,19 @@
             <section class="pagamento-pedido-realizado" aria-labelledby="tituloPagamentoPedido">
                 <div class="pagamento-pedido-cabecalho">
                     <span class="eyebrow-premium">Próxima etapa</span>
-                    <h2 id="tituloPagamentoPedido">Escolha como deseja pagar</h2>
+                    <h2 id="tituloPagamentoPedido">{% if pix_manual_ativo and not pedido_somente_apos_pagamento %}Escolha como deseja pagar{% else %}Pague com a InfinitePay{% endif %}</h2>
                     <p>{% if pagamento_link %}Recomendamos pagar pela InfinitePay: é rápido, seguro e a confirmação do pagamento acontece automaticamente.{% else %}Use os dados abaixo para concluir o pagamento do seu pedido.{% endif %}</p>
                 </div>
-                <div class="formas-pagamento-pedido{% if pedido_somente_apos_pagamento or not pagamento_link %} forma-unica{% endif %}">
+                <div class="formas-pagamento-pedido{% if pedido_somente_apos_pagamento or not pix_manual_ativo or not pagamento_link %} forma-unica{% endif %}">
                     {% if pagamento_link %}
                     <article class="forma-pagamento-card forma-pagamento-infinitepay">
                         <span class="forma-pagamento-selo">Recomendado</span>
                         <h3>InfinitePay</h3>
                         <p>Pague por Pix ou cartão no ambiente seguro da InfinitePay e tenha confirmação automática.</p>
-                        <a href="/pedido/{{ pedido.id }}/pagar" class="btn-finalizar btn-pagamento-destaque btn-pagar-checkout{% if not pedido_somente_apos_pagamento %} js-open-whatsapp-before-pay{% endif %}" id="btnPagarCheckout" data-whatsapp="{{ whatsapp_destino }}">{% if pedido_somente_apos_pagamento %}Pagar e confirmar pedido{% else %}Pagar agora pela InfinitePay{% endif %}</a>
+                        <a href="/pedido/{{ pedido.id }}/pagar" class="btn-finalizar btn-pagamento-destaque btn-pagar-checkout" id="btnPagarCheckout">{% if pedido_somente_apos_pagamento %}Pagar e confirmar pedido{% else %}Pagar agora pela InfinitePay{% endif %}</a>
                     </article>
                     {% endif %}
-                    {% if not pedido_somente_apos_pagamento %}
+                    {% if pix_manual_ativo and not pedido_somente_apos_pagamento %}
                     <article class="forma-pagamento-card forma-pagamento-pix">
                         <h3>Pix manual</h3>
                         <p>Se preferir, copie a chave abaixo. A confirmação desse pagamento será feita manualmente pela loja.</p>
@@ -75,16 +75,14 @@
             </div>
 
             <p class="texto-ajuda-admin texto-ajuda-destaque">
-                {% if pagamento_confirmado %}Seu pedido já foi liberado no painel. O WhatsApp será aberto com a mensagem pronta para envio.
+                {% if pagamento_confirmado %}Seu pedido já foi liberado no painel. Se desejar, use o botão acima para enviar a confirmação pelo WhatsApp.
                 {% elif pedido_somente_apos_pagamento %}O pedido só será liberado para a loja depois que a InfinitePay confirmar o pagamento.
-                {% else %}Ao pagar pela <strong>InfinitePay</strong>, a confirmação é automática. Se escolher o Pix manual, envie o comprovante pelo WhatsApp para agilizar.{% endif %}
+                {% elif pix_manual_ativo %}Ao pagar pela <strong>InfinitePay</strong>, a confirmação é automática. Se escolher o Pix manual, envie o comprovante pelo WhatsApp para agilizar.
+                {% else %}O pagamento pela <strong>InfinitePay</strong> é confirmado automaticamente e você poderá enviar a confirmação pelo WhatsApp ao concluir.{% endif %}
             </p>
         </div>
     </div>
     <div class="toast-global" id="toastGlobal" hidden></div>
-    {% if abrir_whatsapp_automaticamente and whatsapp_destino %}
-    <script>setTimeout(() => window.location.replace({{ whatsapp_destino|tojson }}), 1200);</script>
-    {% endif %}
     <script src="/static/site_ajax.js"></script>
     {% include "_whatsapp_suporte.html" %}
 </body>

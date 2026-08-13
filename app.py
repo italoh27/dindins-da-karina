@@ -95,6 +95,7 @@ def configuracao_padrao():
         "loja_aberta": True,
         "mensagem_loja_fechada": "No momento os pedidos estão pausados. Tente novamente mais tarde.",
         "infinitepay_ativo": True,
+        "pix_manual_ativo": True,
         "bloquear_italo": False,
         "bloquear_karina": False,
         "exigir_cadastro": False,
@@ -2585,6 +2586,7 @@ def finalizar_pedido():
         chave_pix=CHAVE_PIX,
         nome_pix=NOME_PIX,
         banco_pix=BANCO_PIX,
+        pix_manual_ativo=bool(config.get("pix_manual_ativo", True)),
     )
 
 
@@ -2616,7 +2618,7 @@ def montar_mensagem_whatsapp(pedido, pagamento_link="", pagamento_confirmado=Fal
         mensagem += f"\n\n💳 Link de pagamento InfinitePay: {pagamento_link}"
     if pagamento_confirmado:
         mensagem += "\n\n✅ *Pagamento confirmado pela InfinitePay.*"
-    if CHAVE_PIX and not pagamento_confirmado:
+    if CHAVE_PIX and not pagamento_confirmado and ler_config().get("pix_manual_ativo", True):
         mensagem += f"\n\n📌 Chave Pix para pagamento: {CHAVE_PIX}"
         if NOME_PIX:
             mensagem += f"\nTitular Pix: {NOME_PIX}"
@@ -2647,7 +2649,7 @@ def retorno_pagamento():
         if capture_method and "capture_method" not in payment:
             payment["capture_method"] = capture_method
         atualizar_status_pagamento_infinitepay(pedido_id, payment)
-        if modo_pos_pagamento and payment.get("paid"):
+        if payment.get("paid"):
             pedido_confirmado = buscar_pedido(pedido_id)
             if pedido_confirmado:
                 if str(session.get("pagamento_pendente_id", "")) == str(pedido_id):
@@ -2666,12 +2668,13 @@ def retorno_pagamento():
                     pagamento_link="",
                     pix_checkout_automatico=True,
                     pagamento_obrigatorio=False,
-                    pedido_somente_apos_pagamento=True,
+                    pedido_somente_apos_pagamento=modo_pos_pagamento,
                     pagamento_confirmado=True,
-                    abrir_whatsapp_automaticamente=True,
+                    abrir_whatsapp_automaticamente=False,
                     chave_pix=CHAVE_PIX,
                     nome_pix=NOME_PIX,
                     banco_pix=BANCO_PIX,
+                    pix_manual_ativo=bool(ler_config().get("pix_manual_ativo", True)),
                 )
         set_mensagem("mensagem_home", f"Retorno recebido do pedido #{pedido_id}.")
     else:
@@ -3160,6 +3163,7 @@ def admin_configuracoes():
     config = ler_config()
     config["mensagem_loja_fechada"] = request.form.get("mensagem_loja_fechada", "").strip() or configuracao_padrao()["mensagem_loja_fechada"]
     config["infinitepay_ativo"] = request.form.get("infinitepay_ativo") == "on"
+    config["pix_manual_ativo"] = request.form.get("pix_manual_ativo") == "on"
     config["bloquear_italo"] = request.form.get("bloquear_italo") == "on"
     config["bloquear_karina"] = request.form.get("bloquear_karina") == "on"
     config["exigir_cadastro"] = request.form.get("exigir_cadastro") == "on"
@@ -3168,6 +3172,8 @@ def admin_configuracoes():
     config["fidelidade_ativa"] = request.form.get("fidelidade_ativa") == "on"
     if config["pedido_somente_apos_pagamento"]:
         config["exigir_pagamento_online"] = True
+    if not config["infinitepay_ativo"]:
+        config["pix_manual_ativo"] = True
     config["whatsapp_suporte_ativo"] = request.form.get("whatsapp_suporte_ativo") == "on"
     config["entrega_gratis"] = request.form.get("entrega_gratis") == "on"
     try:
