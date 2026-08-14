@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geladinhos Gourmet</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260812-visual-unificado-v5">
+  <link rel="stylesheet" href="/static/style.css?v=20260813-checkout-v4">
 </head>
 <body class="pagina-loja" data-ajax-shell="public" data-cart-count="{{ qtd_itens }}">
     <header class="topo-loja-pro topo-loja-pro-clean">
@@ -99,7 +99,11 @@
 
                                 <div class="campo-qtd-loja-pro">
                                     <label class="label-compacta" for="qtd-{{ loop.index }}">Quantidade</label>
-                                    <input id="qtd-{{ loop.index }}" class="inputquantidade" type="number" name="quantidade" value="1" min="1" {% if sabor.estoque_exibicao > 0 %}max="{{ sabor.estoque_exibicao }}"{% endif %} required data-flavor-qty-input="{{ sabor.nome|lower|replace(" ", "-") }}" {% if not loja_aberta or destinatario_bloqueado or sabor.estoque_exibicao <= 0 %}disabled{% endif %}>
+                                    <div class="controle-quantidade controle-quantidade-loja" data-quantity-box>
+                                        <button type="button" class="btn-qtd-step" data-step="-1" aria-label="Diminuir quantidade de {{ sabor.nome }}" {% if not loja_aberta or destinatario_bloqueado or sabor.estoque_exibicao <= 0 %}disabled{% endif %}>−</button>
+                                        <input id="qtd-{{ loop.index }}" class="inputquantidade" type="number" name="quantidade" value="1" min="1" {% if sabor.estoque_exibicao > 0 %}max="{{ sabor.estoque_exibicao }}"{% endif %} required data-quantity-input data-flavor-qty-input="{{ sabor.nome|lower|replace(" ", "-") }}" {% if not loja_aberta or destinatario_bloqueado or sabor.estoque_exibicao <= 0 %}disabled{% endif %}>
+                                        <button type="button" class="btn-qtd-step" data-step="1" aria-label="Aumentar quantidade de {{ sabor.nome }}" {% if not loja_aberta or destinatario_bloqueado or sabor.estoque_exibicao <= 0 %}disabled{% endif %}>+</button>
+                                    </div>
                                 </div>
 
                                 <button class="btn-adicionar btn-adicionar-pro" type="submit" data-flavor-button="{{ sabor.nome|lower|replace(" ", "-") }}" {% if not loja_aberta or destinatario_bloqueado or sabor.estoque_exibicao <= 0 %}disabled{% endif %}>
