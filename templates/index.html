@@ -4,14 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geladinhos Gourmet</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260813-checkout-v4">
+  <link rel="stylesheet" href="/static/style.css?v=20260813-loja-menu-v2">
 </head>
 <body class="pagina-loja" data-ajax-shell="public" data-cart-count="{{ qtd_itens }}">
     <header class="topo-loja-pro topo-loja-pro-clean">
-        <div class="topo-acoes topo-acoes-loja topo-minimal-loja">
-            <a class="btn-cliente-topo" href="/cliente">Meus pedidos</a>
-            <a class="btn-admin-topo" href="/admin">📋 Admin</a>
-            <a class="btn-carrinho-topo js-ajax-link" href="/carrinho" data-cart-count-label="{{ qtd_itens }}">🛒 Carrinho ({{ qtd_itens }})</a>
+        <div class="topo-acoes topo-acoes-loja topo-minimal-loja loja-nav-compacta">
+            <div class="loja-menu-wrap" data-store-menu>
+                <button class="loja-menu-gatilho" type="button" data-store-menu-toggle aria-expanded="false" aria-controls="lojaMenuOpcoes" aria-label="Abrir menu da loja">
+                    <span class="loja-menu-icone" aria-hidden="true"><i></i><i></i><i></i></span>
+                    <span class="loja-menu-texto">Menu</span>
+                </button>
+                <nav class="loja-menu-painel" id="lojaMenuOpcoes" data-store-menu-panel aria-label="Menu da loja" hidden>
+                    <a class="loja-menu-link" href="/cliente"><span aria-hidden="true">👤</span> Meus pedidos</a>
+                    <a class="loja-menu-link" href="/admin"><span aria-hidden="true">📋</span> Admin</a>
+                </nav>
+            </div>
+            <a class="btn-carrinho-topo carrinho-icone-topo js-ajax-link" href="/carrinho" data-cart-count-label="{{ qtd_itens }}" aria-label="Carrinho, {{ qtd_itens }} dindins adicionados">
+                <span class="carrinho-icone-grafico" aria-hidden="true">🛒</span>
+                <span class="carrinho-quantidade-selo" data-cart-badge>{{ qtd_itens }}</span>
+            </a>
         </div>
 
         <div class="marca-wrap-premium">
@@ -129,7 +140,7 @@
             <button type="button" class="btn-admin-topo" id="continueShoppingBtn">Continuar comprando</button>
         </div>
     </div>
-    <script src="/static/site_ajax.js"></script>
+    <script src="/static/site_ajax.js?v=20260813-loja-menu-v2"></script>
     {% include "_whatsapp_suporte.html" %}
 </body>
 </html>

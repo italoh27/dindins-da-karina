@@ -283,7 +283,11 @@
     if (!select) return;
 
     const sync = () => {
-      const current = window.location.hash || '#topoSabores';
+      const current = window.location.hash;
+      if (!current) {
+        select.value = '';
+        return;
+      }
       if (select.querySelector('option[value="' + current + '"]')) {
         select.value = current;
       } else {
