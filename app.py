@@ -487,8 +487,18 @@ def pagamento_pendente_da_sessao():
     return None
 
 
-def normalizar_imagem_sabor(img):
+def normalizar_imagem_sabor(img, nome=""):
     caminho = str(img or "").strip()
+    nome_chave = str(nome or "").strip().casefold()
+    if nome_chave in {"delícia de abacaxi", "delicia de abacaxi"}:
+        imagem_abacaxi = "/static/delicia_de_abacaxi.webp"
+        caminho_limpo = caminho.split("?", 1)[0].replace("\\", "/")
+        if not caminho_limpo or caminho_limpo in {"/static/gelinhos.png", "static/gelinhos.png"}:
+            return imagem_abacaxi
+        if caminho_limpo.startswith("/static/"):
+            arquivo_local = os.path.join(BASE_DIR, caminho_limpo.lstrip("/").replace("/", os.sep))
+            if not os.path.isfile(arquivo_local):
+                return imagem_abacaxi
     if not caminho:
         return "/static/gelinhos.png"
     mapa = {
@@ -839,7 +849,7 @@ def row_to_sabor(row):
         "id": int(row["id"]),
         "nome": str(row["nome"]),
         "preco": float(row["preco"]),
-        "img": normalizar_imagem_sabor(row["img"]),
+        "img": normalizar_imagem_sabor(row["img"], row["nome"]),
         "disponivel": bool(row["disponivel"]),
         "ativo_italo": bool(row.get("ativo_italo", row.get("disponivel", True))),
         "ativo_karina": bool(row.get("ativo_karina", row.get("disponivel", True))),
@@ -860,7 +870,7 @@ def ler_sabores():
                         "id": int(s.get("id", 0) or 0),
                         "nome": str(s.get("nome", "")).strip(),
                         "preco": float(s.get("preco", 0) or 0),
-                        "img": normalizar_imagem_sabor(s.get("img", "")),
+                        "img": normalizar_imagem_sabor(s.get("img", ""), s.get("nome", "")),
                         "disponivel": bool(s.get("disponivel", True)),
                         "ativo_italo": bool(s.get("ativo_italo", s.get("disponivel", True))),
                         "ativo_karina": bool(s.get("ativo_karina", s.get("disponivel", True))),

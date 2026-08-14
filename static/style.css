@@ -3879,6 +3879,12 @@ input,select,textarea{border:1px solid rgba(148,163,184,.26)!important;border-ra
   overflow: visible !important;
 }
 
+.pagina-loja .topo-loja-pro {
+  position: relative;
+  z-index: 250;
+  overflow: visible;
+}
+
 .loja-menu-wrap {
   position: relative;
   flex: 0 0 auto;
@@ -3933,7 +3939,7 @@ input,select,textarea{border:1px solid rgba(148,163,184,.26)!important;border-ra
 
 .loja-menu-painel {
   position: absolute;
-  z-index: 80;
+  z-index: 500;
   top: calc(100% + 9px);
   left: 0;
   width: min(245px, calc(100vw - 34px));
