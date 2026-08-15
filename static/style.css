@@ -4108,8 +4108,8 @@ input,select,textarea{border:1px solid rgba(148,163,184,.26)!important;border-ra
   box-shadow:0 0 0 5px rgba(34,197,94,.2)!important;
 }
 
-/* === Loja profissional e leve === */
-.pagina-loja{
+/* === Fundo profissional e leve compartilhado por todo o aplicativo === */
+body[class]{
   background-color:#070b16!important;
   background-image:
     radial-gradient(circle at 12% 4%,rgba(14,165,233,.13),transparent 27%),
@@ -4117,9 +4117,11 @@ input,select,textarea{border:1px solid rgba(148,163,184,.26)!important;border-ra
     linear-gradient(180deg,#070b16 0%,#0b1020 52%,#070b16 100%)!important;
   background-attachment:scroll!important;
   background-size:auto!important;
+  background-position:center center!important;
+  background-repeat:no-repeat!important;
   animation:none!important;
 }
-.pagina-loja::before,.pagina-loja::after{display:none!important;animation:none!important}
+body[class]::before,body[class]::after{display:none!important;animation:none!important}
 .pagina-loja .topo-loja-pro,.pagina-loja .card,.pagina-loja .form-responsavel-loja{
   -webkit-backdrop-filter:none!important;
   backdrop-filter:none!important;

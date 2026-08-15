@@ -478,12 +478,10 @@ def aprovar_recuperacao_senha(recuperacao_id):
 
 
 def pedidos_do_cliente(telefone):
-    telefone_normalizado = normalizar_telefone_br(telefone)
-    return [
-        p for p in ler_pedidos()
-        if not pedido_aguardando_liberacao(p)
-        and normalizar_telefone_br(p.get("cliente", {}).get("telefone", "")) == telefone_normalizado
-    ]
+    return consultar_pedidos(
+        telefone=telefone,
+        excluir_aguardando_liberacao=True,
+    )
 
 
 def pedido_aguardando_liberacao(pedido):
@@ -772,6 +770,8 @@ def ensure_database():
                 CREATE INDEX IF NOT EXISTS idx_pedidos_destinatario_data ON pedidos (destinatario, data_filtro DESC);
                 CREATE INDEX IF NOT EXISTS idx_pedidos_pagamento_data ON pedidos (pagamento_status, data_filtro DESC);
                 CREATE INDEX IF NOT EXISTS idx_pedidos_visiveis_id ON pedidos (id DESC) WHERE oculto = FALSE;
+                CREATE INDEX IF NOT EXISTS idx_pedidos_cliente_telefone_id ON pedidos (cliente_telefone, id DESC);
+                CREATE INDEX IF NOT EXISTS idx_pedidos_visiveis_data ON pedidos (data_filtro DESC, id DESC) WHERE oculto = FALSE;
                 CREATE INDEX IF NOT EXISTS idx_pagamentos_log_pedido_id ON pagamentos_log (pedido_id);
                 CREATE INDEX IF NOT EXISTS idx_pagamentos_log_payment_id ON pagamentos_log (payment_id);
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_clientes_telefone ON clientes (telefone);
@@ -838,12 +838,6 @@ def ler_config():
         _config_cache["value"] = dict(base)
         _config_cache["expires_at"] = agora + CONFIG_CACHE_TTL
 
-    # Mantém o arquivo local espelhado como backup simples,
-    # sem depender dele como fonte principal quando há banco.
-    try:
-        salvar_json(ARQUIVO_CONFIG, base)
-    except Exception:
-        pass
     return base
 
 
@@ -1068,6 +1062,175 @@ def row_to_pedido(row, itens):
     return enriquecer_pedido(pedido)
 
 
+def pedidos_from_rows(rows):
+    pedidos = []
+    for row in rows:
+        itens = []
+        for item in row["itens"]:
+            item_convertido = {
+                "nome": item["nome"],
+                "quantidade": int(item["quantidade"]),
+                "preco_unitario": float(item["preco_unitario"]),
+                "subtotal": float(item["subtotal"]),
+            }
+            if item.get("id") is not None:
+                item_convertido["id"] = int(item["id"])
+            itens.append(item_convertido)
+        pedidos.append(row_to_pedido(row, itens))
+    return pedidos
+
+
+def consultar_pedidos(
+    data_inicial="",
+    data_final="",
+    cliente="",
+    responsavel="",
+    pagamento="",
+    status="",
+    telefone="",
+    somente_visiveis=False,
+    excluir_aguardando_liberacao=False,
+    limite=None,
+):
+    """Consulta somente os pedidos necessários para a tela atual."""
+    if not db_enabled():
+        pedidos = ler_pedidos()
+        resultado = []
+        telefone_normalizado = normalizar_telefone_br(telefone)
+        for pedido in pedidos:
+            data_pedido = str(pedido.get("data_filtro", "") or "")
+            if data_inicial and data_pedido < data_inicial:
+                continue
+            if data_final and data_pedido > data_final:
+                continue
+            if cliente and cliente.casefold() not in str((pedido.get("cliente") or {}).get("nome", "")).casefold():
+                continue
+            if responsavel and normalizar_destinatario(pedido.get("destinatario")) != normalizar_destinatario(responsavel):
+                continue
+            if pagamento and str(pedido.get("pagamento_status", "")).lower() != pagamento.lower():
+                continue
+            if status and str(pedido.get("status", "")).lower() != status.lower():
+                continue
+            if telefone_normalizado and normalizar_telefone_br((pedido.get("cliente") or {}).get("telefone", "")) != telefone_normalizado:
+                continue
+            if somente_visiveis and pedido.get("oculto", False):
+                continue
+            if excluir_aguardando_liberacao and pedido_aguardando_liberacao(pedido):
+                continue
+            resultado.append(pedido)
+            if limite and len(resultado) >= int(limite):
+                break
+        return resultado
+
+    clausulas = []
+    parametros = []
+    if data_inicial:
+        clausulas.append("p.data_filtro >= %s")
+        parametros.append(data_inicial)
+    if data_final:
+        clausulas.append("p.data_filtro <= %s")
+        parametros.append(data_final)
+    if cliente:
+        clausulas.append("p.cliente_nome ILIKE %s")
+        parametros.append(f"%{cliente}%")
+    if responsavel:
+        clausulas.append("p.destinatario = %s")
+        parametros.append(normalizar_destinatario(responsavel))
+    if pagamento:
+        clausulas.append("p.pagamento_status = %s")
+        parametros.append(pagamento.lower())
+    if status:
+        clausulas.append("p.status = %s")
+        parametros.append(status.lower())
+    if telefone:
+        clausulas.append("p.cliente_telefone = %s")
+        parametros.append(normalizar_telefone_br(telefone))
+    if somente_visiveis:
+        clausulas.append("p.oculto = FALSE")
+    if excluir_aguardando_liberacao:
+        clausulas.append("(COALESCE(p.payment_detail, '') <> %s OR p.pagamento_status = 'pago')")
+        parametros.append(PAGAMENTO_LIBERACAO_PENDENTE)
+
+    where_sql = f"WHERE {' AND '.join(clausulas)}" if clausulas else ""
+    limite_sql = ""
+    if limite:
+        limite_sql = "LIMIT %s"
+        parametros.append(max(1, int(limite)))
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT p.*,
+                       COALESCE(
+                         json_agg(
+                           json_build_object(
+                             'id', i.id,
+                             'nome', i.nome,
+                             'quantidade', i.quantidade,
+                             'preco_unitario', i.preco_unitario,
+                             'subtotal', i.subtotal
+                           ) ORDER BY i.id
+                         ) FILTER (WHERE i.id IS NOT NULL),
+                         '[]'::json
+                       ) AS itens
+                FROM pedidos p
+                LEFT JOIN pedido_itens i ON i.pedido_id = p.id
+                {where_sql}
+                GROUP BY p.id
+                ORDER BY p.id DESC
+                {limite_sql}
+                """,
+                tuple(parametros),
+            )
+            return pedidos_from_rows(cur.fetchall())
+
+
+def resumo_global_admin(data_filtro):
+    resultado = {"ultimo_pedido_id": 0, "faturamento_total": 0.0, "italo": 0.0, "karina": 0.0}
+    if not db_enabled():
+        for pedido in ler_pedidos():
+            if not pedido.get("oculto", False) and not pedido_aguardando_liberacao(pedido):
+                resultado["ultimo_pedido_id"] = max(resultado["ultimo_pedido_id"], int(pedido.get("id", 0) or 0))
+            if pedido.get("data_filtro") != data_filtro or pedido.get("pagamento_status") != "pago" or pedido.get("oculto", False):
+                continue
+            valor = float(pedido.get("total", 0) or 0)
+            responsavel = normalizar_destinatario(pedido.get("destinatario"))
+            resultado["faturamento_total"] += valor
+            resultado[responsavel] = resultado.get(responsavel, 0.0) + valor
+        return resultado
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    COALESCE(MAX(id) FILTER (
+                        WHERE oculto = FALSE
+                          AND (COALESCE(payment_detail, '') <> %s OR pagamento_status = 'pago')
+                    ), 0) AS ultimo_pedido_id,
+                    COALESCE(SUM(total) FILTER (
+                        WHERE data_filtro = %s AND pagamento_status = 'pago' AND oculto = FALSE
+                    ), 0) AS faturamento_total,
+                    COALESCE(SUM(total) FILTER (
+                        WHERE data_filtro = %s AND pagamento_status = 'pago' AND oculto = FALSE AND destinatario = 'italo'
+                    ), 0) AS faturamento_italo,
+                    COALESCE(SUM(total) FILTER (
+                        WHERE data_filtro = %s AND pagamento_status = 'pago' AND oculto = FALSE AND destinatario = 'karina'
+                    ), 0) AS faturamento_karina
+                FROM pedidos
+                """,
+                (PAGAMENTO_LIBERACAO_PENDENTE, data_filtro, data_filtro, data_filtro),
+            )
+            row = cur.fetchone()
+            resultado.update(
+                ultimo_pedido_id=int(row["ultimo_pedido_id"] or 0),
+                faturamento_total=float(row["faturamento_total"] or 0),
+                italo=float(row["faturamento_italo"] or 0),
+                karina=float(row["faturamento_karina"] or 0),
+            )
+    return resultado
+
+
 def ler_pedidos():
     if not db_enabled():
         pedidos = ler_json(ARQUIVO_PEDIDOS, [])
@@ -1097,21 +1260,7 @@ def ler_pedidos():
                 ORDER BY p.id DESC
                 """
             )
-            rows = cur.fetchall()
-            pedidos = []
-            for row in rows:
-                itens = []
-                for item in row["itens"]:
-                    itens.append(
-                        {
-                            "nome": item["nome"],
-                            "quantidade": int(item["quantidade"]),
-                            "preco_unitario": float(item["preco_unitario"]),
-                            "subtotal": float(item["subtotal"]),
-                        }
-                    )
-                pedidos.append(row_to_pedido(row, itens))
-            return pedidos
+            return pedidos_from_rows(cur.fetchall())
 
 
 def buscar_pedido(pedido_id):
@@ -1439,19 +1588,23 @@ def criar_pedido_db(pedido):
                     bool(pedido.get("estoque_devolvido", False)),
                 ),
             )
-            for item in pedido.get("itens", []):
-                cur.execute(
+            valores_itens = [
+                (
+                    int(pedido["id"]),
+                    item["nome"],
+                    int(item["quantidade"]),
+                    money(item["preco_unitario"]),
+                    money(item["subtotal"]),
+                )
+                for item in pedido.get("itens", [])
+            ]
+            if valores_itens:
+                cur.executemany(
                     """
                     INSERT INTO pedido_itens (pedido_id, nome, quantidade, preco_unitario, subtotal)
                     VALUES (%s, %s, %s, %s, %s)
                     """,
-                    (
-                        int(pedido["id"]),
-                        item["nome"],
-                        int(item["quantidade"]),
-                        money(item["preco_unitario"]),
-                        money(item["subtotal"]),
-                    ),
+                    valores_itens,
                 )
         conn.commit()
 
@@ -1850,18 +2003,29 @@ def devolver_estoque_itens(itens, destinatario):
 
 
 def migrate_json_to_db_once():
-    if not db_enabled() or os.path.exists(MIGRATION_MARKER):
+    if not db_enabled():
         return
 
-    ensure_database()
+    migration_key = "json_to_db_migrated_v1"
+    if get_config_value(migration_key, False):
+        return
 
-    sabores_db = ler_sabores()
-    if not sabores_db and os.path.exists(ARQUIVO_SABORES):
-        for sabor in ler_json(ARQUIVO_SABORES, []):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT EXISTS (SELECT 1 FROM sabores LIMIT 1) AS tem_sabores,
+                       EXISTS (SELECT 1 FROM pedidos LIMIT 1) AS tem_pedidos
+                """
+            )
+            estado_banco = cur.fetchone()
+
+    if not estado_banco["tem_sabores"] and os.path.exists(ARQUIVO_SABORES):
+        for indice, sabor in enumerate(ler_json(ARQUIVO_SABORES, []), start=1):
             if isinstance(sabor, dict) and sabor.get("nome"):
                 inserir_sabor(
                     {
-                        "id": int(sabor.get("id", next_sabor_id()) or next_sabor_id()),
+                        "id": int(sabor.get("id") or indice),
                         "nome": str(sabor.get("nome", "")).strip(),
                         "preco": float(sabor.get("preco", 0) or 0),
                         "img": str(sabor.get("img", "")).strip(),
@@ -1874,8 +2038,7 @@ def migrate_json_to_db_once():
                     }
                 )
 
-    pedidos_db = ler_pedidos()
-    if not pedidos_db and os.path.exists(ARQUIVO_PEDIDOS):
+    if not estado_banco["tem_pedidos"] and os.path.exists(ARQUIVO_PEDIDOS):
         pedidos_json = ler_json(ARQUIVO_PEDIDOS, [])
         for pedido in pedidos_json:
             if not isinstance(pedido, dict) or not pedido.get("id"):
@@ -1923,8 +2086,13 @@ def migrate_json_to_db_once():
     # Não sobrescreve config já salva após reinícios do serviço.
     if get_config_value("config_loja", None) is None:
         salvar_config(ler_config_arquivo())
-    with open(MIGRATION_MARKER, "w", encoding="utf-8") as f:
-        f.write(now_local().isoformat())
+    concluido_em = now_local().isoformat()
+    set_config_value(migration_key, {"completed_at": concluido_em})
+    try:
+        with open(MIGRATION_MARKER, "w", encoding="utf-8") as f:
+            f.write(concluido_em)
+    except OSError:
+        pass
 
 
 # =========================
@@ -2859,13 +3027,6 @@ def admin():
     if not admin_logado():
         return redirect("/admin/login")
 
-    pedidos = [
-        p for p in ler_pedidos()
-        if not pedido_aguardando_liberacao(p) and not p.get("oculto", False)
-    ]
-    sabores = ler_sabores()
-    config = ler_config()
-
     filtro_cliente = request.args.get("cliente", "").strip().lower()
     filtro_data = request.args.get("data", "").strip()
     if not filtro_data:
@@ -2876,6 +3037,18 @@ def admin():
     aliases_status_rapidos = {"todos", "nao_pagos", "pagos", "cancelados"}
     status_rapido = filtro_status if filtro_status in aliases_status_rapidos else ""
     filtro_vendedor = request.args.get("vendedor", "").strip().lower()
+    pedidos = consultar_pedidos(
+        data_inicial=filtro_data,
+        data_final=filtro_data,
+        cliente=filtro_cliente,
+        responsavel=filtro_vendedor,
+        pagamento=filtro_pagamento,
+        status="" if status_rapido else filtro_status,
+        somente_visiveis=True,
+        excluir_aguardando_liberacao=True,
+    )
+    sabores = ler_sabores()
+    config = ler_config()
 
     pedidos_filtrados = []
     for pedido in pedidos:
@@ -2900,20 +3073,21 @@ def admin():
     total_pedidos = len(pedidos_filtrados)
     faturamento_total = sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("pagamento_status") == "pago")
     hoje = now_local().strftime("%Y-%m-%d")
-    faturamento_hoje = sum(float(p.get("total", 0) or 0) for p in pedidos if p.get("data_filtro") == hoje and p.get("pagamento_status") == "pago" and not p.get("oculto", False))
+    resumo_global = resumo_global_admin(hoje)
+    faturamento_hoje = resumo_global["faturamento_total"]
     total_nao_pago = sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("pagamento_status") == "aguardando_pagamento" and not p.get("oculto", False))
 
     metricas_responsavel = {
         "italo": {
             "total_pedidos": len([p for p in pedidos_filtrados if p.get("destinatario") == "italo"]),
             "faturamento_pago": sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("destinatario") == "italo" and p.get("pagamento_status") == "pago"),
-            "faturamento_pago_hoje": sum(float(p.get("total", 0) or 0) for p in pedidos if p.get("data_filtro") == hoje and p.get("destinatario") == "italo" and p.get("pagamento_status") == "pago" and not p.get("oculto", False)),
+            "faturamento_pago_hoje": resumo_global["italo"],
             "total_nao_pago": sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("destinatario") == "italo" and p.get("pagamento_status") == "aguardando_pagamento" and not p.get("oculto", False)),
         },
         "karina": {
             "total_pedidos": len([p for p in pedidos_filtrados if p.get("destinatario") == "karina"]),
             "faturamento_pago": sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("destinatario") == "karina" and p.get("pagamento_status") == "pago"),
-            "faturamento_pago_hoje": sum(float(p.get("total", 0) or 0) for p in pedidos if p.get("data_filtro") == hoje and p.get("destinatario") == "karina" and p.get("pagamento_status") == "pago" and not p.get("oculto", False)),
+            "faturamento_pago_hoje": resumo_global["karina"],
             "total_nao_pago": sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("destinatario") == "karina" and p.get("pagamento_status") == "aguardando_pagamento" and not p.get("oculto", False)),
         },
     }
@@ -2936,7 +3110,7 @@ def admin():
         "cancelados": [p for p in pedidos_filtrados if p.get("status") == "cancelado" or p.get("pagamento_status") == "cancelado"],
     }
 
-    ultimo_pedido_id = max([int(p.get("id", 0) or 0) for p in pedidos], default=0)
+    ultimo_pedido_id = resumo_global["ultimo_pedido_id"]
     premios_fidelidade = listar_premios_fidelidade_pendentes() if config.get("fidelidade_ativa", False) else []
     progresso_fidelidade = listar_progresso_fidelidade_clientes() if config.get("fidelidade_ativa", False) else []
     ultimo_fidelidade_id = ultimo_id_notificacao_fidelidade()
@@ -3006,10 +3180,6 @@ def filtrar_pedidos_analise(pedidos, data_inicial='', data_final='', responsavel
 def admin_analise():
     if not admin_logado():
         return redirect('/admin/login')
-    pedidos = [
-        p for p in ler_pedidos()
-        if not pedido_aguardando_liberacao(p) and not p.get('oculto', False)
-    ]
     hoje = now_local().strftime('%Y-%m-%d')
     periodo = request.args.get('periodo', 'todos').strip().lower()
     data_inicial = request.args.get('data_inicial', '').strip()
@@ -3038,7 +3208,15 @@ def admin_analise():
         data_inicial = ''
         data_final = ''
 
-    filtrados = filtrar_pedidos_analise(pedidos, data_inicial, data_final, responsavel, pagamento)
+    pedidos = consultar_pedidos(
+        data_inicial=data_inicial,
+        data_final=data_final,
+        responsavel=responsavel,
+        pagamento=pagamento,
+        somente_visiveis=True,
+        excluir_aguardando_liberacao=True,
+    )
+    filtrados = pedidos
     if somente_cadastrados:
         telefones_cadastrados = {normalizar_telefone_br(c.get('telefone', '')) for c in clientes_cadastrados}
         filtrados = [p for p in filtrados if normalizar_telefone_br(p.get('cliente', {}).get('telefone', '')) in telefones_cadastrados]

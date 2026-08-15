@@ -89,6 +89,8 @@ CREATE INDEX IF NOT EXISTS idx_pedidos_data_filtro ON pedidos (data_filtro DESC)
 CREATE INDEX IF NOT EXISTS idx_pedidos_destinatario_data ON pedidos (destinatario, data_filtro DESC);
 CREATE INDEX IF NOT EXISTS idx_pedidos_pagamento_data ON pedidos (pagamento_status, data_filtro DESC);
 CREATE INDEX IF NOT EXISTS idx_pedidos_visiveis_id ON pedidos (id DESC) WHERE oculto = FALSE;
+CREATE INDEX IF NOT EXISTS idx_pedidos_cliente_telefone_id ON pedidos (cliente_telefone, id DESC);
+CREATE INDEX IF NOT EXISTS idx_pedidos_visiveis_data ON pedidos (data_filtro DESC, id DESC) WHERE oculto = FALSE;
 CREATE INDEX IF NOT EXISTS idx_pagamentos_log_pedido_id ON pagamentos_log (pedido_id);
 CREATE INDEX IF NOT EXISTS idx_pagamentos_log_payment_id ON pagamentos_log (payment_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_clientes_telefone ON clientes (telefone);

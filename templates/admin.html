@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260815-checkout-integrado-v2">
+  <link rel="stylesheet" href="/static/style.css?v=20260815-fundo-unificado-v1">
 </head>
 <body class="pagina-admin pagina-admin-pro pagina-admin-dashboard">
     <div data-admin-shell="page">
@@ -398,6 +398,7 @@
             let ultimoFidelidadeId = Number(sessionStorage.getItem(STORAGE_LAST_FIDELIDADE) || '{{ ultimo_fidelidade_id }}' || 0);
             let audioContext = null;
             let monitoramentoAtivo = localStorage.getItem(STORAGE_MONITOR) === '1';
+            let monitorRequestInFlight = false;
 
             function atualizarResumoFiltro(filterName) {
                 resumoChips.forEach((chip) => chip.classList.toggle('ativo', chip.dataset.filter === filterName));
@@ -503,7 +504,8 @@
             });
 
             async function verificarNovosPedidos() {
-                if (!monitoramentoAtivo) return;
+                if (!monitoramentoAtivo || document.hidden || monitorRequestInFlight) return;
+                monitorRequestInFlight = true;
                 try {
                     const resposta = await fetch(`/admin/notificacoes?ultimo_id=${ultimoId}&ultimo_fidelidade_id=${ultimoFidelidadeId}`, { cache: 'no-store' });
                     if (!resposta.ok) throw new Error('falha');
@@ -535,6 +537,8 @@
                 } catch (e) {
                     if (statusMonitoramento) statusMonitoramento.textContent = 'Reconectando';
                     if (statusLive) statusLive.textContent = '● Reconectando';
+                } finally {
+                    monitorRequestInFlight = false;
                 }
             }
             if (window.__adminMonitorInterval) clearInterval(window.__adminMonitorInterval);
