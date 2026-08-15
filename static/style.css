@@ -4039,6 +4039,9 @@ input,select,textarea{border:1px solid rgba(148,163,184,.26)!important;border-ra
 }
 
 /* === Navegação compacta apenas do painel principal no celular === */
+.admin-analise-page #topoAnalise,
+.admin-analise-page [data-analise-secao]{scroll-margin-top:170px}
+
 .pagina-admin-dashboard .admin-topo-mobile-nav{display:none!important}
 @media(max-width:760px){
   .pagina-admin-dashboard .admin-topo .admin-topo-acoes-premium{display:none!important}

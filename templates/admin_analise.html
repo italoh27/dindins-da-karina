@@ -4,16 +4,33 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Análise de dados</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260815-fundo-unificado-v1">
+  <link rel="stylesheet" href="/static/style.css?v=20260815-analise-acoes-v1">
 </head>
 <body class="admin-page admin-analise-page">
   <div data-admin-shell="page">
-  <div class="admin-topo admin-topo-sticky">
-    <div class="admin-topo-acoes">
-      <a href="/admin" class="btn-admin-voltar js-admin-ajax-link">← Voltar para painel</a>
+  <div class="admin-topo admin-topo-sticky admin-topo-sabores-page">
+    <div class="admin-topo-flutuante admin-topo-flutuante-sabores">
+      <a href="/admin" class="btn-admin-voltar btn-admin-voltar-flutuante js-admin-ajax-link">← Voltar para painel</a>
+      <div class="barra-navegacao-sabores barra-navegacao-sabores-flutuante">
+        <div class="acoes-sabores-select-wrap">
+          <label for="adminAnaliseSelect" class="sr-only">Ações da análise de dados</label>
+          <select id="adminAnaliseSelect" data-admin-mobile-nav data-admin-sync-scroll="1" class="acoes-sabores-select">
+            <option value="">Ações da análise</option>
+            <option value="#topoAnalise">⬆️ Voltar para o topo da página</option>
+            <option value="#filtrosAnalise">Filtros</option>
+            <option value="#clientesAnalise">Clientes cadastrados</option>
+            <option value="#resumoAnalise">Resumo financeiro</option>
+            <option value="#comparativoAnalise">Comparativo Italo e Karina</option>
+            <option value="#devedoresAnalise">Saldo devedor</option>
+            <option value="#pedidosAnalise">Pedidos do filtro atual</option>
+            <option value="#saboresAnalise">Sabores mais vendidos</option>
+            <option value="#pedidosDiaAnalise">Pedidos por dia</option>
+          </select>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="admin-wrapper admin-wrapper-pro admin-analise-wrapper">
+  <div class="admin-wrapper admin-wrapper-pro admin-analise-wrapper" id="topoAnalise">
     <header class="admin-topo admin-topo-analise">
       <div>
         <h1>Análise de dados</h1>
@@ -26,7 +43,7 @@
 
     {% if mensagem %}<div class="alerta alerta-sucesso">{{ mensagem }}</div>{% endif %}
 
-    <section class="admin-box filtro-box-analise">
+    <section class="admin-box filtro-box-analise" id="filtrosAnalise" data-analise-secao>
       <form class="filtro-analise-grid js-admin-ajax-form" method="get" action="/admin/analise">
         <label><span>Período</span>
           <select name="periodo">
@@ -63,7 +80,7 @@
       </form>
     </section>
 
-    <section class="admin-box clientes-cadastrados-box">
+    <section class="admin-box clientes-cadastrados-box" id="clientesAnalise" data-analise-secao>
       <div class="admin-box-topo"><div><span class="eyebrow-premium">Relacionamento</span><h2>Clientes cadastrados</h2></div><span class="badge badge-pago">{{ clientes_cadastrados|length }} cliente(s)</span></div>
       <div class="tabela-responsiva">
         <table class="tabela-analise">
@@ -77,7 +94,7 @@
       </div>
     </section>
 
-    <section class="admin-cards admin-cards-compactos">
+    <section class="admin-cards admin-cards-compactos" id="resumoAnalise" data-analise-secao>
       <div class="admin-resumo-card destaque-resumo-card"><h3>Total de pedidos</h3><p>{{ total_pedidos }}</p></div>
       <div class="admin-resumo-card"><h3>Faturamento bruto</h3><p>R$ {{ '%.2f'|format(faturamento_bruto) }}</p></div>
       <div class="admin-resumo-card"><h3>Faturamento pago</h3><p>R$ {{ '%.2f'|format(total_pago) }}</p></div>
@@ -85,14 +102,14 @@
       <div class="admin-resumo-card"><h3>Ticket médio</h3><p>R$ {{ '%.2f'|format(ticket_medio) }}</p></div>
     </section>
 
-    <section class="metricas-responsavel-grid">
+    <section class="metricas-responsavel-grid" id="comparativoAnalise" data-analise-secao>
       <div class="admin-box metricas-box"><div class="admin-box-topo"><h2>Comparativo Italo</h2></div><div class="metricas-stack"><div class="metrica-linha"><span>Pedidos</span><strong>{{ comparativo.italo.total_pedidos }}</strong></div><div class="metrica-linha"><span>Pago</span><strong>R$ {{ '%.2f'|format(comparativo.italo.pago) }}</strong></div><div class="metrica-linha"><span>Pendente</span><strong>R$ {{ '%.2f'|format(comparativo.italo.pendente) }}</strong></div></div></div>
       <div class="admin-box metricas-box"><div class="admin-box-topo"><h2>Comparativo Karina</h2></div><div class="metricas-stack"><div class="metrica-linha"><span>Pedidos</span><strong>{{ comparativo.karina.total_pedidos }}</strong></div><div class="metrica-linha"><span>Pago</span><strong>R$ {{ '%.2f'|format(comparativo.karina.pago) }}</strong></div><div class="metrica-linha"><span>Pendente</span><strong>R$ {{ '%.2f'|format(comparativo.karina.pendente) }}</strong></div></div></div>
     </section>
 
     <section class="admin-layout-principal">
       <div class="admin-coluna-principal">
-        <div class="admin-box">
+        <div class="admin-box" id="devedoresAnalise" data-analise-secao>
           <div class="admin-box-topo"><h2>Saldo devedor por cliente</h2></div>
           <div class="tabela-responsiva">
             <table class="tabela-analise">
@@ -133,7 +150,7 @@
           </div>
         </div>
 
-        <div class="admin-box">
+        <div class="admin-box" id="pedidosAnalise" data-analise-secao>
           <div class="admin-box-topo"><h2>Pedidos do filtro atual</h2></div>
           <div class="tabela-responsiva">
             <table class="tabela-analise">
@@ -182,8 +199,8 @@
       </div>
 
       <aside class="admin-coluna-lateral">
-        <div class="admin-box"><div class="admin-box-topo"><h2>Sabores mais vendidos</h2></div>{% for item in ranking_sabores[:10] %}<div class="grafico-barra-item"><div class="grafico-barra-topo"><span>{{ item.nome }}</span><strong>{{ item.quantidade }}</strong></div><div class="grafico-barra-trilho"><div class="grafico-barra-preenchimento" style="width: {{ item.percentual }}%"></div></div><small>Faturamento: R$ {{ '%.2f'|format(item.faturamento) }}</small></div>{% else %}<p class="texto-ajuda-admin">Sem dados no período.</p>{% endfor %}</div>
-        <div class="admin-box"><div class="admin-box-topo"><h2>Pedidos por dia</h2></div>{% for item in pedidos_dia_lista %}<div class="metrica-linha"><span>{{ item.data }}</span><strong>{{ item.pedidos }} pedido(s) &middot; {{ item.tabus }} tabu(s) &middot; R$ {{ '%.2f'|format(item.faturamento) }}</strong></div>{% else %}<p class="texto-ajuda-admin">Sem dados diários no período.</p>{% endfor %}</div>
+        <div class="admin-box" id="saboresAnalise" data-analise-secao><div class="admin-box-topo"><h2>Sabores mais vendidos</h2></div>{% for item in ranking_sabores[:10] %}<div class="grafico-barra-item"><div class="grafico-barra-topo"><span>{{ item.nome }}</span><strong>{{ item.quantidade }}</strong></div><div class="grafico-barra-trilho"><div class="grafico-barra-preenchimento" style="width: {{ item.percentual }}%"></div></div><small>Faturamento: R$ {{ '%.2f'|format(item.faturamento) }}</small></div>{% else %}<p class="texto-ajuda-admin">Sem dados no período.</p>{% endfor %}</div>
+        <div class="admin-box" id="pedidosDiaAnalise" data-analise-secao><div class="admin-box-topo"><h2>Pedidos por dia</h2></div>{% for item in pedidos_dia_lista %}<div class="metrica-linha"><span>{{ item.data }}</span><strong>{{ item.pedidos }} pedido(s) &middot; {{ item.tabus }} tabu(s) &middot; R$ {{ '%.2f'|format(item.faturamento) }}</strong></div>{% else %}<p class="texto-ajuda-admin">Sem dados diários no período.</p>{% endfor %}</div>
       </aside>
     </section>
   </div>
