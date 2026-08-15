@@ -11,13 +11,15 @@
         <h1 class="titulo-carrinho">{% if pagamento_confirmado %}✅ Pedido criado com sucesso{% elif pedido_somente_apos_pagamento %}💳 Finalize o pagamento{% else %}✅ Pedido criado com sucesso{% endif %}</h1>
 
         <div class="box-carrinho pedido-final-box pedido-final-box-pro">
+            {% if pagamento_confirmado %}
             <section class="pedido-agradecimento">
-                <span aria-hidden="true">{% if pagamento_confirmado %}🎉{% else %}💳{% endif %}</span>
+                <span aria-hidden="true">🎉</span>
                 <div>
-                    <h2>{% if pagamento_confirmado %}Obrigado pelo seu pedido, {{ pedido.cliente.nome }}!{% else %}Conclua o pagamento, {{ pedido.cliente.nome }}{% endif %}</h2>
-                    <p>{% if pagamento_confirmado %}Seu pagamento foi confirmado pela InfinitePay e o pedido foi criado para {{ responsavel_nome }}. Agora você pode enviá-lo pelo botão abaixo e aguardar o preparo com todo carinho.{% elif pedido_somente_apos_pagamento %}Pague pela InfinitePay para confirmar e liberar o pedido para a loja.{% else %}Escolha abaixo a forma de pagamento que preferir para concluir esta etapa.{% endif %}</p>
+                    <h2>Obrigado pelo seu pedido, {{ pedido.cliente.nome }}!</h2>
+                    <p>Seu pagamento foi confirmado pela InfinitePay e o pedido foi criado para {{ responsavel_nome }}. Agora você pode enviá-lo pelo botão abaixo e aguardar o preparo com todo carinho.</p>
                 </div>
             </section>
+            {% endif %}
 
             <div class="pedido-resumo-topo">
                 <div>

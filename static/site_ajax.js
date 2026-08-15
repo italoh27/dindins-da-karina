@@ -81,6 +81,17 @@
     }, 2200);
   }
 
+  function bindAutoDismissAlerts() {
+    document.querySelectorAll('[data-auto-dismiss]').forEach((alert) => {
+      if (alert.dataset.autoDismissBound === '1') return;
+      alert.dataset.autoDismissBound = '1';
+      window.setTimeout(() => {
+        alert.classList.add('alerta-saindo');
+        window.setTimeout(() => alert.remove(), 240);
+      }, 4200);
+    });
+  }
+
 
   let cartFloatingTimer = null;
 
@@ -275,7 +286,7 @@
     const safeStock = Math.max(0, Number(stock || 0));
     if (badge) {
       if (safeStock > 0) {
-        badge.textContent = safeStock + ' unidade(s)';
+        badge.textContent = safeStock + (safeStock === 1 ? ' disponível' : ' disponíveis');
         badge.classList.remove('badge-esgotado');
         badge.classList.add('badge-estoque');
         badge.setAttribute('data-estoque-sabor', flavorKey);
@@ -303,7 +314,7 @@
       } else {
         button.disabled = false;
         if (!button.classList.contains('is-loading-soft')) {
-          button.textContent = 'Adicionar ao carrinho';
+          button.textContent = 'Adicionar';
         }
       }
     }
@@ -696,6 +707,7 @@
     bindCheckoutWhatsapp();
     bindCarousel();
     bindStoreHeaderMenu();
+    bindAutoDismissAlerts();
     syncTopCartCounter();
   }
 

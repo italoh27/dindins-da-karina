@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geladinhos Gourmet</title>
-  <link rel="preload" href="/static/background-geladinhos-gourmet.webp" as="image" type="image/webp" fetchpriority="high">
-  <link rel="stylesheet" href="/static/style.css?v=20260815-checkout-integrado-v2">
+  <link rel="stylesheet" href="/static/style.css?v=20260815-loja-leve-v1">
 </head>
 <body class="pagina-loja" data-ajax-shell="public" data-cart-count="{{ qtd_itens }}">
     <header class="topo-loja-pro topo-loja-pro-clean">
@@ -27,13 +26,12 @@
         </div>
 
         <div class="marca-wrap-premium">
-            <span class="marca-kicker">Feitos com carinho, sabor de verdade</span>
             <h1 class="marca-loja-topo marca-loja-topo-principal">Geladinhos Gourmet</h1>
         </div>
     </header>
 
     {% if mensagem %}
-    <div class="alerta alerta-sucesso">{{ mensagem }}</div>
+    <div class="alerta alerta-sucesso alerta-loja-temporario" data-auto-dismiss>{{ mensagem }}</div>
     {% endif %}
 
     {% if pagamento_pendente %}
@@ -87,7 +85,7 @@
                     {% for sabor in sabores %}
                     <article class="card card-carrossel card-carrossel-minimal card-loja-pro" data-flavor-card="{{ sabor.nome|lower|replace(" ", "-") }}">
                         <div class="card-imagem-wrap card-imagem-wrap-pro">
-                            <img src="{{ sabor.img }}" alt="{{ sabor.nome }}" width="600" height="600" loading="{% if loop.first %}eager{% else %}lazy{% endif %}" decoding="async" fetchpriority="{% if loop.first %}high{% else %}low{% endif %}">
+                            <img src="{{ sabor.img }}" alt="{{ sabor.nome }}" width="480" height="480" sizes="(max-width: 760px) calc(50vw - 22px), 250px" loading="{% if loop.index <= 2 %}eager{% else %}lazy{% endif %}" decoding="async" fetchpriority="{% if loop.index <= 2 %}high{% else %}low{% endif %}">
                         </div>
 
                         <div class="card-conteudo card-conteudo-pro">
@@ -97,9 +95,8 @@
                             </div>
 
                             <div class="estoque-destaque estoque-destaque-pro">
-                                <span class="estoque-label">Estoque {{ destinatario_atual|capitalize }}</span>
                                 {% if sabor.estoque_exibicao > 0 %}
-                                <span class="badge badge-estoque badge-estoque-forte" data-estoque-sabor="{{ sabor.nome|lower|replace(' ', '-') }}">{{ sabor.estoque_exibicao }} unidade(s)</span>
+                                <span class="badge badge-estoque badge-estoque-forte" data-estoque-sabor="{{ sabor.nome|lower|replace(' ', '-') }}" aria-label="{{ sabor.estoque_exibicao }} unidades disponíveis para {{ destinatario_atual|capitalize }}">{{ sabor.estoque_exibicao }} disponíveis</span>
                                 {% else %}
                                 <span class="badge badge-esgotado badge-estoque-forte">Sem estoque</span>
                                 {% endif %}
@@ -110,7 +107,7 @@
                                 <input type="hidden" name="destinatario" value="{{ destinatario_atual }}">
 
                                 <div class="campo-qtd-loja-pro">
-                                    <label class="label-compacta" for="qtd-{{ loop.index }}">Quantidade</label>
+                                    <label class="label-compacta" for="qtd-{{ loop.index }}">Qtd.</label>
                                     <div class="controle-quantidade controle-quantidade-loja" data-quantity-box>
                                         <button type="button" class="btn-qtd-step" data-step="-1" aria-label="Diminuir quantidade de {{ sabor.nome }}" {% if not loja_aberta or destinatario_bloqueado or sabor.estoque_exibicao <= 0 %}disabled{% endif %}>−</button>
                                         <input id="qtd-{{ loop.index }}" class="inputquantidade" type="number" name="quantidade" value="1" min="1" {% if sabor.estoque_exibicao > 0 %}max="{{ sabor.estoque_exibicao }}"{% endif %} required data-quantity-input data-flavor-qty-input="{{ sabor.nome|lower|replace(" ", "-") }}" {% if not loja_aberta or destinatario_bloqueado or sabor.estoque_exibicao <= 0 %}disabled{% endif %}>
@@ -119,7 +116,7 @@
                                 </div>
 
                                 <button class="btn-adicionar btn-adicionar-pro" type="submit" data-flavor-button="{{ sabor.nome|lower|replace(" ", "-") }}" {% if not loja_aberta or destinatario_bloqueado or sabor.estoque_exibicao <= 0 %}disabled{% endif %}>
-                                    {% if destinatario_bloqueado %}Pedidos pausados{% elif sabor.estoque_exibicao <= 0 %}Indisponível{% else %}Adicionar ao carrinho{% endif %}
+                                    {% if destinatario_bloqueado %}Pedidos pausados{% elif sabor.estoque_exibicao <= 0 %}Indisponível{% else %}Adicionar{% endif %}
                                 </button>
                             </form>
                         </div>
@@ -141,7 +138,7 @@
             <button type="button" class="btn-admin-topo" id="continueShoppingBtn">Continuar comprando</button>
         </div>
     </div>
-    <script src="/static/site_ajax.js?v=20260814-mobile-checkout-v1"></script>
+    <script src="/static/site_ajax.js?v=20260815-loja-leve-v1"></script>
     {% include "_whatsapp_suporte.html" %}
 </body>
 </html>

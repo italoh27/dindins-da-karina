@@ -4107,3 +4107,170 @@ input,select,textarea{border:1px solid rgba(148,163,184,.26)!important;border-ra
   background:#22c55e!important;
   box-shadow:0 0 0 5px rgba(34,197,94,.2)!important;
 }
+
+/* === Loja profissional e leve === */
+.pagina-loja{
+  background-color:#070b16!important;
+  background-image:
+    radial-gradient(circle at 12% 4%,rgba(14,165,233,.13),transparent 27%),
+    radial-gradient(circle at 88% 18%,rgba(244,63,94,.1),transparent 25%),
+    linear-gradient(180deg,#070b16 0%,#0b1020 52%,#070b16 100%)!important;
+  background-attachment:scroll!important;
+  background-size:auto!important;
+  animation:none!important;
+}
+.pagina-loja::before,.pagina-loja::after{display:none!important;animation:none!important}
+.pagina-loja .topo-loja-pro,.pagina-loja .card,.pagina-loja .form-responsavel-loja{
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+.pagina-loja .topo-loja-pro{
+  max-width:1180px;
+  margin:0 auto 12px!important;
+  padding:10px 14px 12px!important;
+  background:rgba(8,13,27,.96)!important;
+  box-shadow:0 10px 28px rgba(2,6,23,.24)!important;
+}
+.pagina-loja .topo-acoes-loja{margin-bottom:6px!important}
+.pagina-loja .marca-wrap-premium{width:100%;padding:0!important}
+.pagina-loja .marca-loja-topo-principal{
+  margin:4px auto 0!important;
+  font-size:clamp(1.35rem,3.4vw,2rem)!important;
+  letter-spacing:-.025em!important;
+  text-shadow:none!important;
+}
+.pagina-loja .form-responsavel-loja{
+  max-width:620px;
+  padding:10px 12px!important;
+  gap:10px!important;
+  border-radius:15px!important;
+  background:#111827!important;
+  box-shadow:0 8px 22px rgba(2,6,23,.2)!important;
+}
+.pagina-loja .responsavel-loja-bloco{min-width:auto!important}
+.pagina-loja .responsavel-loja-label{font-size:.78rem;white-space:nowrap}
+.pagina-loja .responsavel-loja-acoes{flex:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.pagina-loja .btn-responsavel-loja{
+  min-width:0!important;
+  min-height:38px!important;
+  padding:8px 11px!important;
+  border-radius:10px!important;
+  box-shadow:none!important;
+  font-size:.78rem!important;
+}
+.pagina-loja .seletor-responsavel-loja{margin:10px auto 4px!important}
+.pagina-loja .vitrine-wrapper-loja-ajustada{width:min(1180px,calc(100% - 22px));margin-top:10px!important}
+.pagina-loja .vitrine-topo-loja-final{margin-bottom:10px!important}
+.pagina-loja .titulo-sabores-ajustado{font-size:clamp(1.3rem,3vw,1.8rem)!important;text-shadow:none!important}
+.pagina-loja .card-loja-pro{
+  background:#111827!important;
+  border-color:rgba(148,163,184,.16)!important;
+  box-shadow:0 12px 30px rgba(2,6,23,.24)!important;
+}
+.pagina-loja .card-imagem-wrap-pro{background:#0b1020}
+.pagina-loja .card-imagem-wrap-pro img{transition:none!important}
+.pagina-loja .card-carrossel:hover img{transform:none!important}
+.pagina-loja .card-topo-pro h3{color:#f8fafc;letter-spacing:-.01em}
+.pagina-loja .estoque-destaque-pro{justify-content:flex-start!important;padding:0!important;background:none!important}
+.pagina-loja .estoque-destaque-pro .badge{
+  display:inline-flex!important;
+  width:auto!important;
+  margin:0!important;
+  padding:5px 8px!important;
+  border:1px solid rgba(52,211,153,.22)!important;
+  border-radius:999px!important;
+  background:rgba(5,150,105,.15)!important;
+  color:#a7f3d0!important;
+  font-size:.68rem!important;
+  line-height:1!important;
+  box-shadow:none!important;
+}
+.pagina-loja .estoque-destaque-pro .badge-esgotado{border-color:rgba(251,113,133,.24)!important;background:rgba(190,18,60,.14)!important;color:#fecdd3!important}
+.pagina-loja .alerta-loja-temporario{
+  max-width:680px;
+  margin:10px auto!important;
+  padding:11px 14px!important;
+  border-radius:13px!important;
+  font-size:.82rem!important;
+  transition:opacity .22s ease,transform .22s ease!important;
+}
+.pagina-loja .alerta-loja-temporario.alerta-saindo{opacity:0;transform:translateY(-6px)}
+.pagina-loja .btn-adicionar-pro{white-space:nowrap}
+.pagina-loja .card-carrossel{content-visibility:auto;contain-intrinsic-size:230px 410px}
+
+@media(max-width:760px){
+  .pagina-loja{padding:8px 0 76px!important}
+  .pagina-loja .topo-loja-pro{
+    width:calc(100% - 20px)!important;
+    padding:8px 10px 10px!important;
+    border-radius:17px!important;
+  }
+  .pagina-loja .topo-loja-pro .loja-nav-compacta{padding:3px 2px!important}
+  .pagina-loja .loja-menu-gatilho{
+    width:42px!important;min-width:42px!important;min-height:42px!important;padding:9px!important;border-radius:11px!important;box-shadow:none!important;
+  }
+  .pagina-loja .topo-loja-pro .carrinho-icone-topo{
+    width:44px!important;min-width:44px!important;flex-basis:44px!important;min-height:42px!important;padding:7px!important;box-shadow:none!important;
+  }
+  .pagina-loja .carrinho-icone-grafico{font-size:1.3rem}
+  .pagina-loja .carrinho-quantidade-selo{top:-6px;right:-6px;min-width:21px;height:21px;padding:0 5px;font-size:.65rem!important}
+  .pagina-loja .marca-loja-topo-principal{font-size:1.22rem!important;margin:1px auto 0!important}
+  .pagina-loja .seletor-responsavel-loja{width:calc(100% - 20px);padding:0!important;margin:8px auto 4px!important}
+  .pagina-loja .form-responsavel-loja{display:grid!important;grid-template-columns:auto minmax(0,1fr);align-items:center!important;width:100%!important;padding:8px!important}
+  .pagina-loja .responsavel-loja-bloco,.pagina-loja .responsavel-loja-acoes{width:auto!important}
+  .pagina-loja .responsavel-loja-label{font-size:.7rem}
+  .pagina-loja .btn-responsavel-loja{min-height:36px!important;padding:7px 8px!important;font-size:.7rem!important}
+  .pagina-loja .vitrine-wrapper-loja-ajustada{width:calc(100% - 20px)!important;margin-top:10px!important}
+  .pagina-loja .vitrine-topo-loja-final{align-items:center!important;margin-bottom:9px!important}
+  .pagina-loja .titulo-sabores-ajustado{font-size:1.08rem!important;text-align:center}
+  .pagina-loja .carrossel-stage{display:block!important}
+  .pagina-loja .carrossel-area{overflow:visible!important}
+  .pagina-loja .carrossel-produtos{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    align-items:stretch!important;
+    width:100%!important;
+    gap:10px!important;
+    padding:0 0 12px!important;
+    overflow:visible!important;
+    scroll-snap-type:none!important;
+  }
+  .pagina-loja .card-loja-pro,.pagina-loja .card-carrossel{
+    display:flex!important;
+    flex-direction:column!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    height:100%!important;
+    flex-basis:auto!important;
+    padding:7px!important;
+    border-radius:15px!important;
+    box-sizing:border-box!important;
+  }
+  .pagina-loja .card-imagem-wrap-pro{aspect-ratio:1/1!important;margin-bottom:7px!important;border-radius:11px!important}
+  .pagina-loja .card-conteudo-pro{display:flex!important;flex:1;flex-direction:column;gap:7px!important}
+  .pagina-loja .card-topo-pro h3{
+    min-height:2.25em;margin:0 0 2px!important;font-size:.79rem!important;line-height:1.12!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  .pagina-loja .card-loja-pro .preco-card{font-size:.8rem!important}
+  .pagina-loja .form-card-pro{display:flex!important;flex-direction:column;gap:7px!important;margin-top:auto}
+  .pagina-loja .campo-qtd-loja-pro{gap:4px!important}
+  .pagina-loja .label-compacta{margin:0!important;font-size:.64rem!important;color:#cbd5e1!important}
+  .pagina-loja .controle-quantidade-loja{display:grid!important;grid-template-columns:34px minmax(0,1fr) 34px;gap:5px!important;width:100%!important;padding:4px!important;box-sizing:border-box}
+  .pagina-loja .controle-quantidade-loja .btn-qtd-step{
+    width:34px!important;min-width:34px!important;max-width:34px!important;min-height:34px!important;height:34px!important;padding:0!important;border-radius:9px!important;font-size:1.15rem!important;
+  }
+  .pagina-loja .controle-quantidade-loja .inputquantidade{
+    width:100%!important;min-width:0!important;min-height:34px!important;height:34px!important;padding:4px!important;font-size:.84rem!important;text-align:center;
+  }
+  .pagina-loja .btn-adicionar-pro{min-height:38px!important;padding:8px 6px!important;font-size:.72rem!important;border-radius:10px!important;box-shadow:none!important}
+  .pagina-loja .alerta-loja-temporario{width:calc(100% - 20px);box-sizing:border-box;margin:8px auto!important;padding:10px 12px!important;font-size:.75rem!important}
+  .pagina-loja .card-loja-pro{content-visibility:auto;contain-intrinsic-size:170px 330px}
+}
+
+@media(max-width:370px){
+  .pagina-loja .carrossel-produtos{gap:7px!important}
+  .pagina-loja .card-loja-pro,.pagina-loja .card-carrossel{padding:6px!important}
+  .pagina-loja .responsavel-loja-label{display:none}
+  .pagina-loja .form-responsavel-loja{grid-template-columns:1fr!important}
+}

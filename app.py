@@ -535,9 +535,33 @@ def cliente_pode_acessar_pedido(pedido):
 def normalizar_imagem_sabor(img, nome=""):
     caminho = str(img or "").strip()
     nome_chave = str(nome or "").strip().casefold()
+    caminho_limpo = caminho.split("?", 1)[0].replace("\\", "/")
+    nome_arquivo = caminho_limpo.rsplit("/", 1)[-1].casefold()
+    imagens_otimizadas = {
+        "ninho_com_nutela.jpg": "/static/card_ninho_com_nutela.webp",
+        "ninho_com_morango.jpg": "/static/card_ninho_com_morango.webp",
+        "romeu_julieta.jpg": "/static/card_romeu_julieta.webp",
+        "maracuja_trufado.jpg": "/static/card_maracuja_trufado.webp",
+        "pacoca.jpg": "/static/card_pacoca.webp",
+        "paçoca.jpg": "/static/card_pacoca.webp",
+        "pa#u00e7oca.jpg": "/static/card_pacoca.webp",
+        "pacoca.jpeg": "/static/card_pacoca.webp",
+        "pudim.jpg": "/static/card_pudim.webp",
+        "cocada.jpg": "/static/card_cocada.webp",
+        "chocolate.jfif": "/static/card_chocolate.webp",
+        "ninho_com_oreo.jpg": "/static/card_ninho_com_oreo.webp",
+        "delicia_de_abacaxi.webp": "/static/card_delicia_de_abacaxi.webp",
+    }
+    imagem_otimizada = imagens_otimizadas.get(nome_arquivo)
+    if imagem_otimizada:
+        arquivo_otimizado = os.path.join(BASE_DIR, imagem_otimizada.lstrip("/").replace("/", os.sep))
+        if os.path.isfile(arquivo_otimizado):
+            return imagem_otimizada
     if nome_chave in {"delícia de abacaxi", "delicia de abacaxi"}:
-        imagem_abacaxi = "/static/delicia_de_abacaxi.webp"
-        caminho_limpo = caminho.split("?", 1)[0].replace("\\", "/")
+        imagem_abacaxi = "/static/card_delicia_de_abacaxi.webp"
+        arquivo_abacaxi = os.path.join(BASE_DIR, imagem_abacaxi.lstrip("/").replace("/", os.sep))
+        if not os.path.isfile(arquivo_abacaxi):
+            imagem_abacaxi = "/static/delicia_de_abacaxi.webp"
         if not caminho_limpo or caminho_limpo in {"/static/gelinhos.png", "static/gelinhos.png"}:
             return imagem_abacaxi
         if caminho_limpo.startswith("/static/"):
