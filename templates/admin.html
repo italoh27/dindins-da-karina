@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260815-fundo-unificado-v1">
+  <link rel="stylesheet" href="/static/style.css?v=20260815-quantidade-unificada-v1">
 </head>
 <body class="pagina-admin pagina-admin-pro pagina-admin-dashboard">
     <div data-admin-shell="page">
@@ -269,8 +269,8 @@
                                 <summary>Editar contagem</summary>
                                 <form class="fidelidade-ajuste-form js-admin-ajax-form" method="post" action="/admin/fidelidade/cliente/{{ cliente.id }}/ajustar">
                                     <input type="hidden" name="return_to" value="{{ request_path }}#fidelidadeSecao">
-                                    <label><span>Dindins de R$ 5 no ciclo</span><input type="number" name="progresso_5" min="0" max="9" step="1" value="{{ cliente.progresso_5 }}" required></label>
-                                    <label><span>Dindins de R$ 7 no ciclo</span><input type="number" name="progresso_7" min="0" max="9" step="1" value="{{ cliente.progresso_7 }}" required></label>
+                                    <label><span>Dindins de R$ 5 no ciclo</span><div class="controle-quantidade controle-quantidade-admin" data-quantity-box><button type="button" class="btn-qtd-step" data-step="-1" aria-label="Diminuir contagem de dindins de 5 reais">−</button><input type="number" name="progresso_5" min="0" max="9" step="1" value="{{ cliente.progresso_5 }}" required class="input-quantidade-step" data-quantity-input><button type="button" class="btn-qtd-step" data-step="1" aria-label="Aumentar contagem de dindins de 5 reais">+</button></div></label>
+                                    <label><span>Dindins de R$ 7 no ciclo</span><div class="controle-quantidade controle-quantidade-admin" data-quantity-box><button type="button" class="btn-qtd-step" data-step="-1" aria-label="Diminuir contagem de dindins de 7 reais">−</button><input type="number" name="progresso_7" min="0" max="9" step="1" value="{{ cliente.progresso_7 }}" required class="input-quantidade-step" data-quantity-input><button type="button" class="btn-qtd-step" data-step="1" aria-label="Aumentar contagem de dindins de 7 reais">+</button></div></label>
                                     <button class="btn-admin-topo" type="submit">Salvar contagem</button>
                                 </form>
                                 <small>Edite de 0 a 9. Os próximos pedidos válidos continuarão somando normalmente.</small>
@@ -349,7 +349,7 @@
                                 <span>Entrega grátis</span>
                                 <input type="checkbox" name="entrega_gratis" {% if config.entrega_gratis %}checked{% endif %}>
                             </label>
-                            <label class="campo-taxa-entrega config-lista-item"><span><strong>Valor da entrega</strong><small>Taxa aplicada quando a entrega grátis estiver desligada.</small></span><input type="number" name="taxa_entrega" min="0" step="0.01" value="{{ '%.2f'|format(config.taxa_entrega or 0) }}"></label>
+                            <label class="campo-taxa-entrega config-lista-item"><span><strong>Valor da entrega</strong><small>Taxa aplicada quando a entrega grátis estiver desligada.</small></span><div class="controle-quantidade controle-quantidade-admin controle-valor-monetario" data-quantity-box><button type="button" class="btn-qtd-step" data-step="-0.5" aria-label="Diminuir valor da entrega">−</button><input type="number" name="taxa_entrega" min="0" step="0.01" value="{{ '%.2f'|format(config.taxa_entrega or 0) }}" class="input-quantidade-step" data-quantity-input><button type="button" class="btn-qtd-step" data-step="0.5" aria-label="Aumentar valor da entrega">+</button></div></label>
                         </div>
                         <div class="bloqueios-responsavel-grid">
                             <label class="check-admin check-admin-pro check-bloqueio-destinatario config-lista-item">
@@ -375,7 +375,7 @@
 
     </div>
 
-    <script src="/static/admin_ajax.js?v=20260812-preserva-pedido-v4"></script>
+    <script src="/static/admin_ajax.js?v=20260815-quantidade-unificada-v2"></script>
     <script>
         window.initAdminPage = function () {
             const STORAGE_TAB = 'adminActiveTab';

@@ -4039,6 +4039,45 @@ input,select,textarea{border:1px solid rgba(148,163,184,.26)!important;border-ra
 }
 
 /* === Navegação compacta apenas do painel principal no celular === */
+.controle-quantidade-admin,
+.controle-quantidade-estoque{
+  display:grid;
+  grid-template-columns:38px minmax(48px,1fr) 38px;
+  width:100%;
+  box-sizing:border-box;
+}
+.controle-quantidade-admin .input-quantidade-step,
+.controle-quantidade-estoque .input-quantidade-step{
+  width:100%!important;
+  min-width:0!important;
+  min-height:38px;
+  margin:0!important;
+  padding:0 6px!important;
+  text-align:center;
+}
+.controle-quantidade-admin .btn-qtd-step,
+.controle-quantidade-estoque .btn-qtd-step{
+  width:38px;
+  min-width:38px;
+  margin:0;
+  padding:0;
+}
+.config-lista-item .controle-valor-monetario{
+  width:190px;
+  max-width:100%;
+  flex:0 0 190px;
+}
+@media(max-width:520px){
+  .campo-taxa-entrega{
+    align-items:stretch!important;
+    flex-direction:column!important;
+  }
+  .config-lista-item .controle-valor-monetario{
+    width:100%;
+    flex-basis:auto;
+  }
+}
+
 .admin-analise-page #topoAnalise,
 .admin-analise-page [data-analise-secao]{scroll-margin-top:170px}
 

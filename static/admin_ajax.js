@@ -169,8 +169,14 @@
         const min = Number(input.min || 0);
         const max = input.max ? Number(input.max) : Infinity;
         const current = Number(input.value || 0);
+        const inputStep = input.step && input.step !== 'any' ? Number(input.step) : step;
+        const decimalPlaces = (value) => {
+          const text = String(value || '');
+          return text.includes('.') ? text.split('.')[1].length : 0;
+        };
+        const precision = Math.max(decimalPlaces(step), decimalPlaces(inputStep));
         const next = Math.min(max, Math.max(min, current + step));
-        input.value = next;
+        input.value = precision ? next.toFixed(precision) : String(Math.round(next));
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
     });
@@ -225,7 +231,12 @@
       const clone = first.cloneNode(true);
       clone.querySelectorAll('select').forEach((el) => { el.value = ''; });
       clone.querySelectorAll('input').forEach((el) => { el.value = el.name === 'item_quantidade[]' ? '1' : ''; });
+      clone.querySelectorAll('[data-step-bound], [data-quantity-bound]').forEach((el) => {
+        el.removeAttribute('data-step-bound');
+        el.removeAttribute('data-quantity-bound');
+      });
       lista.appendChild(clone);
+      bindAdminQuantityControls();
     });
   }
 

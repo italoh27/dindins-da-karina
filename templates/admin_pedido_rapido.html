@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pedido rápido</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260815-fundo-unificado-v1">
+  <link rel="stylesheet" href="/static/style.css?v=20260815-quantidade-unificada-v1">
 </head>
 <body class="pagina-admin pagina-admin-pro">
   <div data-admin-shell="page">
@@ -88,7 +88,11 @@
                 </label>
                 <label>
                   <span>Quantidade</span>
-                  <input type="number" min="1" name="item_quantidade[]" value="1" required>
+                  <div class="controle-quantidade controle-quantidade-admin" data-quantity-box>
+                    <button type="button" class="btn-qtd-step" data-step="-1" aria-label="Diminuir quantidade do item">−</button>
+                    <input type="number" min="1" name="item_quantidade[]" value="1" required class="input-quantidade-step" data-quantity-input>
+                    <button type="button" class="btn-qtd-step" data-step="1" aria-label="Aumentar quantidade do item">+</button>
+                  </div>
                 </label>
                 <button type="button" class="btn-excluir-um btn-remover-linha-rapida" data-remove-quick-row>Remover linha</button>
               </div>
@@ -103,7 +107,7 @@
       </section>
     </div>
   </div>
-  <script src="/static/admin_ajax.js?v=20260805-remover-linhas"></script>
+  <script src="/static/admin_ajax.js?v=20260815-quantidade-unificada-v2"></script>
   {% include "_whatsapp_suporte.html" %}
 </body>
 </html>
