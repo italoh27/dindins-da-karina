@@ -1,4 +1,6 @@
 (function () {
+  let paymentMonitorTimer = null;
+
   function normalizeFlavorKey(text) {
     return String(text || '').trim().toLowerCase().replace(/\s+/g, '-');
   }
@@ -560,6 +562,85 @@
     });
   }
 
+  function stopPaymentMonitor() {
+    if (paymentMonitorTimer) window.clearInterval(paymentMonitorTimer);
+    paymentMonitorTimer = null;
+  }
+
+  function bindIntegratedCheckout() {
+    const monitor = document.querySelector('[data-payment-monitor]');
+    if (!monitor) {
+      stopPaymentMonitor();
+      return;
+    }
+    if (monitor.dataset.paymentBound === '1') return;
+    monitor.dataset.paymentBound = '1';
+
+    const checkout = monitor.querySelector('[data-infinitepay-checkout]');
+    const waiting = monitor.querySelector('[data-payment-waiting]');
+    const statusTitle = monitor.querySelector('[data-payment-status-title]');
+    const statusCopy = monitor.querySelector('[data-payment-status-copy]');
+    const checkButton = monitor.querySelector('[data-payment-check-now]');
+    const statusUrl = monitor.dataset.statusUrl || '';
+    let checking = false;
+
+    function showWaiting() {
+      if (waiting) waiting.hidden = false;
+    }
+
+    async function checkPayment(force) {
+      if (!statusUrl || checking) return;
+      checking = true;
+      if (force && checkButton) {
+        checkButton.disabled = true;
+        checkButton.textContent = 'Verificando...';
+      }
+      try {
+        const separator = statusUrl.includes('?') ? '&' : '?';
+        const response = await fetch(statusUrl + (force ? separator + 'refresh=1' : ''), {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          cache: 'no-store'
+        });
+        const payload = await response.json();
+        if (!response.ok || payload.ok === false) throw new Error(payload.message || 'Falha ao consultar pagamento.');
+        if (payload.pago) {
+          stopPaymentMonitor();
+          showWaiting();
+          if (statusTitle) statusTitle.textContent = 'Pagamento confirmado!';
+          if (statusCopy) statusCopy.textContent = 'Estamos preparando a confirmação do seu pedido.';
+          if (payload.confirmed_url) {
+            window.setTimeout(() => { window.location.href = payload.confirmed_url; }, 450);
+          }
+          return;
+        }
+        if (force) {
+          showWaiting();
+          if (statusTitle) statusTitle.textContent = 'Ainda aguardando a InfinitePay';
+          if (statusCopy) statusCopy.textContent = 'Se acabou de pagar, aguarde alguns segundos e tente novamente.';
+        }
+      } catch (error) {
+        if (force) showToast('Não foi possível verificar agora. Tente novamente em alguns segundos.');
+      } finally {
+        checking = false;
+        if (force && checkButton) {
+          checkButton.disabled = false;
+          checkButton.textContent = 'Já paguei, verificar agora';
+        }
+      }
+    }
+
+    function startPaymentMonitor() {
+      showWaiting();
+      stopPaymentMonitor();
+      window.setTimeout(() => checkPayment(false), 1200);
+      paymentMonitorTimer = window.setInterval(() => checkPayment(false), 5000);
+    }
+
+    if (checkout) checkout.addEventListener('click', startPaymentMonitor);
+    if (checkButton) checkButton.addEventListener('click', () => checkPayment(true));
+    monitor.checkPaymentStatus = checkPayment;
+  }
+
   function bindCheckoutWhatsapp() {
     document.querySelectorAll('.js-open-whatsapp-before-pay').forEach((link) => {
       if (link.dataset.whatsBound === '1') return;
@@ -611,6 +692,7 @@
     bindCopyPix();
     bindExternalSubmitButtons();
     bindQuantityControls();
+    bindIntegratedCheckout();
     bindCheckoutWhatsapp();
     bindCarousel();
     bindStoreHeaderMenu();
@@ -619,6 +701,13 @@
 
   window.addEventListener('popstate', () => {
     visit(window.location.href, false).catch(() => window.location.reload());
+  });
+
+  window.addEventListener('focus', () => {
+    const monitor = document.querySelector('[data-payment-monitor]');
+    if (monitor && typeof monitor.checkPaymentStatus === 'function' && !monitor.querySelector('[data-payment-waiting]')?.hidden) {
+      monitor.checkPaymentStatus(false);
+    }
   });
 
   bind();

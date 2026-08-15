@@ -487,6 +487,23 @@ def pagamento_pendente_da_sessao():
     return None
 
 
+def cliente_pode_acessar_pedido(pedido):
+    """Restringe o acompanhamento do checkout ao navegador ou cliente do pedido."""
+    if not pedido:
+        return False
+    pedido_id = str(pedido.get("id", ""))
+    if pedido_id and pedido_id in {
+        str(session.get("ultimo_pedido_id", "")),
+        str(session.get("pagamento_pendente_id", "")),
+    }:
+        return True
+    if not cliente_logado():
+        return False
+    telefone_sessao = normalizar_telefone_br(session.get("cliente_telefone", ""))
+    telefone_pedido = normalizar_telefone_br((pedido.get("cliente") or {}).get("telefone", ""))
+    return bool(telefone_sessao and telefone_sessao == telefone_pedido)
+
+
 def normalizar_imagem_sabor(img, nome=""):
     caminho = str(img or "").strip()
     nome_chave = str(nome or "").strip().casefold()
@@ -1900,7 +1917,7 @@ def criar_checkout_infinitepay(pedido):
         if email:
             payload["customer"]["email"] = email
 
-    resp = requests.post(url, json=payload, timeout=20)
+    resp = requests.post(url, json=payload, timeout=(5, 15))
     if not resp.ok:
         raise RuntimeError(f"Erro ao criar checkout InfinitePay: {resp.status_code} - {resp.text[:300]}")
 
@@ -1925,7 +1942,7 @@ def consultar_pagamento_infinitepay(order_nsu, transaction_nsu="", slug=""):
     if slug:
         payload["slug"] = slug
 
-    resp = requests.post("https://api.checkout.infinitepay.io/payment_check", json=payload, timeout=20)
+    resp = requests.post("https://api.checkout.infinitepay.io/payment_check", json=payload, timeout=(5, 15))
     if not resp.ok:
         return None
     return resp.json()
@@ -2558,7 +2575,8 @@ def finalizar_pedido():
         if infinitepay_ativo():
             checkout = criar_checkout_infinitepay(pedido)
             pedido["pagamento_link"] = checkout.get("checkout_url", "")
-            pedido["invoice_slug"] = str(checkout.get("raw", {}).get("slug", ""))
+            checkout_raw = checkout.get("raw", {})
+            pedido["invoice_slug"] = str(checkout_raw.get("slug") or checkout_raw.get("invoice_slug") or "")
     except Exception as e:
         devolver_estoque_itens(itens_pedido, destinatario)
         set_mensagem("mensagem_carrinho", f"Não foi possível iniciar o pagamento online agora. Detalhe: {str(e)[:180]}")
@@ -2578,6 +2596,7 @@ def finalizar_pedido():
         whatsapp_destino = criar_link_whatsapp(get_numero_vendedor(destinatario), mensagem)
 
     session["carrinho"] = []
+    session["ultimo_pedido_id"] = pedido_id
     if pedido_somente_apos_pagamento:
         session["pagamento_pendente_id"] = pedido_id
     session.modified = True
@@ -2641,6 +2660,30 @@ def criar_link_whatsapp(numero, mensagem):
     return f"https://wa.me/{numero}?text={quote(mensagem)}"
 
 
+def renderizar_pagamento_confirmado(pedido):
+    mensagem = montar_mensagem_whatsapp(pedido, pagamento_confirmado=True)
+    whatsapp_destino = criar_link_whatsapp(
+        get_numero_vendedor(pedido.get("destinatario", "italo")),
+        mensagem,
+    )
+    return render_template(
+        "pedido_criado.html",
+        pedido=pedido,
+        whatsapp_destino=whatsapp_destino,
+        responsavel_nome=pedido.get("nome_vendedor", "Responsável"),
+        pagamento_link="",
+        pix_checkout_automatico=True,
+        pagamento_obrigatorio=False,
+        pedido_somente_apos_pagamento=pedido_modo_pos_pagamento(pedido),
+        pagamento_confirmado=True,
+        abrir_whatsapp_automaticamente=False,
+        chave_pix=CHAVE_PIX,
+        nome_pix=NOME_PIX,
+        banco_pix=BANCO_PIX,
+        pix_manual_ativo=bool(ler_config().get("pix_manual_ativo", True)),
+    )
+
+
 @app.route("/pagamento/retorno")
 def retorno_pagamento():
     order_nsu = request.args.get("order_nsu", "").strip()
@@ -2651,8 +2694,6 @@ def retorno_pagamento():
 
     if order_nsu.isdigit():
         pedido_id = int(order_nsu)
-        pedido_antes = buscar_pedido(pedido_id)
-        modo_pos_pagamento = pedido_modo_pos_pagamento(pedido_antes)
         payment = consultar_pagamento_infinitepay(order_nsu, transaction_nsu=transaction_nsu, slug=slug) or {}
         if receipt_url and "receipt_url" not in payment:
             payment["receipt_url"] = receipt_url
@@ -2665,27 +2706,7 @@ def retorno_pagamento():
                 if str(session.get("pagamento_pendente_id", "")) == str(pedido_id):
                     session.pop("pagamento_pendente_id", None)
                     session.modified = True
-                mensagem = montar_mensagem_whatsapp(pedido_confirmado, pagamento_confirmado=True)
-                whatsapp_destino = criar_link_whatsapp(
-                    get_numero_vendedor(pedido_confirmado.get("destinatario", "italo")),
-                    mensagem,
-                )
-                return render_template(
-                    "pedido_criado.html",
-                    pedido=pedido_confirmado,
-                    whatsapp_destino=whatsapp_destino,
-                    responsavel_nome=pedido_confirmado.get("nome_vendedor", "Responsável"),
-                    pagamento_link="",
-                    pix_checkout_automatico=True,
-                    pagamento_obrigatorio=False,
-                    pedido_somente_apos_pagamento=modo_pos_pagamento,
-                    pagamento_confirmado=True,
-                    abrir_whatsapp_automaticamente=False,
-                    chave_pix=CHAVE_PIX,
-                    nome_pix=NOME_PIX,
-                    banco_pix=BANCO_PIX,
-                    pix_manual_ativo=bool(ler_config().get("pix_manual_ativo", True)),
-                )
+                return renderizar_pagamento_confirmado(pedido_confirmado)
         set_mensagem("mensagem_home", f"Retorno recebido do pedido #{pedido_id}.")
     else:
         set_mensagem("mensagem_home", "Retorno de pagamento recebido.")
@@ -3543,10 +3564,57 @@ def excluir_pedido(pedido_id):
 @app.route("/pedido/<int:pedido_id>/pagar")
 def pagar_pedido(pedido_id):
     pedido = buscar_pedido(pedido_id)
-    if not pedido or not pedido.get("pagamento_link"):
+    if not cliente_pode_acessar_pedido(pedido):
+        set_mensagem("mensagem_home", "Não foi possível identificar esse pedido nesta sessão.")
+        return redirect("/")
+    if pedido.get("pagamento_status") == "pago":
+        return redirect(url_for("pagamento_confirmado_pedido", pedido_id=pedido_id))
+    if not pedido.get("pagamento_link"):
         set_mensagem("mensagem_home", "Link de pagamento não encontrado para este pedido.")
         return redirect("/")
     return redirect(pedido.get("pagamento_link"))
+
+
+@app.route("/pedido/<int:pedido_id>/pagamento/status")
+def status_pagamento_pedido(pedido_id):
+    pedido = buscar_pedido(pedido_id)
+    if not cliente_pode_acessar_pedido(pedido):
+        return jsonify({"ok": False, "message": "Pedido não encontrado nesta sessão."}), 404
+
+    # O acompanhamento automático lê o banco atualizado pelo webhook. A chamada
+    # externa fica reservada ao botão manual para não sobrecarregar o aplicativo.
+    if pedido.get("pagamento_status") != "pago" and request.args.get("refresh") == "1":
+        payment = consultar_pagamento_infinitepay(
+            pedido_id,
+            transaction_nsu=pedido.get("transaction_nsu", ""),
+            slug=pedido.get("invoice_slug", ""),
+        )
+        if payment:
+            atualizar_status_pagamento_infinitepay(pedido_id, payment)
+            pedido = buscar_pedido(pedido_id) or pedido
+
+    pago = pedido.get("pagamento_status") == "pago"
+    if pago and str(session.get("pagamento_pendente_id", "")) == str(pedido_id):
+        session.pop("pagamento_pendente_id", None)
+        session.modified = True
+    return jsonify({
+        "ok": True,
+        "pago": pago,
+        "status": pedido.get("pagamento_status", "aguardando_pagamento"),
+        "confirmed_url": url_for("pagamento_confirmado_pedido", pedido_id=pedido_id) if pago else "",
+    })
+
+
+@app.route("/pedido/<int:pedido_id>/pagamento/confirmado")
+def pagamento_confirmado_pedido(pedido_id):
+    pedido = buscar_pedido(pedido_id)
+    if not cliente_pode_acessar_pedido(pedido):
+        set_mensagem("mensagem_home", "Não foi possível identificar esse pedido nesta sessão.")
+        return redirect("/")
+    if pedido.get("pagamento_status") != "pago":
+        set_mensagem("mensagem_home", "O pagamento ainda está aguardando confirmação.")
+        return redirect("/")
+    return renderizar_pagamento_confirmado(pedido)
 
 
 @app.route("/pedido/<int:pedido_id>/cancelar-pagamento", methods=["POST"])

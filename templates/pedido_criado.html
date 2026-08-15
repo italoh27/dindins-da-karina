@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if pagamento_confirmado %}Pagamento confirmado{% elif pedido_somente_apos_pagamento %}Finalize o pagamento{% else %}Pedido criado{% endif %}</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260813-checkout-v3">
+  <link rel="stylesheet" href="/static/style.css?v=20260814-mobile-checkout-v1">
 </head>
 <body class="pagina-carrinho" data-ajax-shell="public">
     <div class="carrinho-wrapper pedido-final-wrapper">
@@ -47,11 +47,19 @@
                 </div>
                 <div class="formas-pagamento-pedido{% if pedido_somente_apos_pagamento or not pix_manual_ativo or not pagamento_link %} forma-unica{% endif %}">
                     {% if pagamento_link %}
-                    <article class="forma-pagamento-card forma-pagamento-infinitepay">
+                    <article class="forma-pagamento-card forma-pagamento-infinitepay" data-payment-monitor data-status-url="{{ url_for('status_pagamento_pedido', pedido_id=pedido.id) }}">
                         <span class="forma-pagamento-selo">Recomendado</span>
                         <h3>InfinitePay</h3>
-                        <p>Pague por Pix ou cartão no ambiente seguro da InfinitePay e tenha confirmação automática.</p>
-                        <a href="/pedido/{{ pedido.id }}/pagar" class="btn-finalizar btn-pagamento-destaque btn-pagar-checkout" id="btnPagarCheckout">{% if pedido_somente_apos_pagamento %}Pagar e confirmar pedido{% else %}Pagar agora pela InfinitePay{% endif %}</a>
+                        <p>Pague por Pix ou cartão no ambiente seguro da InfinitePay. A loja continuará aberta aqui e acompanhará a confirmação automaticamente.</p>
+                        <a href="/pedido/{{ pedido.id }}/pagar" target="_blank" rel="noopener" class="btn-finalizar btn-pagamento-destaque btn-pagar-checkout" id="btnPagarCheckout" data-infinitepay-checkout>{% if pedido_somente_apos_pagamento %}Pagar e confirmar pedido{% else %}Pagar agora pela InfinitePay{% endif %}</a>
+                        <div class="checkout-status-integrado" data-payment-waiting hidden aria-live="polite">
+                            <span class="checkout-status-pulso" aria-hidden="true"></span>
+                            <div>
+                                <strong data-payment-status-title>Aguardando o pagamento</strong>
+                                <small data-payment-status-copy>Conclua na aba segura da InfinitePay. Esta página atualizará assim que o pagamento for confirmado.</small>
+                            </div>
+                            <button type="button" class="btn-verificar-pagamento" data-payment-check-now>Já paguei, verificar agora</button>
+                        </div>
                     </article>
                     {% endif %}
                     {% if pix_manual_ativo and not pedido_somente_apos_pagamento %}
@@ -83,7 +91,7 @@
         </div>
     </div>
     <div class="toast-global" id="toastGlobal" hidden></div>
-    <script src="/static/site_ajax.js"></script>
+    <script src="/static/site_ajax.js?v=20260814-mobile-checkout-v1"></script>
     {% include "_whatsapp_suporte.html" %}
 </body>
 </html>

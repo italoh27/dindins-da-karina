@@ -4050,3 +4050,48 @@ input,select,textarea{border:1px solid rgba(148,163,184,.26)!important;border-ra
   .admin-analise-page .admin-topo-acoes{display:flex!important;width:100%!important}
   .admin-analise-page .admin-topo-acoes .btn-admin-voltar{width:100%!important}
 }
+
+/* === Desempenho móvel e acompanhamento do Checkout Integrado === */
+.checkout-status-integrado{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  align-items:center;
+  gap:10px 12px;
+  padding:13px;
+  border:1px solid rgba(52,211,153,.3);
+  border-radius:14px;
+  background:rgba(6,78,59,.24);
+}
+.checkout-status-integrado[hidden]{display:none!important}
+.checkout-status-integrado>div{display:grid;gap:3px;min-width:0}
+.checkout-status-integrado strong{color:#a7f3d0;font-size:.84rem}
+.checkout-status-integrado small{color:#d1fae5;font-size:.7rem;line-height:1.4}
+.checkout-status-pulso{width:12px;height:12px;border-radius:50%;background:#34d399;box-shadow:0 0 0 0 rgba(52,211,153,.55);animation:checkout-status-pulso 1.7s ease-out infinite}
+.btn-verificar-pagamento{grid-column:1/-1;width:100%!important;min-height:40px!important;margin:0!important;border:1px solid rgba(167,243,208,.28)!important;border-radius:11px!important;background:rgba(5,150,105,.24)!important;color:#ecfdf5!important;font-size:.72rem!important;font-weight:850!important;box-shadow:none!important}
+.btn-verificar-pagamento:disabled{opacity:.65;cursor:wait}
+@keyframes checkout-status-pulso{70%{box-shadow:0 0 0 9px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+
+@media(max-width:760px){
+  :root{--ui-shadow:0 9px 24px rgba(2,6,23,.24)}
+  body::before,body::after{display:none!important;animation:none!important;filter:none!important}
+  .pagina-loja,.pagina-carrinho,.pagina-cliente{
+    background-position:center center,66% center!important;
+    background-size:cover,auto 100vh!important;
+    background-attachment:scroll!important;
+    animation:none!important;
+  }
+  .topo-loja-pro,.admin-topo,.admin-topo-sticky,.admin-box,.admin-resumo-card,
+  .glass-card,.box-carrinho,.item-carrinho,.pedido-card,.card,.form-cliente,
+  .pagamento,.status-integration-box,.mini-status-card,.topo-acoes-loja,
+  .cliente-nav,.form-responsavel-loja,.whatsapp-suporte-painel,.loja-menu-painel{
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+  .admin-box,.admin-resumo-card,.glass-card,.box-carrinho,.item-carrinho,
+  .pedido-card,.card,.form-cliente,.pagamento,.status-integration-box,.mini-status-card{
+    box-shadow:var(--ui-shadow)!important;
+  }
+  button,a,input,select,textarea{touch-action:manipulation}
+}
+
+@media(prefers-reduced-motion:reduce){.checkout-status-pulso{animation:none}}

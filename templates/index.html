@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geladinhos Gourmet</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260813-loja-menu-v3">
+  <link rel="preload" href="/static/background-geladinhos-gourmet.webp" as="image" type="image/webp" fetchpriority="high">
+  <link rel="stylesheet" href="/static/style.css?v=20260814-mobile-checkout-v1">
 </head>
 <body class="pagina-loja" data-ajax-shell="public" data-cart-count="{{ qtd_itens }}">
     <header class="topo-loja-pro topo-loja-pro-clean">
@@ -86,7 +87,7 @@
                     {% for sabor in sabores %}
                     <article class="card card-carrossel card-carrossel-minimal card-loja-pro" data-flavor-card="{{ sabor.nome|lower|replace(" ", "-") }}">
                         <div class="card-imagem-wrap card-imagem-wrap-pro">
-                            <img src="{{ sabor.img }}" alt="{{ sabor.nome }}" loading="lazy" decoding="async">
+                            <img src="{{ sabor.img }}" alt="{{ sabor.nome }}" width="600" height="600" loading="{% if loop.first %}eager{% else %}lazy{% endif %}" decoding="async" fetchpriority="{% if loop.first %}high{% else %}low{% endif %}">
                         </div>
 
                         <div class="card-conteudo card-conteudo-pro">
@@ -140,7 +141,7 @@
             <button type="button" class="btn-admin-topo" id="continueShoppingBtn">Continuar comprando</button>
         </div>
     </div>
-    <script src="/static/site_ajax.js?v=20260813-loja-menu-v2"></script>
+    <script src="/static/site_ajax.js?v=20260814-mobile-checkout-v1"></script>
     {% include "_whatsapp_suporte.html" %}
 </body>
 </html>
