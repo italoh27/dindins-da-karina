@@ -12,10 +12,10 @@
 
         <div class="box-carrinho pedido-final-box pedido-final-box-pro">
             <section class="pedido-agradecimento">
-                <span aria-hidden="true">🎉</span>
+                <span aria-hidden="true">{% if pagamento_confirmado %}🎉{% else %}💳{% endif %}</span>
                 <div>
-                    <h2>Obrigado pelo seu pedido, {{ pedido.cliente.nome }}!</h2>
-                    <p>{% if pagamento_confirmado %}Seu pagamento foi confirmado pela InfinitePay e o pedido foi criado para {{ responsavel_nome }}. Agora você pode enviá-lo pelo botão abaixo e aguardar o preparo com todo carinho.{% elif pedido_somente_apos_pagamento %}Recebemos os dados do checkout. O pedido só será criado e liberado para a loja depois da confirmação do pagamento.{% else %}Recebemos seu pedido. Escolha abaixo a forma de pagamento que preferir para concluir esta etapa.{% endif %}</p>
+                    <h2>{% if pagamento_confirmado %}Obrigado pelo seu pedido, {{ pedido.cliente.nome }}!{% else %}Conclua o pagamento, {{ pedido.cliente.nome }}{% endif %}</h2>
+                    <p>{% if pagamento_confirmado %}Seu pagamento foi confirmado pela InfinitePay e o pedido foi criado para {{ responsavel_nome }}. Agora você pode enviá-lo pelo botão abaixo e aguardar o preparo com todo carinho.{% elif pedido_somente_apos_pagamento %}Pague pela InfinitePay para confirmar e liberar o pedido para a loja.{% else %}Escolha abaixo a forma de pagamento que preferir para concluir esta etapa.{% endif %}</p>
                 </div>
             </section>
 
