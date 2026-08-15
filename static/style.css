@@ -4244,11 +4244,11 @@ input,select,textarea{border:1px solid rgba(148,163,184,.26)!important;border-ra
   .pagina-loja .card-loja-pro,.pagina-loja .card-carrossel{
     display:flex!important;
     flex-direction:column!important;
-    width:clamp(154px,44vw,190px)!important;
-    min-width:clamp(154px,44vw,190px)!important;
-    max-width:190px!important;
+    width:clamp(220px,72vw,280px)!important;
+    min-width:clamp(220px,72vw,280px)!important;
+    max-width:280px!important;
     height:auto!important;
-    flex:0 0 clamp(154px,44vw,190px)!important;
+    flex:0 0 clamp(220px,72vw,280px)!important;
     padding:7px!important;
     border-radius:15px!important;
     box-sizing:border-box!important;
