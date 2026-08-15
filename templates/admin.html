@@ -152,6 +152,12 @@
                                 </div>
                             </div>
 
+                            {% if pedido.payment_detail == 'pagamento_confirmado_apos_expiracao_verificar_estoque' %}
+                            <div class="alerta alerta-erro">
+                                ⚠️ Pagamento recebido após a reserva expirar. Confira os itens: o estoque não pôde ser reservado novamente.
+                            </div>
+                            {% endif %}
+
                             <div class="pedido-informacoes-grid">
                                 <div class="pedido-info-bloco">
                                     <span class="pedido-info-rotulo">Contato</span>

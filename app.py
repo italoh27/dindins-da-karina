@@ -41,6 +41,8 @@ NUMERO_ITALO = os.environ.get("NUMERO_ITALO", "5581999616265")
 NUMERO_KARINA = os.environ.get("NUMERO_KARINA", "5585981998730")
 PAGAMENTO_LIBERACAO_PENDENTE = "aguardando_pagamento_para_liberar"
 PAGAMENTO_LIBERACAO_CONFIRMADO = "pedido_liberado_apos_pagamento"
+PAGAMENTO_RESERVA_MINUTOS = max(5, int(os.environ.get("PAGAMENTO_RESERVA_MINUTOS", "15")))
+PAGAMENTO_EXPIRACAO_CHECK_SEGUNDOS = max(5, int(os.environ.get("PAGAMENTO_EXPIRACAO_CHECK_SEGUNDOS", "60")))
 
 CHAVE_PIX = os.environ.get("CHAVE_PIX", "italo-henrique-27@jim.com")
 NOME_PIX = os.environ.get("NOME_PIX", "Italo Henrique de Oliveira Farias")
@@ -52,6 +54,8 @@ MIGRATION_MARKER = os.path.join(BASE_DIR, ".json_to_db_migrated")
 DB_POOL = None
 _config_cache = {"value": None, "expires_at": 0.0}
 _config_cache_lock = Lock()
+_pagamento_expiracao_lock = Lock()
+_pagamento_expiracao_ultimo_check = 0.0
 
 
 APP_TIMEZONE = ZoneInfo("America/Recife")
@@ -795,6 +799,7 @@ def ensure_database():
                 CREATE INDEX IF NOT EXISTS idx_pedidos_data_filtro ON pedidos (data_filtro DESC);
                 CREATE INDEX IF NOT EXISTS idx_pedidos_destinatario_data ON pedidos (destinatario, data_filtro DESC);
                 CREATE INDEX IF NOT EXISTS idx_pedidos_pagamento_data ON pedidos (pagamento_status, data_filtro DESC);
+                CREATE INDEX IF NOT EXISTS idx_pedidos_pagamento_expiracao ON pedidos (pagamento_status, payment_detail, estoque_devolvido, created_at);
                 CREATE INDEX IF NOT EXISTS idx_pedidos_visiveis_id ON pedidos (id DESC) WHERE oculto = FALSE;
                 CREATE INDEX IF NOT EXISTS idx_pedidos_cliente_telefone_id ON pedidos (cliente_telefone, id DESC);
                 CREATE INDEX IF NOT EXISTS idx_pedidos_visiveis_data ON pedidos (data_filtro DESC, id DESC) WHERE oculto = FALSE;
@@ -1960,23 +1965,117 @@ def ultimo_id_notificacao_fidelidade():
             return int(cur.fetchone()["id"] or 0)
 
 
+def _devolver_estoque_pedido_bloqueado(cur, pedido_id, destinatario):
+    campo = estoque_campo_destinatario(destinatario)
+    cur.execute(
+        "SELECT nome, quantidade FROM pedido_itens WHERE pedido_id = %s ORDER BY id",
+        (int(pedido_id),),
+    )
+    for item in cur.fetchall():
+        quantidade = max(0, int(item.get("quantidade", 0) or 0))
+        if quantidade:
+            cur.execute(
+                f"UPDATE sabores SET {campo} = {campo} + %s, estoque = (COALESCE(estoque_italo,0) + COALESCE(estoque_karina,0)) + %s, updated_at = NOW() WHERE nome = %s",
+                (quantidade, quantidade, item.get("nome", "")),
+            )
+    cur.execute(
+        "UPDATE pedidos SET estoque_devolvido = TRUE, updated_at = NOW() WHERE id = %s",
+        (int(pedido_id),),
+    )
+
+
 def restaurar_estoque_do_pedido(pedido):
-    if not pedido or pedido.get("estoque_devolvido"):
+    if not pedido or pedido.get("estoque_devolvido") or not db_enabled():
         return False
-    campo = estoque_campo_destinatario(pedido.get("destinatario", "italo"))
     with get_conn() as conn:
         with conn.cursor() as cur:
-            for item in pedido.get("itens", []):
-                cur.execute(
-                    f"UPDATE sabores SET {campo} = {campo} + %s, estoque = (COALESCE(estoque_italo,0) + COALESCE(estoque_karina,0)) + %s, updated_at = NOW() WHERE nome = %s",
-                    (int(item.get("quantidade", 0) or 0), int(item.get("quantidade", 0) or 0), item.get("nome", "")),
-                )
             cur.execute(
-                "UPDATE pedidos SET estoque_devolvido = TRUE, updated_at = NOW() WHERE id = %s",
+                "SELECT id, destinatario, estoque_devolvido FROM pedidos WHERE id = %s FOR UPDATE",
                 (int(pedido["id"]),),
+            )
+            pedido_banco = cur.fetchone()
+            if not pedido_banco or pedido_banco.get("estoque_devolvido"):
+                return False
+            _devolver_estoque_pedido_bloqueado(
+                cur,
+                pedido_banco["id"],
+                pedido_banco.get("destinatario", "italo"),
             )
         conn.commit()
     return True
+
+
+def expirar_pagamento_pendente(pedido_id):
+    """Cancela uma reserva vencida e devolve seu estoque uma única vez."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, destinatario, estoque_devolvido
+                FROM pedidos
+                WHERE id = %s
+                  AND pagamento_status = 'aguardando_pagamento'
+                  AND payment_detail = %s
+                  AND estoque_devolvido = FALSE
+                  AND COALESCE(transaction_nsu, '') = ''
+                  AND COALESCE(receipt_url, '') = ''
+                  AND COALESCE(payment_id, '') = ''
+                  AND created_at <= NOW() - (%s * INTERVAL '1 minute')
+                FOR UPDATE
+                """,
+                (int(pedido_id), PAGAMENTO_LIBERACAO_PENDENTE, PAGAMENTO_RESERVA_MINUTOS),
+            )
+            pedido = cur.fetchone()
+            if not pedido:
+                return False
+            _devolver_estoque_pedido_bloqueado(
+                cur,
+                pedido["id"],
+                pedido.get("destinatario", "italo"),
+            )
+            cur.execute(
+                """
+                UPDATE pedidos
+                SET status = 'cancelado',
+                    pagamento_status = 'cancelado',
+                    payment_detail = 'pagamento_expirado_automaticamente',
+                    oculto = TRUE,
+                    updated_at = NOW()
+                WHERE id = %s
+                """,
+                (int(pedido_id),),
+            )
+        conn.commit()
+    return True
+
+
+def expirar_pagamentos_pendentes(limite=20):
+    if not db_enabled():
+        return 0
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id
+                FROM pedidos
+                WHERE pagamento_status = 'aguardando_pagamento'
+                  AND payment_detail = %s
+                  AND estoque_devolvido = FALSE
+                  AND COALESCE(transaction_nsu, '') = ''
+                  AND COALESCE(receipt_url, '') = ''
+                  AND COALESCE(payment_id, '') = ''
+                  AND created_at <= NOW() - (%s * INTERVAL '1 minute')
+                ORDER BY created_at
+                LIMIT %s
+                """,
+                (PAGAMENTO_LIBERACAO_PENDENTE, PAGAMENTO_RESERVA_MINUTOS, max(1, int(limite))),
+            )
+            pedido_ids = [int(row["id"]) for row in cur.fetchall()]
+    expirados = 0
+    for pedido_id in pedido_ids:
+        if expirar_pagamento_pendente(pedido_id):
+            expirados += 1
+    return expirados
 
 
 def reservar_estoque(carrinho, destinatario):
@@ -2223,27 +2322,54 @@ def atualizar_status_pagamento_infinitepay(pedido_id, payment_data):
     ja_estava_pago = pedido.get("pagamento_status") == "pago"
     if pedido.get("pagamento_status") == "pago" and not paid:
         return True
+    if pedido.get("pagamento_status") == "cancelado" and not paid:
+        return True
     capture_method = str(payment_data.get("capture_method", "")).strip()
     transaction_nsu = str(payment_data.get("transaction_nsu", "")).strip()
     receipt_url = str(payment_data.get("receipt_url", "")).strip()
     slug = str(payment_data.get("slug", payment_data.get("invoice_slug", ""))).strip()
-    liberar_apos_pagamento = paid and pedido_modo_pos_pagamento(pedido)
+    pagamento_apos_expiracao = bool(
+        paid
+        and pedido.get("payment_detail") == "pagamento_expirado_automaticamente"
+        and pedido.get("estoque_devolvido")
+    )
+    estoque_reservado_novamente = False
+    if pagamento_apos_expiracao:
+        try:
+            reservar_estoque(pedido.get("itens", []), pedido.get("destinatario", "italo"))
+            estoque_reservado_novamente = True
+        except ValueError:
+            app.logger.error(
+                "Pedido %s foi pago após a reserva expirar, mas o estoque não estava mais disponível",
+                pedido_id,
+            )
+    liberar_apos_pagamento = paid and (pedido_modo_pos_pagamento(pedido) or pagamento_apos_expiracao)
+    detalhe_pagamento = pedido.get("payment_detail") or "Aguardando pagamento InfinitePay"
+    if paid:
+        if pagamento_apos_expiracao:
+            detalhe_pagamento = (
+                PAGAMENTO_LIBERACAO_CONFIRMADO
+                if estoque_reservado_novamente
+                else "pagamento_confirmado_apos_expiracao_verificar_estoque"
+            )
+        elif pedido_modo_pos_pagamento(pedido):
+            detalhe_pagamento = PAGAMENTO_LIBERACAO_CONFIRMADO
+        else:
+            detalhe_pagamento = "Pagamento confirmado pela InfinitePay"
 
     campos_atualizacao = dict(
         pagamento_status="pago" if paid else "aguardando_pagamento",
         payment_method=capture_method,
-        payment_detail=(
-            PAGAMENTO_LIBERACAO_CONFIRMADO
-            if liberar_apos_pagamento
-            else ("Pagamento confirmado pela InfinitePay" if paid else pedido.get("payment_detail") or "Aguardando pagamento InfinitePay")
-        ),
+        payment_detail=detalhe_pagamento,
         capture_method=capture_method,
         transaction_nsu=transaction_nsu,
         invoice_slug=slug,
         receipt_url=receipt_url,
     )
     if liberar_apos_pagamento:
-        campos_atualizacao.update(oculto=False, ocultado_em=None)
+        campos_atualizacao.update(status="pendente", oculto=False, ocultado_em=None)
+    if pagamento_apos_expiracao and estoque_reservado_novamente:
+        campos_atualizacao["estoque_devolvido"] = False
     atualizar_pedido_db(pedido_id, **campos_atualizacao)
     registrar_pagamento_log(pedido_id, transaction_nsu, "paid" if paid else "pending", payment_data)
     if paid and not ja_estava_pago:
@@ -2253,6 +2379,40 @@ def atualizar_status_pagamento_infinitepay(pedido_id, payment_data):
 # =========================
 # CONTROLE DE CACHE
 # =========================
+@app.before_request
+def liberar_reservas_de_pagamento_vencidas():
+    global _pagamento_expiracao_ultimo_check
+    if (
+        request.path.startswith(("/static/", "/webhooks/"))
+        or request.endpoint in {
+            "retorno_pagamento",
+            "status_pagamento_pedido",
+            "pagamento_confirmado_pedido",
+            "pagar_pedido",
+        }
+        or not db_enabled()
+    ):
+        return None
+    agora = monotonic()
+    if agora - _pagamento_expiracao_ultimo_check < PAGAMENTO_EXPIRACAO_CHECK_SEGUNDOS:
+        return None
+    if not _pagamento_expiracao_lock.acquire(blocking=False):
+        return None
+    try:
+        agora = monotonic()
+        if agora - _pagamento_expiracao_ultimo_check < PAGAMENTO_EXPIRACAO_CHECK_SEGUNDOS:
+            return None
+        _pagamento_expiracao_ultimo_check = agora
+        expirados = expirar_pagamentos_pendentes()
+        if expirados:
+            app.logger.info("%s pagamento(s) pendente(s) expirado(s); estoque restaurado", expirados)
+    except Exception:
+        app.logger.exception("Falha ao liberar reservas de pagamento vencidas")
+    finally:
+        _pagamento_expiracao_lock.release()
+    return None
+
+
 @app.after_request
 def add_cache_headers(response):
     caminho = request.path or ""
@@ -2879,6 +3039,7 @@ def finalizar_pedido():
         pagamento_obrigatorio=config.get("exigir_pagamento_online", False) or pedido_somente_apos_pagamento,
         pedido_somente_apos_pagamento=pedido_somente_apos_pagamento,
         pagamento_confirmado=False,
+        pagamento_reserva_minutos=PAGAMENTO_RESERVA_MINUTOS,
         abrir_whatsapp_automaticamente=False,
         chave_pix=CHAVE_PIX,
         nome_pix=NOME_PIX,
@@ -2944,6 +3105,7 @@ def renderizar_pagamento_confirmado(pedido):
         pagamento_obrigatorio=False,
         pedido_somente_apos_pagamento=pedido_modo_pos_pagamento(pedido),
         pagamento_confirmado=True,
+        pagamento_reserva_minutos=PAGAMENTO_RESERVA_MINUTOS,
         abrir_whatsapp_automaticamente=False,
         chave_pix=CHAVE_PIX,
         nome_pix=NOME_PIX,

@@ -51,7 +51,7 @@
                     <article class="forma-pagamento-card forma-pagamento-infinitepay" data-payment-monitor data-status-url="{{ url_for('status_pagamento_pedido', pedido_id=pedido.id) }}">
                         <span class="forma-pagamento-selo">Recomendado</span>
                         <h3>InfinitePay</h3>
-                        <p>Pague por Pix ou cartão no ambiente seguro da InfinitePay. Ao concluir, toque em “Continuar” para voltar ao app com o pedido confirmado.</p>
+                        <p>Pague por Pix ou cartão no ambiente seguro da InfinitePay. A reserva do estoque dura {{ pagamento_reserva_minutos }} minutos. Ao concluir, toque em “Continuar” para voltar ao app com o pedido confirmado.</p>
                         <a href="/pedido/{{ pedido.id }}/pagar" class="btn-finalizar btn-pagamento-destaque btn-pagar-checkout" id="btnPagarCheckout" data-infinitepay-checkout>{% if pedido_somente_apos_pagamento %}Pagar e confirmar pedido{% else %}Pagar agora pela InfinitePay{% endif %}</a>
                         <div class="checkout-status-integrado" data-payment-waiting hidden aria-live="polite">
                             <span class="checkout-status-pulso" aria-hidden="true"></span>
