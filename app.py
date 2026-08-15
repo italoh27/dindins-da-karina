@@ -535,6 +535,32 @@ def normalizar_imagem_sabor(img, nome=""):
     nome_chave = str(nome or "").strip().casefold()
     caminho_limpo = caminho.split("?", 1)[0].replace("\\", "/")
     nome_arquivo = caminho_limpo.rsplit("/", 1)[-1].casefold()
+    imagens_por_nome = {
+        "ninho com nutella": "/static/card_ninho_com_nutela_gourmet.webp",
+        "ninho com morango": "/static/card_ninho_com_morango_gourmet.webp",
+        "romeu e julieta": "/static/card_romeu_julieta_gourmet.webp",
+        "maracujá trufado": "/static/card_maracuja_trufado_gourmet.webp",
+        "maracuja trufado": "/static/card_maracuja_trufado_gourmet.webp",
+        "paçoca": "/static/card_pacoca_gourmet.webp",
+        "pacoca": "/static/card_pacoca_gourmet.webp",
+        "pudim": "/static/card_pudim_gourmet.webp",
+        "cocada": "/static/card_cocada_gourmet.webp",
+        "delícia de abacaxi": "/static/card_delicia_de_abacaxi_gourmet.webp",
+        "delicia de abacaxi": "/static/card_delicia_de_abacaxi_gourmet.webp",
+        "prestígio": "/static/card_prestigio_gourmet.webp",
+        "prestigio": "/static/card_prestigio_gourmet.webp",
+        "ninho": "/static/card_ninho_gourmet.webp",
+        "maracujá": "/static/card_maracuja_gourmet.webp",
+        "maracuja": "/static/card_maracuja_gourmet.webp",
+        "morango c/chocolate": "/static/card_morango_com_chocolate_gourmet.webp",
+        "morango c/ chocolate": "/static/card_morango_com_chocolate_gourmet.webp",
+        "morango com chocolate": "/static/card_morango_com_chocolate_gourmet.webp",
+    }
+    imagem_por_nome = imagens_por_nome.get(nome_chave)
+    if imagem_por_nome:
+        arquivo_por_nome = os.path.join(BASE_DIR, imagem_por_nome.lstrip("/").replace("/", os.sep))
+        if os.path.isfile(arquivo_por_nome):
+            return imagem_por_nome
     imagens_otimizadas = {
         "ninho_com_nutela.jpg": "/static/card_ninho_com_nutela.webp",
         "ninho_com_morango.jpg": "/static/card_ninho_com_morango.webp",
