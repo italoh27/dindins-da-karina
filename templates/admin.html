@@ -326,23 +326,19 @@
                             <span>Exigir cadastro para fazer pedidos</span>
                             <input type="checkbox" name="exigir_cadastro" {% if config.exigir_cadastro %}checked{% endif %}>
                         </label>
-                        <label class="check-admin check-admin-pro config-lista-item">
-                            <span>Exigir pagamento online ao finalizar</span>
-                            <input type="checkbox" name="exigir_pagamento_online" {% if config.exigir_pagamento_online %}checked{% endif %}>
-                        </label>
+                        <div class="status-integration-box check-modo-pagamento-confirmado config-lista-item">
+                            <span>
+                                <strong>Pedido criado somente após o pagamento</strong>
+                                <small>A InfinitePay deve confirmar o pagamento antes de o pedido aparecer no painel e liberar o botão de envio para Italo ou Karina.</small>
+                            </span>
+                            <b>Obrigatório</b>
+                        </div>
                         <label class="check-admin check-admin-pro check-fidelidade-admin config-lista-item">
                             <span>
                                 Ativar campanha de fidelidade
                                 <small>A cada 10 dindins de R$ 5 ou R$ 7, o cliente cadastrado ganha 1 dindin da mesma faixa.</small>
                             </span>
                             <input type="checkbox" name="fidelidade_ativa" {% if config.fidelidade_ativa %}checked{% endif %}>
-                        </label>
-                        <label class="check-admin check-admin-pro check-modo-pagamento-confirmado config-lista-item">
-                            <span>
-                                Criar e liberar o pedido somente após o pagamento
-                                <small>O pedido fica invisível até a InfinitePay confirmar. Esta opção ativa o pagamento online obrigatório.</small>
-                            </span>
-                            <input type="checkbox" name="pedido_somente_apos_pagamento" {% if config.pedido_somente_apos_pagamento %}checked{% endif %}>
                         </label>
                         <label class="check-admin check-admin-pro config-lista-item">
                             <span>Exibir botão “Fale conosco” pelo WhatsApp <small>(somente com a loja aberta)</small></span>

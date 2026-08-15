@@ -99,8 +99,8 @@ def configuracao_padrao():
         "bloquear_italo": False,
         "bloquear_karina": False,
         "exigir_cadastro": False,
-        "exigir_pagamento_online": False,
-        "pedido_somente_apos_pagamento": False,
+        "exigir_pagamento_online": True,
+        "pedido_somente_apos_pagamento": True,
         "fidelidade_ativa": False,
         "entrega_gratis": True,
         "taxa_entrega": 0.0,
@@ -108,11 +108,19 @@ def configuracao_padrao():
     }
 
 
+def aplicar_regras_obrigatorias_config(config):
+    """Mantém o pedido invisível até a confirmação da InfinitePay."""
+    config = dict(config or {})
+    config["exigir_pagamento_online"] = True
+    config["pedido_somente_apos_pagamento"] = True
+    return config
+
+
 def ler_config_arquivo():
     config = ler_json(ARQUIVO_CONFIG, configuracao_padrao())
     base = configuracao_padrao()
     base.update(config)
-    return base
+    return aplicar_regras_obrigatorias_config(base)
 
 
 # =========================
@@ -761,12 +769,12 @@ def get_config_value(key, default):
 def ler_config():
     arquivo_base = ler_config_arquivo()
     if not db_enabled():
-        return arquivo_base
+        return aplicar_regras_obrigatorias_config(arquivo_base)
 
     agora = monotonic()
     with _config_cache_lock:
         if _config_cache["value"] is not None and _config_cache["expires_at"] > agora:
-            return dict(_config_cache["value"])
+            return aplicar_regras_obrigatorias_config(_config_cache["value"])
 
     base = configuracao_padrao()
     config_db = get_config_value("config_loja", None)
@@ -775,10 +783,12 @@ def ler_config():
     # faz bootstrap automático usando o arquivo local existente.
     if not isinstance(config_db, dict) or not config_db:
         base.update(arquivo_base)
+        base = aplicar_regras_obrigatorias_config(base)
         set_config_value("config_loja", base)
         return base
 
     base.update(config_db)
+    base = aplicar_regras_obrigatorias_config(base)
 
     with _config_cache_lock:
         _config_cache["value"] = dict(base)
@@ -796,6 +806,7 @@ def ler_config():
 def salvar_config(config):
     base = configuracao_padrao()
     base.update(config)
+    base = aplicar_regras_obrigatorias_config(base)
     if db_enabled():
         set_config_value("config_loja", base)
         try:
@@ -2482,7 +2493,9 @@ def finalizar_pedido():
     if config.get("exigir_cadastro", False) and not cliente_logado():
         set_mensagem("mensagem_cliente", "Cadastre-se ou entre para finalizar seu pedido.")
         return redirect("/cliente")
-    pedido_somente_apos_pagamento = bool(config.get("pedido_somente_apos_pagamento", False))
+    # Regra fixa da loja: antes da confirmação existe somente uma referência
+    # de checkout, invisível ao painel e sem envio por WhatsApp.
+    pedido_somente_apos_pagamento = True
     if (config.get("exigir_pagamento_online", False) or pedido_somente_apos_pagamento) and not infinitepay_ativo():
         set_mensagem("mensagem_carrinho", "O pagamento online obrigatório está indisponível. Fale com a loja.")
         return redirect("/carrinho")
@@ -3198,11 +3211,9 @@ def admin_configuracoes():
     config["bloquear_italo"] = request.form.get("bloquear_italo") == "on"
     config["bloquear_karina"] = request.form.get("bloquear_karina") == "on"
     config["exigir_cadastro"] = request.form.get("exigir_cadastro") == "on"
-    config["exigir_pagamento_online"] = request.form.get("exigir_pagamento_online") == "on"
-    config["pedido_somente_apos_pagamento"] = request.form.get("pedido_somente_apos_pagamento") == "on"
+    config["exigir_pagamento_online"] = True
+    config["pedido_somente_apos_pagamento"] = True
     config["fidelidade_ativa"] = request.form.get("fidelidade_ativa") == "on"
-    if config["pedido_somente_apos_pagamento"]:
-        config["exigir_pagamento_online"] = True
     if not config["infinitepay_ativo"]:
         config["pix_manual_ativo"] = True
     config["whatsapp_suporte_ativo"] = request.form.get("whatsapp_suporte_ativo") == "on"
