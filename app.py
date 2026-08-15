@@ -272,7 +272,7 @@ def normalizar_telefone_br(telefone):
     return f"+55{numeros}"
 
 
-def montar_endereco_entrega(form):
+def dados_endereco_entrega(form):
     cep = "".join(ch for ch in str(form.get("cep", "")) if ch.isdigit())
     rua = str(form.get("rua", "") or "").strip()
     numero = str(form.get("numero", "") or "").strip()
@@ -282,6 +282,26 @@ def montar_endereco_entrega(form):
     referencia = str(form.get("ponto_referencia", "") or "").strip()
     if len(cep) != 8 or not all((rua, numero, bairro)):
         raise ValueError("Preencha CEP, rua, número e bairro para a entrega.")
+    return {
+        "cep": cep,
+        "street": rua,
+        "number": numero,
+        "neighborhood": bairro,
+        "city": cidade,
+        "complement": complemento,
+        "reference": referencia,
+    }
+
+
+def montar_endereco_entrega(form, dados=None):
+    dados = dados or dados_endereco_entrega(form)
+    cep = dados["cep"]
+    rua = dados["street"]
+    numero = dados["number"]
+    bairro = dados["neighborhood"]
+    cidade = dados["city"]
+    complemento = dados["complement"]
+    referencia = dados["reference"]
     partes = [f"{rua}, nº {numero}", bairro]
     if cidade:
         partes.append(cidade)
@@ -1928,6 +1948,20 @@ def criar_checkout_infinitepay(pedido):
         if email:
             payload["customer"]["email"] = email
 
+    endereco_checkout = pedido.get("endereco_checkout") or {}
+    if endereco_checkout:
+        complemento = str(endereco_checkout.get("complement", "") or "").strip()
+        referencia = str(endereco_checkout.get("reference", "") or "").strip()
+        if referencia:
+            complemento = f"{complemento} | Referência: {referencia}" if complemento else f"Referência: {referencia}"
+        payload["address"] = {
+            "cep": str(endereco_checkout.get("cep", "") or "").strip(),
+            "street": str(endereco_checkout.get("street", "") or "").strip(),
+            "neighborhood": str(endereco_checkout.get("neighborhood", "") or "").strip(),
+            "number": str(endereco_checkout.get("number", "") or "").strip(),
+            "complement": complemento,
+        }
+
     resp = requests.post(url, json=payload, timeout=(5, 15))
     if not resp.ok:
         raise RuntimeError(f"Erro ao criar checkout InfinitePay: {resp.status_code} - {resp.text[:300]}")
@@ -2508,9 +2542,11 @@ def finalizar_pedido():
     nome = session.get("cliente_nome", "") if config.get("exigir_cadastro", False) else request.form.get("nome", "").strip()
     telefone = session.get("cliente_telefone", "") if config.get("exigir_cadastro", False) else request.form.get("telefone", "").strip()
     endereco = ""
+    endereco_checkout = {}
     if config.get("exigir_cadastro", False):
         try:
-            endereco = montar_endereco_entrega(request.form)
+            endereco_checkout = dados_endereco_entrega(request.form)
+            endereco = montar_endereco_entrega(request.form, endereco_checkout)
         except ValueError as exc:
             set_mensagem("mensagem_carrinho", str(exc))
             return redirect("/carrinho")
@@ -2563,6 +2599,7 @@ def finalizar_pedido():
             "email": session.get("cliente_email", "") if config.get("exigir_cadastro", False) else "",
             "endereco": endereco,
         },
+        "endereco_checkout": endereco_checkout,
         "itens": itens_pedido,
         "total": float(total),
         "taxa_entrega": float(taxa_entrega),

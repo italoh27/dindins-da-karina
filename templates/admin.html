@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260814-mobile-checkout-v1">
+  <link rel="stylesheet" href="/static/style.css?v=20260815-checkout-integrado-v2">
 </head>
 <body class="pagina-admin pagina-admin-pro pagina-admin-dashboard">
     <div data-admin-shell="page">
@@ -128,7 +128,7 @@
 
                     <div class="pedidos-grid-admin pedidos-grid-admin-pro pedidos-grid-unificado" id="pedidosGridAdmin">
                         {% for pedido in abas_pedidos['todos'] %}
-                        <details class="pedido-card pedido-card-admin-melhorado pedido-card-operacional pedido-lista-expansivel {% if loop.first %}pedido-card-recente{% endif %}"
+                        <details class="pedido-card pedido-card-admin-melhorado pedido-card-operacional pedido-lista-expansivel {% if loop.first %}pedido-card-recente{% endif %} {% if pedido.pagamento_status == 'pago' %}pedido-pagamento-pago{% endif %}"
                                  data-pedido-id="{{ pedido.id }}"
                                  data-filter-tags="todos {% if pedido.status == 'cancelado' or pedido.pagamento_status == 'cancelado' %}cancelados{% elif pedido.pagamento_status == 'aguardando_pagamento' %}nao_pagos{% elif pedido.pagamento_status == 'pago' %}pagos{% endif %}">
                             <summary class="pedido-lista-resumo">

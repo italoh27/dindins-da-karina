@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if pagamento_confirmado %}Pedido criado com sucesso{% elif pedido_somente_apos_pagamento %}Finalize o pagamento{% else %}Pedido criado{% endif %}</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260814-mobile-checkout-v1">
+  <link rel="stylesheet" href="/static/style.css?v=20260815-checkout-integrado-v2">
 </head>
 <body class="pagina-carrinho" data-ajax-shell="public">
     <div class="carrinho-wrapper pedido-final-wrapper">
@@ -50,8 +50,8 @@
                     <article class="forma-pagamento-card forma-pagamento-infinitepay" data-payment-monitor data-status-url="{{ url_for('status_pagamento_pedido', pedido_id=pedido.id) }}">
                         <span class="forma-pagamento-selo">Recomendado</span>
                         <h3>InfinitePay</h3>
-                        <p>Pague por Pix ou cartão no ambiente seguro da InfinitePay. A loja continuará aberta aqui e acompanhará a confirmação automaticamente.</p>
-                        <a href="/pedido/{{ pedido.id }}/pagar" target="_blank" rel="noopener" class="btn-finalizar btn-pagamento-destaque btn-pagar-checkout" id="btnPagarCheckout" data-infinitepay-checkout>{% if pedido_somente_apos_pagamento %}Pagar e confirmar pedido{% else %}Pagar agora pela InfinitePay{% endif %}</a>
+                        <p>Pague por Pix ou cartão no ambiente seguro da InfinitePay. Ao concluir, toque em “Continuar” para voltar ao app com o pedido confirmado.</p>
+                        <a href="/pedido/{{ pedido.id }}/pagar" class="btn-finalizar btn-pagamento-destaque btn-pagar-checkout" id="btnPagarCheckout" data-infinitepay-checkout>{% if pedido_somente_apos_pagamento %}Pagar e confirmar pedido{% else %}Pagar agora pela InfinitePay{% endif %}</a>
                         <div class="checkout-status-integrado" data-payment-waiting hidden aria-live="polite">
                             <span class="checkout-status-pulso" aria-hidden="true"></span>
                             <div>
