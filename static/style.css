@@ -4393,12 +4393,12 @@ body[class]::before,body[class]::after{display:none!important;animation:none!imp
 
 .admin-topo-sabores-page .acoes-pagina-contextuais{
   display:grid;
-  grid-template-columns:auto minmax(0,1fr);
+  grid-template-columns:minmax(0,1fr);
   align-items:center;
-  gap:12px;
+  gap:0;
   width:100%;
   margin:0!important;
-  padding:8px 9px 8px 14px;
+  padding:8px;
   box-sizing:border-box;
   border:1px solid rgba(59,130,246,.35);
   border-radius:13px;
@@ -4464,7 +4464,7 @@ body[class]::before,body[class]::after{display:none!important;animation:none!imp
 
   .admin-topo-sabores-page .acoes-pagina-contextuais{
     grid-template-columns:1fr;
-    gap:7px;
+    gap:0;
     padding:9px;
   }
 
@@ -4477,5 +4477,103 @@ body[class]::before,body[class]::after{display:none!important;animation:none!imp
     width:100%!important;
     min-height:46px!important;
     font-size:.84rem!important;
+  }
+}
+
+/* Admin principal: analise e sabores fora do menu de acoes */
+.pagina-admin-dashboard .admin-acessos-principais{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(210px,280px));
+  justify-content:center;
+  gap:10px;
+  width:100%;
+  margin:0 0 10px;
+  padding:9px 10px;
+  box-sizing:border-box;
+  border:1px solid rgba(148,163,184,.16);
+  border-radius:16px;
+  background:rgba(15,23,42,.58);
+}
+
+.pagina-admin-dashboard .admin-acesso-principal{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:48px;
+  padding:10px 15px;
+  box-sizing:border-box;
+  overflow:hidden;
+  border:1px solid transparent;
+  border-radius:12px;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  font-size:.82rem;
+  font-weight:900;
+  line-height:1.2;
+  text-align:center;
+  text-decoration:none;
+  box-shadow:0 9px 22px rgba(2,6,23,.25);
+  transition:transform .18s ease,filter .18s ease,border-color .18s ease;
+}
+
+.pagina-admin-dashboard .admin-acesso-principal::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.18),transparent 55%);
+  pointer-events:none;
+}
+
+.pagina-admin-dashboard .admin-acesso-principal:hover{
+  transform:translateY(-2px);
+  filter:brightness(1.1) saturate(1.08);
+}
+
+.pagina-admin-dashboard .admin-acesso-principal>span{
+  position:relative;
+  z-index:1;
+  font-size:1.12rem;
+}
+
+.pagina-admin-dashboard .admin-acesso-analise{
+  border-color:rgba(196,181,253,.45);
+  background:linear-gradient(135deg,#6d28d9,#4f46e5);
+  box-shadow:0 10px 24px rgba(109,40,217,.28);
+}
+
+.pagina-admin-dashboard .admin-acesso-sabores{
+  border-color:rgba(251,207,232,.45);
+  background:linear-gradient(135deg,#be185d,#e11d48);
+  box-shadow:0 10px 24px rgba(225,29,72,.25);
+}
+
+@media(max-width:760px){
+  .pagina-admin-dashboard .admin-acessos-principais{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+    margin-bottom:0;
+    padding:8px 10px 4px;
+    border:0;
+    border-radius:0;
+    background:transparent;
+  }
+
+  .pagina-admin-dashboard .admin-acesso-principal{
+    min-width:0;
+    min-height:50px;
+    padding:8px 9px;
+    font-size:.74rem;
+  }
+
+  .pagina-admin-dashboard .admin-acesso-principal>span{
+    font-size:1rem;
+  }
+}
+
+@media(max-width:360px){
+  .pagina-admin-dashboard .admin-acessos-principais{
+    grid-template-columns:1fr;
   }
 }

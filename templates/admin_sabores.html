@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gerenciador de sabores</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260816-navegacao-contextual-v1">
+  <link rel="stylesheet" href="/static/style.css?v=20260816-acessos-admin-v1">
 </head>
 <body class="pagina-admin pagina-admin-pro">
   <div data-admin-shell="page">
@@ -16,11 +16,10 @@
         </a>
         <div class="barra-navegacao-sabores barra-navegacao-sabores-flutuante acoes-pagina-contextuais">
           <label for="adminSaboresSelect" class="sr-only">Ações dos sabores</label>
-          <span class="acoes-pagina-contextuais-label" aria-hidden="true"><span>☰</span> Ações da página</span>
           <div class="acoes-sabores-select-wrap">
             <label for="adminSaboresSelect" class="sr-only">Selecionar sabor</label>
             <select id="adminSaboresSelect" data-admin-mobile-nav data-admin-sabores-nav data-admin-sync-scroll="1" class="acoes-sabores-select">
-              <option value="">Escolha uma ação</option>
+              <option value="">Ações dos sabores</option>
               <option value="#topoSabores">⬆️ Voltar para o topo da página</option>
               {% for sabor in sabores %}
               <option value="#sabor-{{ sabor.id }}">{{ sabor.nome }}</option>

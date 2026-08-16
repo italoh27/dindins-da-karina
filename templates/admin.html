@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260815-quantidade-unificada-v1">
+  <link rel="stylesheet" href="/static/style.css?v=20260816-acessos-admin-v1">
 </head>
 <body class="pagina-admin pagina-admin-pro pagina-admin-dashboard">
     <div data-admin-shell="page">
@@ -12,13 +12,15 @@
         <div class="admin-topo-flutuante">
             <a href="/" class="btn-admin-voltar btn-admin-voltar-flutuante">← Voltar para loja</a>
         </div>
+        <nav class="admin-acessos-principais" aria-label="Acessos principais do painel">
+            <a href="/admin/analise" class="admin-acesso-principal admin-acesso-analise js-admin-ajax-link"><span aria-hidden="true">📊</span> Análise de dados</a>
+            <a href="/admin/sabores" class="admin-acesso-principal admin-acesso-sabores js-admin-ajax-link"><span aria-hidden="true">🍦</span> Gerenciamento de sabores</a>
+        </nav>
         <div class="admin-topo-acoes admin-topo-acoes-premium">
             <button type="button" class="btn-admin-topo" data-scroll-target="#centralPedidosSecao">📍 Ir para pedidos</button>
             <button type="button" class="btn-admin-topo" data-scroll-target="#configuracaoLojaSecao">⚙️ Configurações da loja</button>
             <button type="button" class="btn-admin-topo" data-scroll-target="#notificacoesTempoRealSecao">🔔 Notificações em tempo real</button>
             <button type="button" class="btn-admin-topo" data-scroll-target="body">⬆️ Voltar para o topo da página</button>
-            <a href="/admin/analise" class="btn-admin-topo js-admin-ajax-link">📊 Análise de dados</a>
-            <a href="/admin/sabores" class="btn-admin-topo js-admin-ajax-link">🍦 Gerenciador de sabores</a>
             <a href="/admin/exportar_excel" class="btn-exportar-excel js-admin-ajax-link">📥 Exportar Excel</a>
             <a href="/admin/pedido_rapido" class="btn-admin-topo btn-admin-topo-destaque js-admin-ajax-link">⚡ Pedido rápido</a>
             <a href="/admin/logout" class="btn-admin-sair">Sair</a>
@@ -31,8 +33,6 @@
                 <option value="scroll:#centralPedidosSecao">Ir para pedidos</option>
                 <option value="scroll:#configuracaoLojaSecao">Configurações da loja</option>
                 <option value="scroll:#notificacoesTempoRealSecao">Notificações em tempo real</option>
-                <option value="/admin/analise">Análise de dados</option>
-                <option value="/admin/sabores">Gerenciador de sabores</option>
                 <option value="/admin/exportar_excel">Exportar Excel</option>
                 <option value="/admin/pedido_rapido">Pedido rápido</option>
                 <option value="/admin/logout">Sair</option>
