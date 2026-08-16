@@ -4,19 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gerenciador de sabores</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260815-quantidade-unificada-v1">
+  <link rel="stylesheet" href="/static/style.css?v=20260816-navegacao-contextual-v1">
 </head>
 <body class="pagina-admin pagina-admin-pro">
   <div data-admin-shell="page">
     <div class="admin-topo admin-topo-sticky admin-topo-sabores-page">
       <div class="admin-topo-flutuante admin-topo-flutuante-sabores">
-        <a href="/admin" class="btn-admin-voltar btn-admin-voltar-flutuante js-admin-ajax-link">← Voltar para painel</a>
-        <div class="barra-navegacao-sabores barra-navegacao-sabores-flutuante">
+        <a href="/admin" class="btn-admin-voltar btn-admin-voltar-flutuante btn-voltar-contextual js-admin-ajax-link">
+          <span class="btn-voltar-contextual-icone" aria-hidden="true">←</span>
+          <span>Voltar ao painel</span>
+        </a>
+        <div class="barra-navegacao-sabores barra-navegacao-sabores-flutuante acoes-pagina-contextuais">
           <label for="adminSaboresSelect" class="sr-only">Ações dos sabores</label>
+          <span class="acoes-pagina-contextuais-label" aria-hidden="true"><span>☰</span> Ações da página</span>
           <div class="acoes-sabores-select-wrap">
             <label for="adminSaboresSelect" class="sr-only">Selecionar sabor</label>
             <select id="adminSaboresSelect" data-admin-mobile-nav data-admin-sabores-nav data-admin-sync-scroll="1" class="acoes-sabores-select">
-              <option value="">Ações dos sabores</option>
+              <option value="">Escolha uma ação</option>
               <option value="#topoSabores">⬆️ Voltar para o topo da página</option>
               {% for sabor in sabores %}
               <option value="#sabor-{{ sabor.id }}">{{ sabor.nome }}</option>
