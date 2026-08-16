@@ -4927,3 +4927,142 @@ body[class]::before,body[class]::after{display:none!important;animation:none!imp
     grid-column:1/-1;
   }
 }
+
+/* Central de pedidos em largura total, com detalhes flutuantes sem mover a grade. */
+.pagina-admin-dashboard .pedidos-lista-painel{
+  width:100%;
+  margin:0;
+  box-sizing:border-box;
+}
+
+.pagina-admin-dashboard .admin-layout-complementar{
+  grid-template-columns:minmax(0,1fr);
+}
+
+.pagina-admin-dashboard .admin-layout-complementar .admin-coluna-lateral{
+  width:100%;
+}
+
+.pagina-admin-dashboard #pedidosGridAdmin{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:start;
+  gap:11px!important;
+}
+
+.pagina-admin-dashboard #pedidosGridAdmin .pedido-lista-expansivel,
+.pagina-admin-dashboard #pedidosGridAdmin .pedido-lista-expansivel[open]{
+  grid-column:auto!important;
+  min-width:0;
+  min-height:0!important;
+}
+
+.pagina-admin-dashboard .pedido-dialog:not([open]){
+  display:none!important;
+}
+
+.pagina-admin-dashboard .pedido-dialog[open]{
+  position:fixed;
+  inset:0;
+  z-index:2000;
+  display:flex!important;
+  flex-direction:column;
+  gap:12px;
+  width:min(880px,calc(100vw - 32px));
+  max-width:880px;
+  max-height:calc(100dvh - 32px);
+  margin:auto;
+  padding:0 0 16px!important;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  box-sizing:border-box;
+  border:1px solid rgba(103,232,249,.42)!important;
+  border-radius:22px;
+  background:linear-gradient(160deg,#1a1d3c,#0c0f23)!important;
+  color:#fff;
+  box-shadow:0 32px 100px rgba(2,6,23,.82)!important;
+  scrollbar-width:thin;
+  scrollbar-color:#38bdf8 rgba(15,23,42,.8);
+}
+
+.pagina-admin-dashboard .pedido-dialog::backdrop{
+  background:rgba(2,6,23,.78);
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+}
+
+.pagina-admin-dashboard .pedido-dialog-toolbar{
+  position:sticky;
+  top:0;
+  z-index:5;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  min-height:54px;
+  padding:10px 14px 10px 18px;
+  box-sizing:border-box;
+  border-bottom:1px solid rgba(148,163,184,.2);
+  background:rgba(8,15,31,.97);
+}
+
+.pagina-admin-dashboard .pedido-dialog-toolbar span{
+  color:#a5f3fc;
+  font-size:.78rem;
+  font-weight:900;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+
+.pagina-admin-dashboard .pedido-dialog-fechar{
+  display:grid!important;
+  place-items:center!important;
+  flex:0 0 38px;
+  width:38px!important;
+  min-width:38px!important;
+  height:38px!important;
+  min-height:38px!important;
+  margin:0!important;
+  padding:0!important;
+  border:1px solid rgba(251,113,133,.38)!important;
+  border-radius:11px!important;
+  background:rgba(190,24,93,.2)!important;
+  color:#fff!important;
+  font-size:1.35rem!important;
+  line-height:1!important;
+  box-shadow:none!important;
+}
+
+.pagina-admin-dashboard .pedido-dialog-fechar:hover,
+.pagina-admin-dashboard .pedido-dialog-fechar:focus-visible{
+  border-color:rgba(253,164,175,.8)!important;
+  background:rgba(225,29,72,.42)!important;
+  outline:none;
+}
+
+@media(min-width:761px) and (max-width:1100px){
+  .pagina-admin-dashboard #pedidosGridAdmin{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+
+@media(max-width:760px){
+  .pagina-admin-dashboard #pedidosGridAdmin{
+    grid-template-columns:1fr!important;
+  }
+
+  .pagina-admin-dashboard .pedidos-lista-painel{
+    padding:11px!important;
+  }
+
+  .pagina-admin-dashboard .pedido-dialog[open]{
+    width:calc(100vw - 18px);
+    max-height:calc(100dvh - 18px);
+    border-radius:17px;
+  }
+
+  .pagina-admin-dashboard .pedido-dialog-toolbar{
+    min-height:50px;
+    padding:8px 10px 8px 14px;
+  }
+}

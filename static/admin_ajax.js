@@ -35,17 +35,59 @@
     let saved = '';
     try { saved = sessionStorage.getItem(ADMIN_OPEN_ORDER_KEY) || ''; } catch (e) {}
     document.querySelectorAll('details[data-pedido-id]').forEach((card) => {
-      card.open = saved !== '' && card.dataset.pedidoId === saved;
-      if (card.dataset.openStateBound === '1') return;
-      card.dataset.openStateBound = '1';
-      card.addEventListener('toggle', () => {
-        if (card.open) saveOpenOrder(card.dataset.pedidoId);
-        else {
-          try {
-            if (sessionStorage.getItem(ADMIN_OPEN_ORDER_KEY) === card.dataset.pedidoId) saveOpenOrder('');
-          } catch (e) {}
+      const dialog = card.querySelector('.pedido-dialog');
+
+      if (card.dataset.openStateBound !== '1') {
+        card.dataset.openStateBound = '1';
+
+        card.addEventListener('toggle', () => {
+          if (card.open) {
+            document.querySelectorAll('details[data-pedido-id][open]').forEach((otherCard) => {
+              if (otherCard !== card) otherCard.open = false;
+            });
+            saveOpenOrder(card.dataset.pedidoId);
+            if (dialog && !dialog.open) {
+              try { dialog.showModal(); } catch (e) { dialog.setAttribute('open', ''); }
+            }
+          } else {
+            if (dialog && dialog.open) dialog.close();
+            try {
+              if (sessionStorage.getItem(ADMIN_OPEN_ORDER_KEY) === card.dataset.pedidoId) saveOpenOrder('');
+            } catch (e) {}
+          }
+        });
+
+        if (dialog) {
+          const closeButton = dialog.querySelector('[data-close-order-dialog]');
+          if (closeButton) closeButton.addEventListener('click', () => { card.open = false; });
+
+          dialog.addEventListener('cancel', (event) => {
+            event.preventDefault();
+            card.open = false;
+          });
+
+          dialog.addEventListener('close', () => {
+            if (card.open) card.open = false;
+          });
+
+          dialog.addEventListener('click', (event) => {
+            if (event.target !== dialog) return;
+            const rect = dialog.getBoundingClientRect();
+            const foraDoPainel = event.clientX < rect.left || event.clientX > rect.right ||
+              event.clientY < rect.top || event.clientY > rect.bottom;
+            if (foraDoPainel) card.open = false;
+          });
         }
-      });
+      }
+
+      const shouldOpen = saved !== '' && card.dataset.pedidoId === saved;
+      card.open = shouldOpen;
+      if (shouldOpen && dialog && !dialog.open) {
+        requestAnimationFrame(() => {
+          if (!card.open || dialog.open) return;
+          try { dialog.showModal(); } catch (e) { dialog.setAttribute('open', ''); }
+        });
+      }
     });
   }
 

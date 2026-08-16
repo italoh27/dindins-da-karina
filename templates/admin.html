@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260816-barra-pedidos-v1">
+  <link rel="stylesheet" href="/static/style.css?v=20260816-pedidos-modal-v1">
 </head>
 <body class="pagina-admin pagina-admin-pro pagina-admin-dashboard">
     <div data-admin-shell="page">
@@ -200,9 +200,7 @@
             </div>
         </section>
 
-        <section class="admin-layout-principal">
-            <div class="admin-coluna-principal">
-                <div class="admin-box pedidos-lista-painel">
+        <section class="admin-box pedidos-lista-painel" aria-label="Lista de pedidos">
 
                     <div class="pedidos-grid-admin pedidos-grid-admin-pro pedidos-grid-unificado" id="pedidosGridAdmin">
                         {% for pedido in abas_pedidos['todos'] %}
@@ -214,14 +212,18 @@
                                 <span class="pedido-lista-cliente">{{ pedido.cliente.nome }}</span>
                                 <span class="pedido-lista-data">{{ pedido.data }}</span>
                             </summary>
-                            <div class="pedido-lista-detalhes">
+                            <dialog class="pedido-lista-detalhes pedido-dialog" aria-labelledby="pedidoDialogTitulo-{{ pedido.id }}">
+                            <div class="pedido-dialog-toolbar">
+                                <span>Detalhes do pedido #{{ pedido.id }}</span>
+                                <button type="button" class="pedido-dialog-fechar" data-close-order-dialog aria-label="Fechar detalhes do pedido">×</button>
+                            </div>
                             <div class="pedido-cabecalho-operacional">
                                 <div class="pedido-identificacao">
                                     <div class="pedido-numero-linha">
                                         <span class="pedido-id-destaque">Pedido #{{ pedido.id }}</span>
                                         {% if loop.first %}<span class="pedido-novo-sinal"><i></i> Mais recente</span>{% endif %}
                                     </div>
-                                    <h3>{{ pedido.cliente.nome }}</h3>
+                                    <h3 id="pedidoDialogTitulo-{{ pedido.id }}">{{ pedido.cliente.nome }}</h3>
                                     <p class="pedido-data-operacional">{{ pedido.data }}</p>
                                 </div>
                                 <div class="pedido-status-box pedido-status-operacional">
@@ -304,7 +306,7 @@
                                 {% if pedido.pagamento_link %}<a href="{{ pedido.pagamento_link }}" target="_blank" class="btn-exportar-excel">InfinitePay</a>{% endif %}
                                 {% if pedido.receipt_url %}<a href="{{ pedido.receipt_url }}" target="_blank" class="btn-exportar-excel">Comprovante</a>{% endif %}
                             </div>
-                            </div>
+                            </dialog>
                         </details>
                         {% endfor %}
                     </div>
@@ -312,9 +314,9 @@
                         <h3>Nenhum pedido encontrado</h3>
                         <p>Troque o filtro rápido acima para ver outro grupo de pedidos.</p>
                     </div>
-                </div>
-            </div>
+        </section>
 
+        <section class="admin-layout-principal admin-layout-complementar">
             <aside class="admin-coluna-lateral">
                 {% if config.fidelidade_ativa %}
                 <div class="admin-box fidelidade-admin-box" id="fidelidadeSecao">
@@ -375,7 +377,7 @@
 
     </div>
 
-    <script src="/static/admin_ajax.js?v=20260815-quantidade-unificada-v2"></script>
+    <script src="/static/admin_ajax.js?v=20260816-pedidos-modal-v1"></script>
     <script>
         window.initAdminPage = function () {
             const STORAGE_TAB = 'adminActiveTab';
