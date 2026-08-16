@@ -4483,7 +4483,7 @@ body[class]::before,body[class]::after{display:none!important;animation:none!imp
 /* Admin principal: analise e sabores fora do menu de acoes */
 .pagina-admin-dashboard .admin-acessos-principais{
   display:grid;
-  grid-template-columns:repeat(2,minmax(210px,280px));
+  grid-template-columns:repeat(4,minmax(150px,230px));
   justify-content:center;
   gap:10px;
   width:100%;
@@ -4547,6 +4547,24 @@ body[class]::before,body[class]::after{display:none!important;animation:none!imp
   border-color:rgba(251,207,232,.45);
   background:linear-gradient(135deg,#be185d,#e11d48);
   box-shadow:0 10px 24px rgba(225,29,72,.25);
+}
+
+.pagina-admin-dashboard .admin-acesso-exportar{
+  border-color:rgba(167,243,208,.45);
+  background:linear-gradient(135deg,#047857,#059669);
+  box-shadow:0 10px 24px rgba(5,150,105,.25);
+}
+
+.pagina-admin-dashboard .admin-acesso-pedido-rapido{
+  border-color:rgba(253,186,116,.48);
+  background:linear-gradient(135deg,#c2410c,#d97706);
+  box-shadow:0 10px 24px rgba(217,119,6,.26);
+}
+
+@media(max-width:980px) and (min-width:761px){
+  .pagina-admin-dashboard .admin-acessos-principais{
+    grid-template-columns:repeat(2,minmax(210px,300px));
+  }
 }
 
 @media(max-width:760px){
