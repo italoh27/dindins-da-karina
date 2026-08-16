@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260816-controles-admin-v1">
+  <link rel="stylesheet" href="/static/style.css?v=20260816-barra-pedidos-v1">
 </head>
 <body class="pagina-admin pagina-admin-pro pagina-admin-dashboard">
     <div data-admin-shell="page">
@@ -159,47 +159,50 @@
             </div>
         </section>
 
+        <section class="admin-box central-pedidos-barra" id="centralPedidosSecao" aria-label="Filtros e indicadores dos pedidos">
+            <div class="central-pedidos-barra-cabecalho">
+                <h2>Central de pedidos</h2>
+                <div class="central-pedidos-topbar">
+                    <p class="texto-ajuda-admin">Exibindo: <strong id="labelFiltroPedidos">Todos</strong></p>
+                    <p class="texto-ajuda-admin">Pedidos visíveis: <strong id="contadorPedidosVisiveis">{{ resumo_status['todos'] }}</strong></p>
+                </div>
+            </div>
+            <div class="central-pedidos-barra-conteudo">
+                <div class="resumo-filtros-pedidos">
+                    <div class="resumo-filtro-chip ativo" data-filter="todos">
+                        <strong>Todos</strong>
+                        <span>{{ resumo_status['todos'] }}</span>
+                    </div>
+                    <div class="resumo-filtro-chip" data-filter="nao_pagos">
+                        <strong>Não pagos</strong>
+                        <span>{{ resumo_status['nao_pagos'] }}</span>
+                    </div>
+                    <div class="resumo-filtro-chip" data-filter="pagos">
+                        <strong>Pagos</strong>
+                        <span>{{ resumo_status['pagos'] }}</span>
+                    </div>
+                    <div class="resumo-filtro-chip" data-filter="cancelados">
+                        <strong>Cancelados</strong>
+                        <span>{{ resumo_status['cancelados'] }}</span>
+                    </div>
+                </div>
+                <form class="filtro-data-pedidos js-admin-ajax-form" method="get" action="/admin" id="filtroDataPedidosForm">
+                    <input type="hidden" name="return_to" value="{{ request_path }}">
+                    <label for="filtro_data" class="texto-ajuda-admin">Filtrar por data do pedido</label>
+                    <div class="filtro-data-linha">
+                        <input type="date" id="filtro_data" name="data" value="{{ filtro_data }}">
+                        <input type="hidden" id="filtro_status_hidden" name="status" value="{{ filtro_status }}">
+                        <button type="submit" class="btn-admin-topo">Aplicar data</button>
+                        {% if filtro_data %}<a href="/admin" class="btn-admin-topo btn-limpar-data">Limpar</a>{% endif %}
+                    </div>
+                    <small class="texto-ajuda-admin">{% if filtro_data_label %}Mostrando somente pedidos de {{ filtro_data_label }}.{% else %}Selecione uma data para ver só os pedidos daquele dia.{% endif %}</small>
+                </form>
+            </div>
+        </section>
+
         <section class="admin-layout-principal">
             <div class="admin-coluna-principal">
-                <div class="admin-box" id="centralPedidosSecao">
-                    <div class="admin-box-topo admin-box-topo-coluna">
-                        <div>
-                            <h2>Central de pedidos</h2>
-                        </div>
-                        <div class="resumo-filtros-pedidos">
-                            <div class="resumo-filtro-chip ativo" data-filter="todos">
-                                <strong>Todos</strong>
-                                <span>{{ resumo_status['todos'] }}</span>
-                            </div>
-                            <div class="resumo-filtro-chip" data-filter="nao_pagos">
-                                <strong>Não pagos</strong>
-                                <span>{{ resumo_status['nao_pagos'] }}</span>
-                            </div>
-                            <div class="resumo-filtro-chip" data-filter="pagos">
-                                <strong>Pagos</strong>
-                                <span>{{ resumo_status['pagos'] }}</span>
-                            </div>
-                            <div class="resumo-filtro-chip" data-filter="cancelados">
-                                <strong>Cancelados</strong>
-                                <span>{{ resumo_status['cancelados'] }}</span>
-                            </div>
-                        </div>
-                        <form class="filtro-data-pedidos js-admin-ajax-form" method="get" action="/admin" id="filtroDataPedidosForm">
-                            <input type="hidden" name="return_to" value="{{ request_path }}">
-                            <label for="filtro_data" class="texto-ajuda-admin">Filtrar por data do pedido</label>
-                            <div class="filtro-data-linha">
-                                <input type="date" id="filtro_data" name="data" value="{{ filtro_data }}">
-                                <input type="hidden" id="filtro_status_hidden" name="status" value="{{ filtro_status }}">
-                                <button type="submit" class="btn-admin-topo">Aplicar data</button>
-                                {% if filtro_data %}<a href="/admin" class="btn-admin-topo btn-limpar-data">Limpar</a>{% endif %}
-                            </div>
-                            <small class="texto-ajuda-admin">{% if filtro_data_label %}Mostrando somente pedidos de {{ filtro_data_label }}.{% else %}Selecione uma data para ver só os pedidos daquele dia.{% endif %}</small>
-                        </form>
-                        <div class="central-pedidos-topbar">
-                            <p class="texto-ajuda-admin">Exibindo: <strong id="labelFiltroPedidos">Todos</strong></p>
-                            <p class="texto-ajuda-admin">Pedidos visíveis: <strong id="contadorPedidosVisiveis">{{ resumo_status['todos'] }}</strong></p>
-                        </div>
-                    </div>
+                <div class="admin-box pedidos-lista-painel">
 
                     <div class="pedidos-grid-admin pedidos-grid-admin-pro pedidos-grid-unificado" id="pedidosGridAdmin">
                         {% for pedido in abas_pedidos['todos'] %}

@@ -4783,3 +4783,147 @@ body[class]::before,body[class]::after{display:none!important;animation:none!imp
     max-height:calc(100vh - 230px);
   }
 }
+
+/* Ajustes desktop: painel acima dos cards e barra independente da central */
+.pagina-admin-dashboard .central-pedidos-barra{
+  display:grid;
+  gap:13px;
+  width:100%;
+  margin:0;
+  padding:17px 18px!important;
+  box-sizing:border-box;
+  border-radius:19px!important;
+}
+
+.pagina-admin-dashboard .central-pedidos-barra-cabecalho{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding-bottom:12px;
+  border-bottom:1px solid rgba(148,163,184,.16);
+}
+
+.pagina-admin-dashboard .central-pedidos-barra-cabecalho h2{
+  margin:0;
+  color:#fff;
+  font-size:1.2rem;
+}
+
+.pagina-admin-dashboard .central-pedidos-barra .central-pedidos-topbar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
+}
+
+.pagina-admin-dashboard .central-pedidos-barra .central-pedidos-topbar p{
+  margin:0;
+  padding:7px 10px;
+  border:1px solid rgba(103,232,249,.18);
+  border-radius:10px;
+  background:rgba(14,116,144,.1);
+  white-space:nowrap;
+}
+
+.pagina-admin-dashboard .central-pedidos-barra-conteudo{
+  display:grid;
+  grid-template-columns:minmax(0,1.45fr) minmax(360px,.75fr);
+  align-items:stretch;
+  gap:14px;
+}
+
+.pagina-admin-dashboard .central-pedidos-barra .resumo-filtros-pedidos{
+  align-self:stretch;
+  margin:0!important;
+  padding:0!important;
+}
+
+.pagina-admin-dashboard .central-pedidos-barra .filtro-data-pedidos{
+  align-content:center;
+  margin:0;
+  padding:10px 12px;
+  border-radius:13px;
+}
+
+.pagina-admin-dashboard .central-pedidos-barra .filtro-data-pedidos>small{
+  display:none;
+}
+
+.pagina-admin-dashboard .central-pedidos-barra .filtro-data-linha{
+  display:grid;
+  grid-template-columns:minmax(150px,1fr) auto auto;
+  gap:7px;
+}
+
+.pagina-admin-dashboard .central-pedidos-barra .filtro-data-linha input[type="date"]{
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+
+.pagina-admin-dashboard .pedidos-lista-painel{
+  padding:16px!important;
+}
+
+@media(min-width:761px){
+  .pagina-admin-dashboard .admin-topo-sticky{
+    position:relative!important;
+    z-index:600!important;
+    overflow:visible!important;
+  }
+
+  .pagina-admin-dashboard .configuracao-loja-painel{
+    z-index:1000;
+  }
+
+  .pagina-admin-dashboard #pedidosGridAdmin .pedido-lista-expansivel[open]{
+    grid-column:auto!important;
+  }
+}
+
+@media(max-width:1100px){
+  .pagina-admin-dashboard .central-pedidos-barra-conteudo{
+    grid-template-columns:1fr;
+  }
+
+  .pagina-admin-dashboard .central-pedidos-barra .filtro-data-pedidos>small{
+    display:block;
+  }
+}
+
+@media(max-width:760px){
+  .pagina-admin-dashboard .central-pedidos-barra{
+    gap:10px;
+    padding:14px!important;
+  }
+
+  .pagina-admin-dashboard .central-pedidos-barra-cabecalho{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:9px;
+  }
+
+  .pagina-admin-dashboard .central-pedidos-barra .central-pedidos-topbar{
+    width:100%;
+    align-items:stretch;
+    flex-direction:row;
+  }
+
+  .pagina-admin-dashboard .central-pedidos-barra .central-pedidos-topbar p{
+    flex:1;
+    min-width:0;
+    white-space:normal;
+  }
+
+  .pagina-admin-dashboard .central-pedidos-barra .filtro-data-linha{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .pagina-admin-dashboard .central-pedidos-barra .filtro-data-linha input[type="date"]{
+    grid-column:1/-1;
+  }
+}
