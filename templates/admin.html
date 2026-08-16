@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260816-acessos-admin-v2">
+  <link rel="stylesheet" href="/static/style.css?v=20260816-controles-admin-v1">
 </head>
 <body class="pagina-admin pagina-admin-pro pagina-admin-dashboard">
     <div data-admin-shell="page">
@@ -18,10 +18,89 @@
             <a href="/admin/exportar_excel" class="admin-acesso-principal admin-acesso-exportar js-admin-ajax-link"><span aria-hidden="true">📥</span> Exportar Excel</a>
             <a href="/admin/pedido_rapido" class="admin-acesso-principal admin-acesso-pedido-rapido js-admin-ajax-link"><span aria-hidden="true">⚡</span> Pedido rápido</a>
         </nav>
+        <div class="admin-controles-operacionais">
+            <button type="button" class="btn-notificacao-topo" id="ativarNotificacoesLateral" aria-pressed="false">🔔 Ativar notificações</button>
+            <details class="configuracao-loja-popover" id="configuracaoLojaSecao">
+                <summary class="btn-configuracao-topo">
+                    <span class="config-abrir-label">⚙️ Configuração da loja</span>
+                    <span class="config-fechar-label">✕ Fechar configurações</span>
+                </summary>
+                <div class="configuracao-loja-painel admin-box">
+                    <div class="admin-box-topo configuracao-loja-painel-topo">
+                        <div>
+                            <h2>Configuração da loja</h2>
+                            <p class="texto-ajuda-admin">Ajuste o funcionamento da loja e salve as alterações.</p>
+                        </div>
+                    </div>
+                    <div class="config-lista-loja">
+                    <form action="/admin/loja/toggle" method="post" class="stack-form-admin config-lista-item config-lista-status-loja">
+                        <span><strong>Status dos pedidos</strong><small>{{ 'Loja aberta e recebendo pedidos' if config.loja_aberta else 'Loja fechada para novos pedidos' }}</small></span>
+                        <button type="submit" class="{{ 'btn-status-pendente' if config.loja_aberta else 'btn-status-entregue' }} btn-bloco-total">
+                            {{ 'Bloquear pedidos' if config.loja_aberta else 'Liberar pedidos' }}
+                        </button>
+                    </form>
+                    <form class="form-admin-config form-admin-config-pro" action="/admin/configuracoes" method="post">
+                        <label class="config-lista-item config-lista-campo"><span><strong>Mensagem da loja fechada</strong><small>Texto exibido ao cliente quando os pedidos estiverem bloqueados.</small></span><input type="text" name="mensagem_loja_fechada" placeholder="Mensagem quando a loja estiver fechada" value="{{ config.mensagem_loja_fechada }}"></label>
+                        <div class="status-integration-box config-lista-item"><span><strong>Integração de pagamento</strong><small>Status atual do checkout</small></span><b>{{ 'InfinitePay ativa' if config.infinitepay_ativo else 'InfinitePay desativada' }}</b></div>
+                        <label class="check-admin check-admin-pro config-lista-item">
+                            <span>Ativar checkout InfinitePay</span>
+                            <input type="checkbox" name="infinitepay_ativo" {% if config.infinitepay_ativo %}checked{% endif %}>
+                        </label>
+                        <label class="check-admin check-admin-pro config-lista-item">
+                            <span>
+                                Exibir Pix manual na página do pedido
+                                <small>Quando desligado, a etapa de pagamento mostrará somente a InfinitePay. Se a InfinitePay for desativada, o Pix manual permanecerá disponível.</small>
+                            </span>
+                            <input type="checkbox" name="pix_manual_ativo" {% if config.pix_manual_ativo %}checked{% endif %}>
+                        </label>
+                        <label class="check-admin check-admin-pro config-lista-item">
+                            <span>Exigir cadastro para fazer pedidos</span>
+                            <input type="checkbox" name="exigir_cadastro" {% if config.exigir_cadastro %}checked{% endif %}>
+                        </label>
+                        <div class="status-integration-box check-modo-pagamento-confirmado config-lista-item">
+                            <span>
+                                <strong>Pedido criado somente após o pagamento</strong>
+                                <small>A InfinitePay deve confirmar o pagamento antes de o pedido aparecer no painel e liberar o botão de envio para Italo ou Karina.</small>
+                            </span>
+                            <b>Obrigatório</b>
+                        </div>
+                        <label class="check-admin check-admin-pro check-fidelidade-admin config-lista-item">
+                            <span>
+                                Ativar campanha de fidelidade
+                                <small>A cada 10 dindins de R$ 5 ou R$ 7, o cliente cadastrado ganha 1 dindin da mesma faixa.</small>
+                            </span>
+                            <input type="checkbox" name="fidelidade_ativa" {% if config.fidelidade_ativa %}checked{% endif %}>
+                        </label>
+                        <label class="check-admin check-admin-pro config-lista-item">
+                            <span>Exibir botão “Fale conosco” pelo WhatsApp <small>(somente com a loja aberta)</small></span>
+                            <input type="checkbox" name="whatsapp_suporte_ativo" {% if config.whatsapp_suporte_ativo %}checked{% endif %}>
+                        </label>
+                        <div class="config-entrega-grid">
+                            <label class="check-admin check-admin-pro config-lista-item">
+                                <span>Entrega grátis</span>
+                                <input type="checkbox" name="entrega_gratis" {% if config.entrega_gratis %}checked{% endif %}>
+                            </label>
+                            <label class="campo-taxa-entrega config-lista-item"><span><strong>Valor da entrega</strong><small>Taxa aplicada quando a entrega grátis estiver desligada.</small></span><div class="controle-quantidade controle-quantidade-admin controle-valor-monetario" data-quantity-box><button type="button" class="btn-qtd-step" data-step="-0.5" aria-label="Diminuir valor da entrega">−</button><input type="number" name="taxa_entrega" min="0" step="0.01" value="{{ '%.2f'|format(config.taxa_entrega or 0) }}" class="input-quantidade-step" data-quantity-input><button type="button" class="btn-qtd-step" data-step="0.5" aria-label="Aumentar valor da entrega">+</button></div></label>
+                        </div>
+                        <div class="bloqueios-responsavel-grid">
+                            <label class="check-admin check-admin-pro check-bloqueio-destinatario config-lista-item">
+                                <span>Bloquear pedidos do Italo</span>
+                                <input type="checkbox" name="bloquear_italo" {% if config.bloquear_italo %}checked{% endif %}>
+                            </label>
+                            <label class="check-admin check-admin-pro check-bloqueio-destinatario config-lista-item">
+                                <span>Bloquear pedidos da Karina</span>
+                                <input type="checkbox" name="bloquear_karina" {% if config.bloquear_karina %}checked{% endif %}>
+                            </label>
+                        </div>
+                        <button class="btn-admin-salvar-contigurações btn-bloco-total" type="submit">Salvar configurações</button>
+                    </form>
+                    </div>
+                    <p class="texto-ajuda-admin configuracao-loja-rodape">O checkout online depende do <strong>INFINITEPAY_HANDLE</strong> configurado no Railway, sem o símbolo $.</p>
+                </div>
+            </details>
+        </div>
         <div class="admin-topo-acoes admin-topo-acoes-premium">
             <button type="button" class="btn-admin-topo" data-scroll-target="#centralPedidosSecao">📍 Ir para pedidos</button>
-            <button type="button" class="btn-admin-topo" data-scroll-target="#configuracaoLojaSecao">⚙️ Configurações da loja</button>
-            <button type="button" class="btn-admin-topo" data-scroll-target="#notificacoesTempoRealSecao">🔔 Notificações em tempo real</button>
             <button type="button" class="btn-admin-topo" data-scroll-target="body">⬆️ Voltar para o topo da página</button>
             <a href="/admin/logout" class="btn-admin-sair">Sair</a>
         </div>
@@ -31,8 +110,6 @@
                 <option value="" selected>Ações do admin</option>
                 <option value="scroll:body">⬆️ Voltar para o topo da página</option>
                 <option value="scroll:#centralPedidosSecao">Ir para pedidos</option>
-                <option value="scroll:#configuracaoLojaSecao">Configurações da loja</option>
-                <option value="scroll:#notificacoesTempoRealSecao">Notificações em tempo real</option>
                 <option value="/admin/logout">Sair</option>
             </select>
         </div>
@@ -286,90 +363,6 @@
                     </div>
                 </div>
                 {% endif %}
-
-                <div class="admin-box destaque-box" id="notificacoesTempoRealSecao">
-                    <div class="admin-box-topo">
-                        <div>
-                            <h2>Notificações em tempo real</h2>
-                            <p class="texto-ajuda-admin">Mantenha o painel aberto para monitorar pedidos novos.</p>
-                        </div>
-                        <button type="button" class="btn-admin-topo" id="ativarNotificacoesLateral" aria-pressed="false">Ativar</button>
-                    </div>
-                    <div class="mini-status-grid">
-                        <div class="mini-status-card"><strong>Monitoramento</strong><span id="statusMonitoramento">Ligado</span></div>
-                        <div class="mini-status-card"><strong>Último pedido</strong><span id="ultimoPedidoLidoCard">#{{ ultimo_pedido_id }}</span></div>
-                    </div>
-                </div>
-
-                <div class="admin-box" id="configuracaoLojaSecao">
-                    <div class="admin-box-topo">
-                        <h2>Configuração da loja</h2>
-                    </div>
-                    <div class="config-lista-loja">
-                    <form action="/admin/loja/toggle" method="post" class="stack-form-admin config-lista-item config-lista-status-loja">
-                        <span><strong>Status dos pedidos</strong><small>{{ 'Loja aberta e recebendo pedidos' if config.loja_aberta else 'Loja fechada para novos pedidos' }}</small></span>
-                        <button type="submit" class="{{ 'btn-status-pendente' if config.loja_aberta else 'btn-status-entregue' }} btn-bloco-total">
-                            {{ 'Bloquear pedidos' if config.loja_aberta else 'Liberar pedidos' }}
-                        </button>
-                    </form>
-                    <form class="form-admin-config form-admin-config-pro" action="/admin/configuracoes" method="post">
-                        <label class="config-lista-item config-lista-campo"><span><strong>Mensagem da loja fechada</strong><small>Texto exibido ao cliente quando os pedidos estiverem bloqueados.</small></span><input type="text" name="mensagem_loja_fechada" placeholder="Mensagem quando a loja estiver fechada" value="{{ config.mensagem_loja_fechada }}"></label>
-                        <div class="status-integration-box config-lista-item"><span><strong>Integração de pagamento</strong><small>Status atual do checkout</small></span><b>{{ 'InfinitePay ativa' if config.infinitepay_ativo else 'InfinitePay desativada' }}</b></div>
-                        <label class="check-admin check-admin-pro config-lista-item">
-                            <span>Ativar checkout InfinitePay</span>
-                            <input type="checkbox" name="infinitepay_ativo" {% if config.infinitepay_ativo %}checked{% endif %}>
-                        </label>
-                        <label class="check-admin check-admin-pro config-lista-item">
-                            <span>
-                                Exibir Pix manual na página do pedido
-                                <small>Quando desligado, a etapa de pagamento mostrará somente a InfinitePay. Se a InfinitePay for desativada, o Pix manual permanecerá disponível.</small>
-                            </span>
-                            <input type="checkbox" name="pix_manual_ativo" {% if config.pix_manual_ativo %}checked{% endif %}>
-                        </label>
-                        <label class="check-admin check-admin-pro config-lista-item">
-                            <span>Exigir cadastro para fazer pedidos</span>
-                            <input type="checkbox" name="exigir_cadastro" {% if config.exigir_cadastro %}checked{% endif %}>
-                        </label>
-                        <div class="status-integration-box check-modo-pagamento-confirmado config-lista-item">
-                            <span>
-                                <strong>Pedido criado somente após o pagamento</strong>
-                                <small>A InfinitePay deve confirmar o pagamento antes de o pedido aparecer no painel e liberar o botão de envio para Italo ou Karina.</small>
-                            </span>
-                            <b>Obrigatório</b>
-                        </div>
-                        <label class="check-admin check-admin-pro check-fidelidade-admin config-lista-item">
-                            <span>
-                                Ativar campanha de fidelidade
-                                <small>A cada 10 dindins de R$ 5 ou R$ 7, o cliente cadastrado ganha 1 dindin da mesma faixa.</small>
-                            </span>
-                            <input type="checkbox" name="fidelidade_ativa" {% if config.fidelidade_ativa %}checked{% endif %}>
-                        </label>
-                        <label class="check-admin check-admin-pro config-lista-item">
-                            <span>Exibir botão “Fale conosco” pelo WhatsApp <small>(somente com a loja aberta)</small></span>
-                            <input type="checkbox" name="whatsapp_suporte_ativo" {% if config.whatsapp_suporte_ativo %}checked{% endif %}>
-                        </label>
-                        <div class="config-entrega-grid">
-                            <label class="check-admin check-admin-pro config-lista-item">
-                                <span>Entrega grátis</span>
-                                <input type="checkbox" name="entrega_gratis" {% if config.entrega_gratis %}checked{% endif %}>
-                            </label>
-                            <label class="campo-taxa-entrega config-lista-item"><span><strong>Valor da entrega</strong><small>Taxa aplicada quando a entrega grátis estiver desligada.</small></span><div class="controle-quantidade controle-quantidade-admin controle-valor-monetario" data-quantity-box><button type="button" class="btn-qtd-step" data-step="-0.5" aria-label="Diminuir valor da entrega">−</button><input type="number" name="taxa_entrega" min="0" step="0.01" value="{{ '%.2f'|format(config.taxa_entrega or 0) }}" class="input-quantidade-step" data-quantity-input><button type="button" class="btn-qtd-step" data-step="0.5" aria-label="Aumentar valor da entrega">+</button></div></label>
-                        </div>
-                        <div class="bloqueios-responsavel-grid">
-                            <label class="check-admin check-admin-pro check-bloqueio-destinatario config-lista-item">
-                                <span>Bloquear pedidos do Italo</span>
-                                <input type="checkbox" name="bloquear_italo" {% if config.bloquear_italo %}checked{% endif %}>
-                            </label>
-                            <label class="check-admin check-admin-pro check-bloqueio-destinatario config-lista-item">
-                                <span>Bloquear pedidos da Karina</span>
-                                <input type="checkbox" name="bloquear_karina" {% if config.bloquear_karina %}checked{% endif %}>
-                            </label>
-                        </div>
-                        <button class="btn-admin-salvar-contigurações btn-bloco-total" type="submit">Salvar configurações</button>
-                    </form>
-                    </div>
-                    <p class="texto-ajuda-admin">O checkout online depende do <strong>INFINITEPAY_HANDLE</strong> configurado no Render, sem o símbolo $.</p>
-                </div>
 
                 </aside>
         </section>

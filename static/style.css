@@ -4592,6 +4592,194 @@ body[class]::before,body[class]::after{display:none!important;animation:none!imp
 
 @media(max-width:360px){
   .pagina-admin-dashboard .admin-acessos-principais{
-    grid-template-columns:1fr;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+/* Controles operacionais compactos no topo do painel */
+.pagina-admin-dashboard .admin-controles-operacionais{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(210px,280px));
+  justify-content:center;
+  gap:10px;
+  width:100%;
+  margin:0 0 10px;
+  padding:0 10px;
+  box-sizing:border-box;
+}
+
+.pagina-admin-dashboard .btn-notificacao-topo,
+.pagina-admin-dashboard .btn-configuracao-topo{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%;
+  min-height:46px!important;
+  margin:0;
+  padding:10px 14px!important;
+  box-sizing:border-box;
+  border:1px solid transparent!important;
+  border-radius:12px!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  font-size:.8rem!important;
+  font-weight:900!important;
+  line-height:1.2!important;
+  text-align:center;
+  text-decoration:none;
+  box-shadow:0 9px 22px rgba(2,6,23,.24)!important;
+  cursor:pointer;
+  transition:transform .18s ease,filter .18s ease,border-color .18s ease!important;
+}
+
+.pagina-admin-dashboard .btn-notificacao-topo{
+  background:linear-gradient(135deg,#9f1239,#e11d48)!important;
+  border-color:rgba(253,164,175,.42)!important;
+  box-shadow:0 9px 22px rgba(225,29,72,.24)!important;
+}
+
+.pagina-admin-dashboard .btn-notificacao-topo.ativo{
+  background:linear-gradient(135deg,#047857,#10b981)!important;
+  border-color:rgba(167,243,208,.52)!important;
+  box-shadow:0 9px 24px rgba(16,185,129,.28)!important;
+}
+
+.pagina-admin-dashboard .btn-notificacao-topo:hover,
+.pagina-admin-dashboard .btn-configuracao-topo:hover{
+  transform:translateY(-1px);
+  filter:brightness(1.1);
+}
+
+.pagina-admin-dashboard #configuracaoLojaSecao{
+  position:static;
+  display:block!important;
+  min-width:0;
+  margin:0;
+}
+
+.pagina-admin-dashboard .btn-configuracao-topo{
+  list-style:none;
+  background:linear-gradient(135deg,#075985,#2563eb)!important;
+  border-color:rgba(125,211,252,.42)!important;
+  box-shadow:0 9px 22px rgba(37,99,235,.24)!important;
+}
+
+.pagina-admin-dashboard .btn-configuracao-topo::-webkit-details-marker{
+  display:none;
+}
+
+.pagina-admin-dashboard .config-fechar-label{
+  display:none;
+}
+
+.pagina-admin-dashboard .configuracao-loja-popover[open] .config-abrir-label{
+  display:none;
+}
+
+.pagina-admin-dashboard .configuracao-loja-popover[open] .config-fechar-label{
+  display:inline;
+}
+
+.pagina-admin-dashboard .configuracao-loja-popover[open] .btn-configuracao-topo{
+  background:linear-gradient(135deg,#334155,#475569)!important;
+  border-color:rgba(203,213,225,.38)!important;
+}
+
+.pagina-admin-dashboard .configuracao-loja-painel{
+  position:absolute;
+  top:calc(100% + 8px);
+  right:10px;
+  z-index:220;
+  width:min(840px,calc(100vw - 32px));
+  max-height:calc(100vh - 210px);
+  margin:0!important;
+  padding:18px!important;
+  box-sizing:border-box;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  border:1px solid rgba(125,211,252,.36)!important;
+  border-radius:18px!important;
+  background:rgba(8,15,31,.98)!important;
+  box-shadow:0 26px 70px rgba(2,6,23,.7)!important;
+  scrollbar-width:thin;
+  scrollbar-color:#38bdf8 rgba(15,23,42,.8);
+}
+
+.pagina-admin-dashboard .configuracao-loja-painel-topo{
+  position:sticky;
+  top:-18px;
+  z-index:2;
+  margin:-18px -18px 14px!important;
+  padding:17px 18px 14px;
+  border-bottom:1px solid rgba(148,163,184,.18);
+  background:rgba(8,15,31,.98);
+}
+
+.pagina-admin-dashboard .configuracao-loja-painel-topo h2{
+  margin:0 0 3px;
+}
+
+.pagina-admin-dashboard .configuracao-loja-rodape{
+  margin:13px 2px 0!important;
+  padding-top:12px;
+  border-top:1px solid rgba(148,163,184,.16);
+}
+
+/* Mantem a central compacta, com duas linhas de pedidos por fileira. */
+@media(min-width:761px){
+  .pagina-admin-dashboard #pedidosGridAdmin{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    align-items:start;
+    gap:10px!important;
+  }
+
+  .pagina-admin-dashboard #pedidosGridAdmin .pedido-lista-expansivel[open]{
+    grid-column:1/-1;
+  }
+}
+
+@media(max-width:760px){
+  .pagina-admin-dashboard .admin-controles-operacionais{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+    margin-bottom:0;
+    padding:4px 10px 8px;
+  }
+
+  .pagina-admin-dashboard .btn-notificacao-topo,
+  .pagina-admin-dashboard .btn-configuracao-topo{
+    min-width:0;
+    min-height:48px!important;
+    padding:8px!important;
+    font-size:.72rem!important;
+  }
+
+  .pagina-admin-dashboard .configuracao-loja-painel{
+    right:8px;
+    width:calc(100vw - 28px);
+    max-height:calc(100vh - 250px);
+    padding:14px!important;
+    border-radius:15px!important;
+  }
+
+  .pagina-admin-dashboard .configuracao-loja-painel-topo{
+    top:-14px;
+    margin:-14px -14px 12px!important;
+    padding:14px;
+  }
+
+  .pagina-admin-dashboard #pedidosGridAdmin{
+    grid-template-columns:1fr!important;
+  }
+}
+
+@media(max-width:360px){
+  .pagina-admin-dashboard .admin-controles-operacionais{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .pagina-admin-dashboard .configuracao-loja-painel{
+    max-height:calc(100vh - 230px);
   }
 }
