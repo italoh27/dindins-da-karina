@@ -4214,7 +4214,15 @@ body[class]::before,body[class]::after{display:none!important;animation:none!imp
 .pagina-loja .card-imagem-wrap-pro{background:#0b1020}
 .pagina-loja .card-imagem-wrap-pro img{transition:none!important}
 .pagina-loja .card-carrossel:hover img{transform:none!important}
-.pagina-loja .card-topo-pro h3{color:#f8fafc;letter-spacing:-.01em}
+.pagina-loja .card-topo-pro h3{
+  color:#fff!important;
+  font-size:1.05rem;
+  font-weight:800;
+  line-height:1.2;
+  letter-spacing:.005em;
+  text-wrap:balance;
+  text-shadow:0 1px 8px rgba(0,0,0,.28);
+}
 .pagina-loja .estoque-destaque-pro{justify-content:flex-start!important;padding:0!important;background:none!important}
 .pagina-loja .estoque-destaque-pro .badge{
   display:inline-flex!important;
@@ -4302,7 +4310,16 @@ body[class]::before,body[class]::after{display:none!important;animation:none!imp
   .pagina-loja .card-imagem-wrap-pro{aspect-ratio:1/1.06!important;margin-bottom:7px!important;border-radius:11px!important}
   .pagina-loja .card-conteudo-pro{display:flex!important;flex:1;flex-direction:column;gap:7px!important}
   .pagina-loja .card-topo-pro h3{
-    min-height:2.25em;margin:0 0 2px!important;font-size:.79rem!important;line-height:1.12!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    min-height:2.4em;
+    margin:1px 2px 3px!important;
+    font-size:1rem!important;
+    font-weight:850!important;
+    line-height:1.2!important;
+    letter-spacing:.005em!important;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
   }
   .pagina-loja .card-loja-pro .preco-card{font-size:.8rem!important}
   .pagina-loja .form-card-pro{display:flex!important;flex-direction:column;gap:7px!important;margin-top:auto}
@@ -4323,6 +4340,7 @@ body[class]::before,body[class]::after{display:none!important;animation:none!imp
 @media(max-width:370px){
   .pagina-loja .carrossel-produtos{gap:7px!important}
   .pagina-loja .card-loja-pro,.pagina-loja .card-carrossel{padding:6px!important}
+  .pagina-loja .card-topo-pro h3{font-size:.96rem!important}
   .pagina-loja .responsavel-loja-label{display:none}
   .pagina-loja .form-responsavel-loja{grid-template-columns:1fr!important}
 }
