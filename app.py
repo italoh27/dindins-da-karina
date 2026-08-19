@@ -3247,7 +3247,6 @@ def admin():
             pagamento=filtro_pagamento,
             status="" if status_rapido else filtro_status,
             somente_visiveis=True,
-            excluir_aguardando_liberacao=True,
         )
         sabores = ler_sabores()
         config = ler_config()
@@ -3413,140 +3412,164 @@ def filtrar_pedidos_analise(pedidos, data_inicial='', data_final='', responsavel
 def admin_analise():
     if not admin_logado():
         return redirect('/admin/login')
-    hoje = now_local().strftime('%Y-%m-%d')
-    periodo = request.args.get('periodo', 'todos').strip().lower()
-    data_inicial = request.args.get('data_inicial', '').strip()
-    data_final = request.args.get('data_final', '').strip()
-    responsavel = request.args.get('responsavel', '').strip().lower()
-    pagamento = request.args.get('pagamento', '').strip().lower()
-    somente_cadastrados = request.args.get('clientes_cadastrados', '').strip().lower() == '1'
-    clientes_cadastrados = listar_clientes()
+    try:
+        hoje = now_local().strftime('%Y-%m-%d')
+        periodo = request.args.get('periodo', 'todos').strip().lower()
+        data_inicial = request.args.get('data_inicial', '').strip()
+        data_final = request.args.get('data_final', '').strip()
+        responsavel = request.args.get('responsavel', '').strip().lower()
+        pagamento = request.args.get('pagamento', '').strip().lower()
+        somente_cadastrados = request.args.get('clientes_cadastrados', '').strip().lower() == '1'
+        clientes_cadastrados = listar_clientes()
 
-    if periodo == 'hoje' and not data_inicial and not data_final:
-        data_inicial = hoje
-        data_final = hoje
-    elif periodo == '7dias' and not data_inicial and not data_final:
-        base = now_local()
-        data_inicial = (base - timedelta(days=6)).strftime('%Y-%m-%d')
-        data_final = hoje
-    elif periodo == '30dias' and not data_inicial and not data_final:
-        base = now_local()
-        data_inicial = (base - timedelta(days=29)).strftime('%Y-%m-%d')
-        data_final = hoje
-    elif periodo == 'mes' and not data_inicial and not data_final:
-        base = now_local()
-        data_inicial = base.replace(day=1).strftime('%Y-%m-%d')
-        data_final = hoje
-    elif periodo in ('todos', 'custom') and not data_inicial and not data_final:
-        data_inicial = ''
-        data_final = ''
+        if periodo == 'hoje' and not data_inicial and not data_final:
+            data_inicial = hoje
+            data_final = hoje
+        elif periodo == '7dias' and not data_inicial and not data_final:
+            base = now_local()
+            data_inicial = (base - timedelta(days=6)).strftime('%Y-%m-%d')
+            data_final = hoje
+        elif periodo == '30dias' and not data_inicial and not data_final:
+            base = now_local()
+            data_inicial = (base - timedelta(days=29)).strftime('%Y-%m-%d')
+            data_final = hoje
+        elif periodo == 'mes' and not data_inicial and not data_final:
+            base = now_local()
+            data_inicial = base.replace(day=1).strftime('%Y-%m-%d')
+            data_final = hoje
+        elif periodo in ('todos', 'custom') and not data_inicial and not data_final:
+            data_inicial = ''
+            data_final = ''
 
-    pedidos = consultar_pedidos(
-        data_inicial=data_inicial,
-        data_final=data_final,
-        responsavel=responsavel,
-        pagamento=pagamento,
-        somente_visiveis=True,
-        excluir_aguardando_liberacao=True,
-    )
-    filtrados = pedidos
-    if somente_cadastrados:
-        telefones_cadastrados = {normalizar_telefone_br(c.get('telefone', '')) for c in clientes_cadastrados}
-        filtrados = [p for p in filtrados if normalizar_telefone_br(p.get('cliente', {}).get('telefone', '')) in telefones_cadastrados]
-    total_pedidos = len(filtrados)
-    total_pago = sum(float(p.get('total', 0) or 0) for p in filtrados if p.get('pagamento_status') == 'pago')
-    total_pendente = sum(float(p.get('total', 0) or 0) for p in filtrados if p.get('pagamento_status') == 'aguardando_pagamento')
-    faturamento_bruto = sum(float(p.get('total', 0) or 0) for p in filtrados)
-    ticket_medio = (faturamento_bruto / total_pedidos) if total_pedidos else 0
-
-    comparativo = {}
-    for resp in ['italo', 'karina']:
-        subset = [p for p in filtrados if p.get('destinatario') == resp]
-        comparativo[resp] = {
-            'total_pedidos': len(subset),
-            'pago': sum(float(p.get('total', 0) or 0) for p in subset if p.get('pagamento_status') == 'pago'),
-            'pendente': sum(float(p.get('total', 0) or 0) for p in subset if p.get('pagamento_status') == 'aguardando_pagamento'),
-        }
-
-    sabores = {}
-    faturamento_sabor = {}
-    pedidos_por_dia = {}
-    devedores = {}
-    for pedido in filtrados:
-        pedidos_por_dia[pedido.get('data_filtro', '')] = pedidos_por_dia.get(
-            pedido.get('data_filtro', ''),
-            {'pedidos': 0, 'tabus': 0, 'faturamento': 0.0},
+        pedidos = consultar_pedidos(
+            data_inicial=data_inicial,
+            data_final=data_final,
+            responsavel=responsavel,
+            pagamento=pagamento,
+            somente_visiveis=True,
         )
-        pedidos_por_dia[pedido.get('data_filtro', '')]['pedidos'] += 1
-        pedidos_por_dia[pedido.get('data_filtro', '')]['faturamento'] += float(pedido.get('total', 0) or 0)
-        cliente = pedido.get('cliente', {}).get('nome', 'Cliente')
-        telefone = pedido.get('cliente', {}).get('telefone', '')
-        chave = (cliente, telefone)
-        if chave not in devedores:
-            devedores[chave] = {'cliente': cliente, 'telefone': telefone, 'total': 0.0, 'pago': 0.0, 'nao_pago': 0.0, 'pedidos': 0}
-        devedores[chave]['total'] += float(pedido.get('total', 0) or 0)
-        devedores[chave]['pedidos'] += 1
-        if pedido.get('pagamento_status') == 'pago':
-            devedores[chave]['pago'] += float(pedido.get('total', 0) or 0)
-        elif pedido.get('pagamento_status') == 'aguardando_pagamento':
-            devedores[chave]['nao_pago'] += float(pedido.get('total', 0) or 0)
-        for item in pedido.get('itens', []):
-            nome = item.get('nome', 'Sem nome')
-            qtd = int(item.get('quantidade', 0) or 0)
-            subtotal = float(item.get('subtotal', 0) or 0)
-            pedidos_por_dia[pedido.get('data_filtro', '')]['tabus'] += qtd
-            sabores[nome] = sabores.get(nome, 0) + qtd
-            faturamento_sabor[nome] = faturamento_sabor.get(nome, 0.0) + subtotal
+        filtrados = pedidos
+        if somente_cadastrados:
+            telefones_cadastrados = {normalizar_telefone_br(c.get('telefone', '')) for c in clientes_cadastrados}
+            filtrados = [p for p in filtrados if normalizar_telefone_br(p.get('cliente', {}).get('telefone', '')) in telefones_cadastrados]
+        total_pedidos = len(filtrados)
+        total_pago = sum(float(p.get('total', 0) or 0) for p in filtrados if p.get('pagamento_status') == 'pago')
+        total_pendente = sum(float(p.get('total', 0) or 0) for p in filtrados if p.get('pagamento_status') == 'aguardando_pagamento')
+        faturamento_bruto = sum(float(p.get('total', 0) or 0) for p in filtrados)
+        ticket_medio = (faturamento_bruto / total_pedidos) if total_pedidos else 0
 
-    ranking_sabores = [
-        {'nome': nome, 'quantidade': quantidade, 'faturamento': faturamento_sabor.get(nome, 0.0)}
-        for nome, quantidade in sorted(sabores.items(), key=lambda x: x[1], reverse=True)
-    ]
-    max_qtd = max([item['quantidade'] for item in ranking_sabores], default=1)
-    for item in ranking_sabores:
-        item['percentual'] = round((item['quantidade'] / max_qtd) * 100, 1) if max_qtd else 0
+        comparativo = {}
+        for resp in ['italo', 'karina']:
+            subset = [p for p in filtrados if p.get('destinatario') == resp]
+            comparativo[resp] = {
+                'total_pedidos': len(subset),
+                'pago': sum(float(p.get('total', 0) or 0) for p in subset if p.get('pagamento_status') == 'pago'),
+                'pendente': sum(float(p.get('total', 0) or 0) for p in subset if p.get('pagamento_status') == 'aguardando_pagamento'),
+            }
 
-    pedidos_dia_lista = [
-        {
-            'data': data,
-            'pedidos': info['pedidos'],
-            'tabus': info['tabus'],
-            'faturamento': round(info['faturamento'], 2),
-        }
-        for data, info in sorted(pedidos_por_dia.items())
-    ]
+        sabores = {}
+        faturamento_sabor = {}
+        pedidos_por_dia = {}
+        devedores = {}
+        for pedido in filtrados:
+            pedidos_por_dia[pedido.get('data_filtro', '')] = pedidos_por_dia.get(
+                pedido.get('data_filtro', ''),
+                {'pedidos': 0, 'tabus': 0, 'faturamento': 0.0},
+            )
+            pedidos_por_dia[pedido.get('data_filtro', '')]['pedidos'] += 1
+            pedidos_por_dia[pedido.get('data_filtro', '')]['faturamento'] += float(pedido.get('total', 0) or 0)
+            cliente = pedido.get('cliente', {}).get('nome', 'Cliente')
+            telefone = pedido.get('cliente', {}).get('telefone', '')
+            chave = (cliente, telefone)
+            if chave not in devedores:
+                devedores[chave] = {'cliente': cliente, 'telefone': telefone, 'total': 0.0, 'pago': 0.0, 'nao_pago': 0.0, 'pedidos': 0}
+            devedores[chave]['total'] += float(pedido.get('total', 0) or 0)
+            devedores[chave]['pedidos'] += 1
+            if pedido.get('pagamento_status') == 'pago':
+                devedores[chave]['pago'] += float(pedido.get('total', 0) or 0)
+            elif pedido.get('pagamento_status') == 'aguardando_pagamento':
+                devedores[chave]['nao_pago'] += float(pedido.get('total', 0) or 0)
+            for item in pedido.get('itens', []):
+                nome = item.get('nome', 'Sem nome')
+                qtd = int(item.get('quantidade', 0) or 0)
+                subtotal = float(item.get('subtotal', 0) or 0)
+                pedidos_por_dia[pedido.get('data_filtro', '')]['tabus'] += qtd
+                sabores[nome] = sabores.get(nome, 0) + qtd
+                faturamento_sabor[nome] = faturamento_sabor.get(nome, 0.0) + subtotal
 
-    saldo_devedor = [
-        {
-            **info,
-            'saldo_devedor': round(info['nao_pago'], 2),
-        }
-        for info in devedores.values() if info['nao_pago'] > 0
-    ]
-    saldo_devedor.sort(key=lambda x: x['saldo_devedor'], reverse=True)
+        ranking_sabores = [
+            {'nome': nome, 'quantidade': quantidade, 'faturamento': faturamento_sabor.get(nome, 0.0)}
+            for nome, quantidade in sorted(sabores.items(), key=lambda x: x[1], reverse=True)
+        ]
+        max_qtd = max([item['quantidade'] for item in ranking_sabores], default=1)
+        for item in ranking_sabores:
+            item['percentual'] = round((item['quantidade'] / max_qtd) * 100, 1) if max_qtd else 0
 
-    return render_template(
-        'admin_analise.html',
-        total_pedidos=total_pedidos,
-        total_pago=total_pago,
-        total_pendente=total_pendente,
-        faturamento_bruto=faturamento_bruto,
-        ticket_medio=ticket_medio,
-        comparativo=comparativo,
-        ranking_sabores=ranking_sabores,
-        pedidos_dia_lista=pedidos_dia_lista,
-        saldo_devedor=saldo_devedor,
-        pedidos_filtrados=filtrados,
-        periodo=periodo,
-        data_inicial=data_inicial,
-        data_final=data_final,
-        responsavel=responsavel,
-        pagamento=pagamento,
-        somente_cadastrados=somente_cadastrados,
-        clientes_cadastrados=clientes_cadastrados,
-        request_path=request.full_path if request.query_string else request.path,
-        mensagem=pop_mensagem('mensagem_admin'),
-    )
+        pedidos_dia_lista = [
+            {
+                'data': data,
+                'pedidos': info['pedidos'],
+                'tabus': info['tabus'],
+                'faturamento': round(info['faturamento'], 2),
+            }
+            for data, info in sorted(pedidos_por_dia.items())
+        ]
+
+        saldo_devedor = [
+            {
+                **info,
+                'saldo_devedor': round(info['nao_pago'], 2),
+            }
+            for info in devedores.values() if info['nao_pago'] > 0
+        ]
+        saldo_devedor.sort(key=lambda x: x['saldo_devedor'], reverse=True)
+
+        return render_template(
+            'admin_analise.html',
+            total_pedidos=total_pedidos,
+            total_pago=total_pago,
+            total_pendente=total_pendente,
+            faturamento_bruto=faturamento_bruto,
+            ticket_medio=ticket_medio,
+            comparativo=comparativo,
+            ranking_sabores=ranking_sabores,
+            pedidos_dia_lista=pedidos_dia_lista,
+            saldo_devedor=saldo_devedor,
+            pedidos_filtrados=filtrados,
+            periodo=periodo,
+            data_inicial=data_inicial,
+            data_final=data_final,
+            responsavel=responsavel,
+            pagamento=pagamento,
+            somente_cadastrados=somente_cadastrados,
+            clientes_cadastrados=clientes_cadastrados,
+            request_path=request.full_path if request.query_string else request.path,
+            mensagem=pop_mensagem('mensagem_admin'),
+        )
+    except Exception as exc:
+        app.logger.exception("Erro ao carregar analise: %s", exc)
+        return render_template(
+            'admin_analise.html',
+            total_pedidos=0,
+            total_pago=0,
+            total_pendente=0,
+            faturamento_bruto=0,
+            ticket_medio=0,
+            comparativo={'italo': {'total_pedidos': 0, 'pago': 0, 'pendente': 0}, 'karina': {'total_pedidos': 0, 'pago': 0, 'pendente': 0}},
+            ranking_sabores=[],
+            pedidos_dia_lista=[],
+            saldo_devedor=[],
+            pedidos_filtrados=[],
+            periodo='todos',
+            data_inicial='',
+            data_final='',
+            responsavel='',
+            pagamento='',
+            somente_cadastrados=False,
+            clientes_cadastrados=[],
+            request_path=request.path,
+            mensagem='Não consegui carregar a análise de dados agora. Tente novamente em instantes.',
+        )
 
 
 
