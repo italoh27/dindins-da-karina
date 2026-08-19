@@ -1061,7 +1061,7 @@ def row_to_pedido(row, itens):
     else:
         data_formatada = str(data_bruta)
 
-    pedido = {
+        pedido = {
         "id": int(row["id"]),
         "data": data_formatada,
         "data_filtro": row["data_filtro"].strftime("%Y-%m-%d") if hasattr(row["data_filtro"], "strftime") else str(row["data_filtro"]),
@@ -2482,6 +2482,9 @@ def cliente_cadastro():
             request.form.get("nome"), request.form.get("telefone"),
             request.form.get("email"), request.form.get("senha"),
         )
+        if request.form.get("salvar_acesso") == "1":
+            session.permanent = True
+            app.permanent_session_lifetime = timedelta(days=30)
         session["cliente_id"] = int(cliente["id"])
         session["cliente_nome"] = cliente["nome"]
         session["cliente_telefone"] = cliente["telefone"]
@@ -2498,6 +2501,9 @@ def cliente_entrar():
     if not cliente or not check_password_hash(cliente.get("senha_hash", ""), request.form.get("senha", "")):
         set_mensagem("mensagem_cliente", "Telefone ou senha incorretos.")
         return redirect("/cliente")
+    if request.form.get("lembrar_acesso") == "1":
+        session.permanent = True
+        app.permanent_session_lifetime = timedelta(days=30)
     session["cliente_id"] = int(cliente["id"])
     session["cliente_nome"] = cliente["nome"]
     session["cliente_telefone"] = cliente["telefone"]
@@ -2979,6 +2985,7 @@ def finalizar_pedido():
         },
         "endereco_checkout": endereco_checkout,
         "itens": itens_pedido,
+        "sabores": [item.get("nome", "") for item in itens_pedido],
         "total": float(total),
         "taxa_entrega": float(taxa_entrega),
         "status": "pendente",
@@ -3054,7 +3061,7 @@ def montar_mensagem_whatsapp(pedido, pagamento_link="", pagamento_confirmado=Fal
     linhas_itens = []
     for item in itens:
         linhas_itens.append(
-            f"- {item.get('nome', '')} | Qtd: {item.get('quantidade', 0)} | Unit: R$ {float(item.get('preco_unitario', 0)):.2f} | Subtotal: R$ {float(item.get('subtotal', 0)):.2f}"
+            f"- Sabor: {item.get('nome', '')} | Qtd: {item.get('quantidade', 0)} | Unit: R$ {float(item.get('preco_unitario', 0)):.2f} | Subtotal: R$ {float(item.get('subtotal', 0)):.2f}"
         )
     telefone = cliente.get("telefone", "")
     endereco = cliente.get("endereco", "")
