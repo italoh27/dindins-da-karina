@@ -39,9 +39,6 @@
         <h1>Análise de dados</h1>
         <p class="texto-ajuda-admin">Filtre período, responsável e status para acompanhar faturamento, clientes com saldo devedor e sabores mais vendidos.</p>
       </div>
-      <div class="admin-topo-nav-flutuante">
-        <a href="/admin/exportar_excel" class="btn-exportar-excel">Exportar Excel</a>
-      </div>
     </header>
 
     {% if mensagem %}<div class="alerta alerta-sucesso">{{ mensagem }}</div>{% endif %}
@@ -75,26 +72,11 @@
             <option value="cancelado" {% if pagamento=='cancelado' %}selected{% endif %}>Cancelado</option>
           </select>
         </label>
-        <label class="checkbox-analise"><input type="checkbox" name="clientes_cadastrados" value="1" {% if somente_cadastrados %}checked{% endif %}> <span>Somente clientes cadastrados</span></label>
         <div class="filtro-acoes-analise">
           <button class="btn-admin-filtrar" type="submit">Aplicar filtros</button>
           <a href="/admin/analise?periodo=todos" class="btn-admin-topo btn-admin-topo-secundario js-admin-ajax-link">Limpar datas</a>
         </div>
       </form>
-    </section>
-
-    <section class="admin-box clientes-cadastrados-box" id="clientesAnalise" data-analise-secao>
-      <div class="admin-box-topo"><div><span class="eyebrow-premium">Relacionamento</span><h2>Clientes cadastrados</h2></div><span class="badge badge-pago">{{ clientes_cadastrados|length }} cliente(s)</span></div>
-      <div class="tabela-responsiva">
-        <table class="tabela-analise">
-          <thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Cadastro</th><th>Ação</th></tr></thead>
-          <tbody>
-            {% for cliente in clientes_cadastrados %}
-            <tr><td><strong>{{ cliente.nome }}</strong></td><td>{{ cliente.telefone }}</td><td>{{ cliente.email or 'Não informado' }}</td><td>{{ cliente.created_at.strftime('%d/%m/%Y') if cliente.created_at and cliente.created_at.strftime is defined else cliente.created_at }}</td><td><form class="js-admin-ajax-form" method="post" action="/admin/clientes/{{ cliente.id }}/excluir" onsubmit="return confirm('Excluir o cadastro de {{ cliente.nome }}? Os pedidos serão preservados.');"><input type="hidden" name="return_to" value="{{ request_path }}"><button class="btn-excluir-um" type="submit">Excluir cliente</button></form></td></tr>
-            {% else %}<tr><td colspan="5">Nenhum cliente cadastrado ainda.</td></tr>{% endfor %}
-          </tbody>
-        </table>
-      </div>
     </section>
 
     <section class="admin-cards admin-cards-compactos" id="resumoAnalise" data-analise-secao>
