@@ -171,13 +171,20 @@ def admin_logado():
 
 
 def get_admin_password():
-    if db_enabled():
-        senha_db = get_config_value("admin_password", None)
-        if isinstance(senha_db, str) and senha_db.strip():
-            return senha_db.strip()
-    config_local = ler_config_arquivo()
-    senha_local = str(config_local.get("admin_password", "") or "").strip()
-    return senha_local or SENHA_ADMIN
+    try:
+        if db_enabled():
+            senha_db = get_config_value("admin_password", None)
+            if isinstance(senha_db, str) and senha_db.strip():
+                return senha_db.strip()
+    except Exception:
+        # Se o banco cair, o login do admin continua funcionando com a senha local.
+        pass
+    try:
+        config_local = ler_config_arquivo()
+        senha_local = str(config_local.get("admin_password", "") or "").strip()
+        return senha_local or SENHA_ADMIN
+    except Exception:
+        return SENHA_ADMIN
 
 
 def salvar_admin_password(nova_senha):
