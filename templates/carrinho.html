@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carrinho - Geladinhos Gourmet</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260815-fundo-unificado-v1">
+  <link rel="stylesheet" href="/static/style.css?v=20260819-checkout-simples">
 </head>
 <body class="pagina-carrinho" data-ajax-shell="public" data-cart-count="{{ qtd_itens }}">
     <div class="pagina-carrinho-topo">
@@ -67,10 +67,19 @@
                 <div class="total-carrinho" data-cart-total-wrap><span class="texto-resumo-carrinho total-carrinho-label">Total do pedido:</span> <span data-cart-total>R$ {{ "%.2f"|format(total) }}</span></div>
             </div>
 
+            <div class="checkout-opcoes-gratis">
+                <h2>Opções sem taxa</h2>
+                <ul>
+                    <li>Pix manual gratuito com cópia da chave</li>
+                    <li>Pagamento na entrega ou retirada</li>
+                    <li>Confirmação do pedido pelo WhatsApp</li>
+                </ul>
+            </div>
+
             {% if exigir_cadastro and not cliente_logado %}
             <div class="cadastro-obrigatorio-box"><h2>Entre para finalizar</h2><p>A loja está exigindo cadastro para novos pedidos. É rápido e permite acompanhar a entrega.</p><a href="/cliente" class="btn-vibrante">Cadastrar ou entrar</a></div>
             {% else %}
-            <form class="form-cliente" action="/finalizar_pedido" method="post" id="finalizarPedidoForm">
+            <form class="form-cliente" action="/finalizar_pedido" method="post" id="finalizarPedidoForm" {% if exigir_pagamento_online %}data-preparar-whatsapp="1"{% endif %}>
                 <h2>Finalizar pedido</h2>
 
                 <div class="responsavel-destaque">
@@ -82,8 +91,14 @@
                     <p class="texto-ajuda-admin">O estoque e a separação do pedido seguem o responsável selecionado.</p>
                 </div>
 
-                <input type="text" name="nome" placeholder="Seu nome" value="{{ cliente_nome }}" {% if exigir_cadastro %}readonly{% endif %} required>
-                <input type="text" name="telefone" placeholder="Seu telefone" value="{{ cliente_telefone }}" {% if exigir_cadastro %}readonly{% endif %}>
+                <div class="checkout-rapido-box">
+                    <label><span>Seu nome</span><input type="text" name="nome" placeholder="Seu nome" value="{{ cliente_nome }}" autocomplete="name" {% if exigir_cadastro %}readonly{% endif %} required></label>
+                    <label><span>Seu telefone</span><input type="tel" name="telefone" placeholder="Seu telefone" value="{{ cliente_telefone }}" autocomplete="tel" {% if exigir_cadastro %}readonly{% endif %}></label>
+                </div>
+                <div class="checkout-rapido-opcoes">
+                    <label class="checkbox-simples"><input type="checkbox" name="pagamento_na_entrega" value="1"> Pagar na entrega ou retirada</label>
+                    <label class="checkbox-simples"><input type="checkbox" name="pular_checkout_externo" value="1" checked> Quero só confirmar o pedido no WhatsApp</label>
+                </div>
                 {% if exigir_cadastro %}
                 <fieldset class="endereco-entrega-grid">
                     <legend>Endereço para entrega</legend>
@@ -98,9 +113,9 @@
                 {% endif %}
 
                 <div class="acoes-carrinho acoes-carrinho-duplas">
-                    <p class="aviso-proxima-etapa">As formas de pagamento aparecerão na próxima etapa.</p>
+                    {% if exigir_pagamento_online %}<p class="aviso-pagamento-obrigatorio">O pagamento online será aberto ao finalizar.</p>{% endif %}
                     <button class="btn-limpar" type="button" data-submit-external-form="#formLimparCarrinho">Limpar pedido</button>
-                    <button class="btn-finalizar" type="submit" {% if not loja_aberta or destinatario_bloqueado %}disabled{% endif %}>Continuar e escolher pagamento</button>
+                    <button class="btn-finalizar" type="submit" {% if not loja_aberta or destinatario_bloqueado %}disabled{% endif %}>Finalizar pedido</button>
                 </div>
             </form>
             {% endif %}

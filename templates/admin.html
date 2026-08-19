@@ -267,11 +267,14 @@
                                 {% for item in pedido.itens %}
                                 <div class="pedido-item-linha">
                                     <span class="pedido-item-quantidade">{{ item.quantidade }}×</span>
-                                    <strong>{{ item.nome }}</strong>
+                                    <strong>Sabor: {{ item.nome }}</strong>
                                     <span>R$ {{ "%.2f"|format(item.preco_unitario) }} un.</span>
                                 </div>
                                 {% endfor %}
                             </div>
+                            {% if pedido.sabores %}
+                            <p class="pedido-sabores-resumo"><strong>Sabores escolhidos:</strong> {{ pedido.sabores | join(', ') }}</p>
+                            {% endif %}
 
                             <div class="pedido-total-operacional">
                                 <span>Total do pedido</span>
