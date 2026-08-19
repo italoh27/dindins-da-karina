@@ -3228,126 +3228,157 @@ def admin_logout():
 def admin():
     if not admin_logado():
         return redirect("/admin/login")
+    try:
+        filtro_cliente = request.args.get("cliente", "").strip().lower()
+        filtro_data = request.args.get("data", "").strip()
+        if not filtro_data:
+            filtro_data = now_local().strftime("%Y-%m-%d")
+        filtro_status = request.args.get("status", "").strip().lower()
+        filtro_pagamento = request.args.get("pagamento", "").strip().lower()
 
-    filtro_cliente = request.args.get("cliente", "").strip().lower()
-    filtro_data = request.args.get("data", "").strip()
-    if not filtro_data:
-        filtro_data = now_local().strftime("%Y-%m-%d")
-    filtro_status = request.args.get("status", "").strip().lower()
-    filtro_pagamento = request.args.get("pagamento", "").strip().lower()
+        aliases_status_rapidos = {"todos", "nao_pagos", "pagos", "cancelados"}
+        status_rapido = filtro_status if filtro_status in aliases_status_rapidos else ""
+        filtro_vendedor = request.args.get("vendedor", "").strip().lower()
+        pedidos = consultar_pedidos(
+            data_inicial=filtro_data,
+            data_final=filtro_data,
+            cliente=filtro_cliente,
+            responsavel=filtro_vendedor,
+            pagamento=filtro_pagamento,
+            status="" if status_rapido else filtro_status,
+            somente_visiveis=True,
+            excluir_aguardando_liberacao=True,
+        )
+        sabores = ler_sabores()
+        config = ler_config()
 
-    aliases_status_rapidos = {"todos", "nao_pagos", "pagos", "cancelados"}
-    status_rapido = filtro_status if filtro_status in aliases_status_rapidos else ""
-    filtro_vendedor = request.args.get("vendedor", "").strip().lower()
-    pedidos = consultar_pedidos(
-        data_inicial=filtro_data,
-        data_final=filtro_data,
-        cliente=filtro_cliente,
-        responsavel=filtro_vendedor,
-        pagamento=filtro_pagamento,
-        status="" if status_rapido else filtro_status,
-        somente_visiveis=True,
-        excluir_aguardando_liberacao=True,
-    )
-    sabores = ler_sabores()
-    config = ler_config()
+        pedidos_filtrados = []
+        for pedido in pedidos:
+            nome_cliente = str(pedido.get("cliente", {}).get("nome", "")).lower()
+            data_pedido = pedido.get("data_filtro", "")
+            status_pedido = str(pedido.get("status", "pendente")).lower()
+            pagamento_status = str(pedido.get("pagamento_status", "aguardando_pagamento")).lower()
+            vendedor = str(pedido.get("destinatario", "italo")).lower()
+            if filtro_cliente and filtro_cliente not in nome_cliente:
+                continue
+            if filtro_data and filtro_data != data_pedido:
+                continue
+            if filtro_status and not status_rapido and filtro_status != status_pedido:
+                continue
+            if filtro_pagamento and pagamento_status != filtro_pagamento:
+                continue
+            if filtro_vendedor and filtro_vendedor != vendedor:
+                continue
+            pedidos_filtrados.append(pedido)
 
-    pedidos_filtrados = []
-    for pedido in pedidos:
-        nome_cliente = str(pedido.get("cliente", {}).get("nome", "")).lower()
-        data_pedido = pedido.get("data_filtro", "")
-        status_pedido = str(pedido.get("status", "pendente")).lower()
-        pagamento_status = str(pedido.get("pagamento_status", "aguardando_pagamento")).lower()
-        vendedor = str(pedido.get("destinatario", "italo")).lower()
-        if filtro_cliente and filtro_cliente not in nome_cliente:
-            continue
-        if filtro_data and filtro_data != data_pedido:
-            continue
-        if filtro_status and not status_rapido and filtro_status != status_pedido:
-            continue
+        total_pedidos = len(pedidos_filtrados)
+        faturamento_total = sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("pagamento_status") == "pago")
+        hoje = now_local().strftime("%Y-%m-%d")
+        resumo_global = resumo_global_admin(hoje)
+        faturamento_hoje = resumo_global["faturamento_total"]
+        total_nao_pago = sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("pagamento_status") == "aguardando_pagamento" and not p.get("oculto", False))
 
-        if filtro_pagamento and pagamento_status != filtro_pagamento:
-            continue
-        if filtro_vendedor and filtro_vendedor != vendedor:
-            continue
-        pedidos_filtrados.append(pedido)
+        metricas_responsavel = {
+            "italo": {
+                "total_pedidos": len([p for p in pedidos_filtrados if p.get("destinatario") == "italo"]),
+                "faturamento_pago": sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("destinatario") == "italo" and p.get("pagamento_status") == "pago"),
+                "faturamento_pago_hoje": resumo_global["italo"],
+                "total_nao_pago": sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("destinatario") == "italo" and p.get("pagamento_status") == "aguardando_pagamento" and not p.get("oculto", False)),
+            },
+            "karina": {
+                "total_pedidos": len([p for p in pedidos_filtrados if p.get("destinatario") == "karina"]),
+                "faturamento_pago": sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("destinatario") == "karina" and p.get("pagamento_status") == "pago"),
+                "faturamento_pago_hoje": resumo_global["karina"],
+                "total_nao_pago": sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("destinatario") == "karina" and p.get("pagamento_status") == "aguardando_pagamento" and not p.get("oculto", False)),
+            },
+        }
 
-    total_pedidos = len(pedidos_filtrados)
-    faturamento_total = sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("pagamento_status") == "pago")
-    hoje = now_local().strftime("%Y-%m-%d")
-    resumo_global = resumo_global_admin(hoje)
-    faturamento_hoje = resumo_global["faturamento_total"]
-    total_nao_pago = sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("pagamento_status") == "aguardando_pagamento" and not p.get("oculto", False))
+        sabores_vendidos = {}
+        for pedido in pedidos_filtrados:
+            for item in pedido.get("itens", []):
+                nome = item.get("nome", "Sem nome")
+                quantidade = int(item.get("quantidade", 0) or 0)
+                sabores_vendidos[nome] = sabores_vendidos.get(nome, 0) + quantidade
+        ranking_sabores = sorted(sabores_vendidos.items(), key=lambda x: x[1], reverse=True)
 
-    metricas_responsavel = {
-        "italo": {
-            "total_pedidos": len([p for p in pedidos_filtrados if p.get("destinatario") == "italo"]),
-            "faturamento_pago": sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("destinatario") == "italo" and p.get("pagamento_status") == "pago"),
-            "faturamento_pago_hoje": resumo_global["italo"],
-            "total_nao_pago": sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("destinatario") == "italo" and p.get("pagamento_status") == "aguardando_pagamento" and not p.get("oculto", False)),
-        },
-        "karina": {
-            "total_pedidos": len([p for p in pedidos_filtrados if p.get("destinatario") == "karina"]),
-            "faturamento_pago": sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("destinatario") == "karina" and p.get("pagamento_status") == "pago"),
-            "faturamento_pago_hoje": resumo_global["karina"],
-            "total_nao_pago": sum(float(p.get("total", 0) or 0) for p in pedidos_filtrados if p.get("destinatario") == "karina" and p.get("pagamento_status") == "aguardando_pagamento" and not p.get("oculto", False)),
-        },
-    }
+        pedidos_italo = [p for p in pedidos_filtrados if p.get("destinatario") == "italo"]
+        pedidos_karina = [p for p in pedidos_filtrados if p.get("destinatario") == "karina"]
 
-    sabores_vendidos = {}
-    for pedido in pedidos_filtrados:
-        for item in pedido.get("itens", []):
-            nome = item.get("nome", "Sem nome")
-            quantidade = int(item.get("quantidade", 0) or 0)
-            sabores_vendidos[nome] = sabores_vendidos.get(nome, 0) + quantidade
-    ranking_sabores = sorted(sabores_vendidos.items(), key=lambda x: x[1], reverse=True)
+        abas_pedidos = {
+            "todos": pedidos_filtrados,
+            "nao_pagos": [p for p in pedidos_filtrados if p.get("pagamento_status") == "aguardando_pagamento"],
+            "pagos": [p for p in pedidos_filtrados if p.get("pagamento_status") == "pago"],
+            "cancelados": [p for p in pedidos_filtrados if p.get("status") == "cancelado" or p.get("pagamento_status") == "cancelado"],
+        }
 
-    pedidos_italo = [p for p in pedidos_filtrados if p.get("destinatario") == "italo"]
-    pedidos_karina = [p for p in pedidos_filtrados if p.get("destinatario") == "karina"]
+        ultimo_pedido_id = resumo_global["ultimo_pedido_id"]
+        premios_fidelidade = listar_premios_fidelidade_pendentes() if config.get("fidelidade_ativa", False) else []
+        progresso_fidelidade = listar_progresso_fidelidade_clientes() if config.get("fidelidade_ativa", False) else []
+        ultimo_fidelidade_id = ultimo_id_notificacao_fidelidade()
+        resumo_status = resumo_status_pedidos(pedidos_filtrados)
 
-    abas_pedidos = {
-        "todos": pedidos_filtrados,
-        "nao_pagos": [p for p in pedidos_filtrados if p.get("pagamento_status") == "aguardando_pagamento"],
-        "pagos": [p for p in pedidos_filtrados if p.get("pagamento_status") == "pago"],
-        "cancelados": [p for p in pedidos_filtrados if p.get("status") == "cancelado" or p.get("pagamento_status") == "cancelado"],
-    }
-
-    ultimo_pedido_id = resumo_global["ultimo_pedido_id"]
-    premios_fidelidade = listar_premios_fidelidade_pendentes() if config.get("fidelidade_ativa", False) else []
-    progresso_fidelidade = listar_progresso_fidelidade_clientes() if config.get("fidelidade_ativa", False) else []
-    ultimo_fidelidade_id = ultimo_id_notificacao_fidelidade()
-    resumo_status = resumo_status_pedidos(pedidos_filtrados)
-
-    return render_template(
-        "admin.html",
-        pedidos=pedidos_filtrados,
-        pedidos_italo=pedidos_italo,
-        pedidos_karina=pedidos_karina,
-        total_pedidos=total_pedidos,
-        faturamento_total=faturamento_total,
-        faturamento_hoje=faturamento_hoje,
-        total_nao_pago=total_nao_pago,
-        ranking_sabores=ranking_sabores,
-        resumo_status=resumo_status,
-        filtro_data_label=parse_data_filtro_admin(request.args.get("data", "")),
-        filtro_cliente=request.args.get("cliente", ""),
-        filtro_data=request.args.get("data", ""),
-        filtro_status=filtro_status,
-        filtro_pagamento=request.args.get("pagamento", ""),
-        filtro_vendedor=request.args.get("vendedor", ""),
-        sabores=sabores,
-        config=config,
-        mensagem=pop_mensagem("mensagem_admin"),
-        infinitepay_ativo=infinitepay_ativo(),
-        abas_pedidos=abas_pedidos,
-        ultimo_pedido_id=ultimo_pedido_id,
-        premios_fidelidade=premios_fidelidade,
-        progresso_fidelidade=progresso_fidelidade,
-        ultimo_fidelidade_id=ultimo_fidelidade_id,
-        metricas_responsavel=metricas_responsavel,
-        request_path=request.full_path if request.query_string else request.path,
-        quick_order_url="/admin/pedido_rapido",
-    )
+        return render_template(
+            "admin.html",
+            pedidos=pedidos_filtrados,
+            pedidos_italo=pedidos_italo,
+            pedidos_karina=pedidos_karina,
+            total_pedidos=total_pedidos,
+            faturamento_total=faturamento_total,
+            faturamento_hoje=faturamento_hoje,
+            total_nao_pago=total_nao_pago,
+            ranking_sabores=ranking_sabores,
+            resumo_status=resumo_status,
+            filtro_data_label=parse_data_filtro_admin(request.args.get("data", "")),
+            filtro_cliente=request.args.get("cliente", ""),
+            filtro_data=request.args.get("data", ""),
+            filtro_status=filtro_status,
+            filtro_pagamento=request.args.get("pagamento", ""),
+            filtro_vendedor=request.args.get("vendedor", ""),
+            sabores=sabores,
+            config=config,
+            mensagem=pop_mensagem("mensagem_admin"),
+            infinitepay_ativo=infinitepay_ativo(),
+            abas_pedidos=abas_pedidos,
+            ultimo_pedido_id=ultimo_pedido_id,
+            premios_fidelidade=premios_fidelidade,
+            progresso_fidelidade=progresso_fidelidade,
+            ultimo_fidelidade_id=ultimo_fidelidade_id,
+            metricas_responsavel=metricas_responsavel,
+            request_path=request.full_path if request.query_string else request.path,
+            quick_order_url="/admin/pedido_rapido",
+        )
+    except Exception as exc:
+        app.logger.exception("Erro ao carregar admin: %s", exc)
+        return render_template(
+            "admin.html",
+            pedidos=[],
+            pedidos_italo=[],
+            pedidos_karina=[],
+            total_pedidos=0,
+            faturamento_total=0,
+            faturamento_hoje=0,
+            total_nao_pago=0,
+            ranking_sabores=[],
+            resumo_status=resumo_status_pedidos([]),
+            filtro_data_label="",
+            filtro_cliente="",
+            filtro_data="",
+            filtro_status="",
+            filtro_pagamento="",
+            filtro_vendedor="",
+            sabores=ler_sabores(),
+            config=ler_config_arquivo(),
+            mensagem="Não consegui carregar o painel admin agora. Tente novamente em instantes.",
+            infinitepay_ativo=infinitepay_ativo(),
+            abas_pedidos={"todos": [], "nao_pagos": [], "pagos": [], "cancelados": []},
+            ultimo_pedido_id=0,
+            premios_fidelidade=[],
+            progresso_fidelidade=[],
+            ultimo_fidelidade_id=0,
+            metricas_responsavel={"italo": {"total_pedidos": 0, "faturamento_pago": 0, "faturamento_pago_hoje": 0, "total_nao_pago": 0}, "karina": {"total_pedidos": 0, "faturamento_pago": 0, "faturamento_pago_hoje": 0, "total_nao_pago": 0}},
+            request_path=request.path,
+            quick_order_url="/admin/pedido_rapido",
+        )
 
 
 @app.route("/admin/sabores")
