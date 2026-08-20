@@ -1,27 +1,27 @@
 :root {
-    --rosa: #ff4d6d;
-    --rosa-hover: #e63e5f;
-    --verde: #25d366;
-    --verde-hover: #1ebe5d;
+    --rosa: #ff3f74;
+    --rosa-hover: #e11d63;
+    --verde: #059669;
+    --verde-hover: #047857;
     --azul: #2563eb;
     --azul-hover: #1d4ed8;
     --laranja: #f59e0b;
     --laranja-hover: #d97706;
-    --vermelho: #dc2626;
-    --vermelho-hover: #b91c1c;
-    --cinza: #6b7280;
-    --cinza-hover: #4b5563;
-    --escuro: #1f2937;
-    --destaque: #00ffcc;
+    --vermelho: #e11d48;
+    --vermelho-hover: #be123c;
+    --cinza: #475569;
+    --cinza-hover: #334155;
+    --escuro: #0f172a;
+    --destaque: #22d3ee;
     --branco: #fff;
-    --glass: rgba(255, 255, 255, 0.08);
-    --glass-soft: rgba(255, 255, 255, 0.05);
-    --borda: 1px solid rgba(255, 255, 255, 0.22);
-    --borda-soft: 1px solid rgba(255, 255, 255, 0.12);
+    --glass: rgba(15, 23, 42, 0.84);
+    --glass-soft: rgba(30, 41, 59, 0.72);
+    --borda: 1px solid rgba(148, 163, 184, 0.22);
+    --borda-soft: 1px solid rgba(148, 163, 184, 0.12);
     --radius: 18px;
     --radius-sm: 12px;
-    --shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
-    --shadow-hover: 0 10px 24px rgba(0, 0, 0, 0.28);
+    --shadow: 0 18px 48px rgba(2, 6, 23, 0.42);
+    --shadow-hover: 0 24px 56px rgba(2, 6, 23, 0.52);
     --transicao: 0.25s ease;
 }
 
@@ -34,11 +34,24 @@
 body {
     min-height: 100vh;
     padding: 20px;
-    font-family: Arial, sans-serif;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
     color: var(--branco);
     text-align: center;
-    background: linear-gradient(135deg, #0f172a, #1e293b, #020617);
+    background:
+        linear-gradient(90deg, rgba(7, 8, 22, 0.93), rgba(7, 8, 22, 0.76)),
+        url("/static/background-geladinhos-gourmet.webp") center/cover fixed;
     color: #ffffff;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+        radial-gradient(circle at 15% 20%, rgba(37, 99, 235, 0.18), transparent 34%),
+        radial-gradient(circle at 85% 65%, rgba(236, 72, 153, 0.15), transparent 32%);
+    pointer-events: none;
 }
 
 h1 {

@@ -223,9 +223,17 @@ def normalizar_imagem_sabor(img):
     if not caminho:
         return "/static/gelinhos.png"
     mapa = {
-        "paçoca.jpg": "/static/pacoca.jpg",
-        "pa#U00e7oca.jpg": "/static/pacoca.jpg",
-        "pacoca.jpeg": "/static/pacoca.jpg",
+        "paçoca.jpg": "/static/sabores/card_pacoca_gourmet.webp",
+        "pa#U00e7oca.jpg": "/static/sabores/card_pacoca_gourmet.webp",
+        "pacoca.jpeg": "/static/sabores/card_pacoca_gourmet.webp",
+        "pacoca.jpg": "/static/sabores/card_pacoca_gourmet.webp",
+        "ninho_com_nutela.jpg": "/static/sabores/card_ninho_com_nutela_gourmet.webp",
+        "ninho_com_morango.jpg": "/static/sabores/card_ninho_com_morango_gourmet.webp",
+        "romeu_julieta.jpg": "/static/sabores/card_romeu_julieta_gourmet.webp",
+        "maracuja_trufado.jpg": "/static/sabores/card_maracuja_trufado_gourmet_v2.webp",
+        "pudim.jpg": "/static/sabores/card_pudim_gourmet.webp",
+        "cocada.jpg": "/static/sabores/card_cocada_gourmet.webp",
+        "chocolate.jfif": "/static/sabores/card_morango_com_chocolate_gourmet.webp",
     }
     lower = caminho.lower()
     for origem, destino in mapa.items():
